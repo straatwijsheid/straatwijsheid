@@ -6,12 +6,32 @@ a strongly monothematic buurt, the buurt theme wins (this is what fixes
 Pinkstraat -> "Pink" the singer, Pluvierlaan -> an unrelated person, etc.).
 """
 import json
+import re
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 CONFIDENT_THRESHOLD = 0.7
 STRONG_THEME_THRESHOLD = 0.8
+
+# a title/honorific prefix is a strong, cheap signal that a street is named
+# after a person, regardless of what the buurt's dominant theme is (this is
+# what fixes cases like "Ingenieur Kalffstraat" getting swept into a
+# buurt's "thing" theme just because that subtheme had the bigger share)
+PERSON_TITLE_PREFIXES = [
+    "Ingenieur", "Professor", "Doctor", "Dr", "Meester", "Mr", "Burgemeester",
+    "Generaal", "Kapitein", "Monseigneur", "Pastoor", "Kardinaal", "Sint",
+    "Dominee", "Rector", "Kanunnik", "Deken", "Baron", "Graaf", "Hertog",
+    "Prins", "Prinses", "Koning", "Koningin", "Vicaris", "Pater", "President",
+    "Minister", "Veldmaarschalk", "Kolonel", "Majoor", "Admiraal",
+]
+_TITLE_RE = re.compile(
+    r"^(" + "|".join(re.escape(p) for p in PERSON_TITLE_PREFIXES) + r")\s+\S", re.IGNORECASE
+)
+
+
+def has_person_title(street_name: str) -> bool:
+    return bool(_TITLE_RE.match(street_name))
 
 
 def load_json(path: Path):
@@ -40,6 +60,27 @@ def reconcile(wikidata_results: list[dict], context: dict, themes_by_buurt: dict
             "buurt_theme": theme.get("theme") if theme else None,
             "notes": "",
         }
+
+        if has_person_title(street) and wd_category != "person":
+            subcategory = "other"
+            if theme:
+                if theme.get("category") == "person":
+                    subcategory = theme.get("subcategory") or "other"
+                elif theme.get("category") == "mixed":
+                    person_subs = [s for s in theme.get("subthemes", []) if s["category"] == "person"]
+                    if person_subs:
+                        subcategory = person_subs[0].get("subcategory") or "other"
+            row["category"] = "person"
+            row["subcategory"] = subcategory
+            row["confidence"] = 0.65
+            row["source"] = "title_heuristic"
+            title = street.split()[0]
+            row["notes"] = (
+                f"street name starts with the person-title '{title}', overriding the "
+                f"{wd_category or 'unresolved'} guess from Wikidata/buurt theme"
+            )
+            final.append(row)
+            continue
 
         if theme is None:
             final.append(row)

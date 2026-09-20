@@ -18,6 +18,57 @@ CATEGORY_COLORS = {
     "unclear": "#9ca3af",
 }
 
+SOURCE_LABELS = {
+    "wikidata": "Wikidata match",
+    "wikidata_surname_only": "Wikidata (surname only, individual not identified)",
+    "buurt_theme_override": "inferred from neighborhood theme (overrode a weaker individual match)",
+    "buurt_theme_fallback": "inferred from neighborhood theme (no individual match found)",
+    "title_heuristic": "inferred from a person-title prefix in the name",
+    "wikidata_weak_match": "Wikidata (weak/unreliable match)",
+    "wikidata_low_similarity": "Wikidata (low-confidence match)",
+    "wikidata_no_match": "no match found",
+}
+
+
+def street_explanation(row) -> str:
+    """A short, human-readable answer to 'what is this street actually named after,
+    and how sure are we', for the map tooltip."""
+    def clean(v):
+        return v if isinstance(v, str) and v else None
+
+    category = clean(row["category"]) or "unresolved"
+    subcategory = clean(row["subcategory"]) or ""
+    entity = clean(row["entity_label"])
+    desc = clean(row["entity_description"])
+    conf = row["confidence"]
+    if isinstance(conf, float) and conf != conf:  # NaN check without importing math
+        conf = None
+    source = clean(row["source"])
+
+    if category == "unresolved" or category is None:
+        return "Origin not identified (no confident match found)"
+
+    # only trust the Wikidata entity_label when it's actually the source of
+    # the final classification -- if a buurt-theme override replaced it,
+    # showing the rejected guess (e.g. "Pink" the singer for a street about
+    # ship types) would be actively misleading
+    trusted_entity_sources = {"wikidata", "wikidata_surname_only"}
+    if entity and source not in trusted_entity_sources:
+        entity = None
+
+    if entity:
+        origin = f"Likely named after: <b>{entity}</b>" + (f" &mdash; {desc}" if desc else "")
+    else:
+        theme = clean(row.get("buurt_theme"))
+        if theme:
+            origin = f"No specific match; fits neighborhood theme: <i>{theme}</i>"
+        else:
+            origin = f"Classified as {category}" + (f" ({subcategory})" if subcategory else "")
+
+    basis = SOURCE_LABELS.get(source, source or "unknown")
+    conf_label = "high" if (conf or 0) >= 0.75 else "medium" if (conf or 0) >= 0.5 else "low"
+    return f"{origin}<br>Category: {category}/{subcategory} &middot; confidence: {conf_label} ({conf})<br>Basis: {basis}"
+
 
 def main():
     streets = gpd.read_file(DATA_DIR / "raw" / "streets.geojson")
@@ -29,6 +80,9 @@ def main():
     streets["subcategory"] = streets["name"].map(lambda n: final.get(n, {}).get("subcategory"))
     streets["confidence"] = streets["name"].map(lambda n: final.get(n, {}).get("confidence"))
     streets["source"] = streets["name"].map(lambda n: final.get(n, {}).get("source"))
+    streets["entity_label"] = streets["name"].map(lambda n: final.get(n, {}).get("entity_label"))
+    streets["entity_description"] = streets["name"].map(lambda n: final.get(n, {}).get("entity_description"))
+    streets["buurt_theme"] = streets["name"].map(lambda n: final.get(n, {}).get("buurt_theme"))
 
     center = [51.4416, 5.4697]  # Eindhoven
     m = folium.Map(location=center, zoom_start=12, tiles="OpenStreetMap")
@@ -53,15 +107,13 @@ def main():
     street_layer = folium.FeatureGroup(name="Streets", show=True)
     for _, row in streets.iterrows():
         color = CATEGORY_COLORS.get(row["category"], "#9ca3af")
-        popup = (
-            f"<b>{row['name']}</b><br>category: {row['category']} / {row['subcategory']}"
-            f"<br>confidence: {row['confidence']}<br>source: {row['source']}"
-        )
+        explanation = street_explanation(row)
+        tooltip = f"<b>{row['name']}</b><br>{explanation}"
         folium.GeoJson(
             row["geometry"],
             style_function=lambda _, c=color: {"color": c, "weight": 3, "opacity": 0.8},
-            tooltip=row["name"],
-            popup=popup,
+            tooltip=folium.Tooltip(tooltip, sticky=True),
+            popup=folium.Popup(tooltip, max_width=320),
         ).add_to(street_layer)
     street_layer.add_to(m)
 
