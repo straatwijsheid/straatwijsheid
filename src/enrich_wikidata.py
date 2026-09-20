@@ -41,6 +41,24 @@ SUFFIXES = sorted(
 PERSON_QID = "Q5"
 FAMILY_NAME_QID = "Q101352"
 GIVEN_NAME_QID = "Q202444"
+
+# tie-breaking for generic "thing" matches: a name can collide with an
+# obscure band/film/etc. that happens to share the exact label (e.g. a
+# Hungarian band called "Saturnus" outranking the planet). Nudge toward
+# types a Dutch street is actually likely to be named after, and away from
+# types that are common false-positive traps.
+PREFERRED_THING_QIDS = {
+    "Q634", "Q3863", "Q6999",       # planet, moon, astronomical object
+    "Q11344", "Q7946", "Q498640",   # chemical element, mineral, gemstone variety
+    "Q16521", "Q55983715",          # taxon, taxon (organism)
+    "Q34379", "Q1051067",           # musical instrument, instrument family
+    "Q11446", "Q2235308",           # ship, ship class
+}
+DEPRIORITIZED_THING_QIDS = {
+    "Q215380", "Q5398426", "Q11424",  # musical group, TV series, film
+    "Q4167410", "Q4167836",           # Wikimedia disambiguation/category page
+    "Q7366", "Q134556",               # single, song
+}
 PLACE_TYPES = {
     "Q515": "city", "Q6256": "country", "Q23397": "lake", "Q4022": "river",
     "Q8502": "mountain", "Q486972": "human settlement", "Q3957": "town",
@@ -168,7 +186,41 @@ def lookup_street(street_name: str) -> dict:
         sim = label_similarity(core, h.get("label", ""))
         scored.append((sim, h, ent, instance_of, is_person, is_place, is_surname))
 
+    # fallback: a "thing" match (planet, constellation, mineral, instrument,
+    # animal/plant species, ...) is never captured by the person/place/surname
+    # filter above, so a near-exact label match against ANY entity is worth
+    # surfacing too -- this is what turns "Saturnusweg -> unresolved" into
+    # "Saturnusweg -> Saturn, sixth planet in the Solar System". Self-referential
+    # street-stub Wikidata articles ("Saturnusweg: street in Eindhoven") are
+    # excluded since they carry no naming information.
+    def thing_score(h):
+        sim = label_similarity(core, h.get("label", ""))
+        instance_of = _claim_qids(entities.get(h["id"], {}), "P31")
+        if set(instance_of) & PREFERRED_THING_QIDS:
+            sim += 0.1
+        if set(instance_of) & DEPRIORITIZED_THING_QIDS:
+            sim -= 0.2
+        return sim
+
+    thing_candidates = [
+        (thing_score(h), h)
+        for h in hits
+        if "street in" not in (h.get("description") or "").lower()
+        and "straat in" not in (h.get("description") or "").lower()
+    ]
+    thing_candidates.sort(key=lambda t: t[0], reverse=True)
+    best_thing_sim, best_thing_hit = thing_candidates[0] if thing_candidates else (0.0, None)
+
     if not scored:
+        if best_thing_hit is not None and best_thing_sim >= 0.85:
+            return {
+                "street": street_name, "core_name": core,
+                "wikidata_qid": best_thing_hit["id"], "wikidata_label": best_thing_hit.get("label"),
+                "wikidata_description": best_thing_hit.get("description"),
+                "category": "thing", "subcategory": None,
+                "confidence": round(0.65 - lang_penalty, 2),
+                "source": "wikidata_thing_match",
+            }
         top = hits[0]
         return {
             "street": street_name, "core_name": core,
@@ -182,8 +234,18 @@ def lookup_street(street_name: str) -> dict:
     sim, hit, ent, instance_of, is_person, is_place, is_surname = scored[0]
 
     # a poor label match against every candidate is more likely a coincidence
-    # (e.g. "Pink" the singer) than the street's actual namesake
+    # (e.g. "Pink" the singer) than the street's actual namesake -- but check
+    # the broader thing-candidate pool before giving up entirely
     if sim < 0.6:
+        if best_thing_hit is not None and best_thing_sim >= 0.85:
+            return {
+                "street": street_name, "core_name": core,
+                "wikidata_qid": best_thing_hit["id"], "wikidata_label": best_thing_hit.get("label"),
+                "wikidata_description": best_thing_hit.get("description"),
+                "category": "thing", "subcategory": None,
+                "confidence": round(0.65 - lang_penalty, 2),
+                "source": "wikidata_thing_match",
+            }
         return {
             "street": street_name, "core_name": core,
             "wikidata_qid": hit["id"], "wikidata_label": hit.get("label"),
