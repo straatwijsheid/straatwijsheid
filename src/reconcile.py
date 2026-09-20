@@ -61,6 +61,18 @@ def reconcile(wikidata_results: list[dict], context: dict, themes_by_buurt: dict
             "notes": "",
         }
 
+        def theme_supports_person(theme) -> bool:
+            if not theme:
+                return False
+            if theme.get("category") == "person":
+                return True
+            if theme.get("category") == "mixed":
+                share = sum(
+                    s.get("share", 0) for s in theme.get("subthemes", []) if s["category"] == "person"
+                )
+                return share >= 0.4
+            return False
+
         if has_person_title(street) and wd_category != "person":
             subcategory = "other"
             if theme:
@@ -135,6 +147,23 @@ def reconcile(wikidata_results: list[dict], context: dict, themes_by_buurt: dict
             row["notes"] = f"no confident individual match; inferred from buurt theme '{theme['theme']}'"
         else:
             row["notes"] = "kept as-is; theme present but not strong enough to override or assist"
+            if row["source"] == "wikidata_surname_only" and not has_person_title(street) \
+                    and not theme_supports_person(theme):
+                # a "family name" Wikidata hit is weak on its own: Dutch surnames are
+                # often derived from ordinary words (Wal, Vloet, Bogert, Molendijk...),
+                # so a common-word street can false-positive as "person" with no real
+                # signal, and here nothing else (title, strong buurt theme) corroborates it
+                row["category"] = "unresolved"
+                row["subcategory"] = None
+                row["confidence"] = 0.25
+                row["source"] = "surname_unsupported"
+                row["notes"] = (
+                    f"Wikidata matched '{row['entity_label']}' as a family name, but nothing "
+                    f"corroborates a person-naming pattern here -- likely a plain Dutch word that "
+                    f"happens to coincide with a rare surname, not evidence of the real origin"
+                )
+                row["entity_label"] = None
+                row["entity_description"] = None
 
         final.append(row)
     return final
