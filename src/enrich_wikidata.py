@@ -193,7 +193,6 @@ def lookup_street(street_name: str) -> dict:
         }
 
     occupation = _claim_qids(ent, "P106")
-    citizenship_qids = _claim_qids(ent, "P27")
 
     if is_surname:
         return {
@@ -216,39 +215,66 @@ def lookup_street(street_name: str) -> dict:
         subcategory = place_type
         confidence = round((0.85 if sim > 0.9 else 0.7) - lang_penalty, 2)
 
-    citizenship_labels = []
-    if citizenship_qids:
-        cz_entities = wd_get_claims(citizenship_qids[:2])
-        for q in citizenship_qids[:2]:
-            lbl = cz_entities.get(q, {}).get("labels", {}).get("nl", {}).get("value") \
-                or cz_entities.get(q, {}).get("labels", {}).get("en", {}).get("value")
-            if lbl:
-                citizenship_labels.append(lbl)
-
     return {
         "street": street_name, "core_name": core,
         "wikidata_qid": hit["id"], "wikidata_label": hit.get("label"),
         "wikidata_description": hit.get("description"),
         "category": category, "subcategory": subcategory,
-        "citizenship": ", ".join(citizenship_labels),
         "confidence": confidence, "source": "wikidata",
     }
 
 
-def lookup_all(street_names: list[str], delay: float = 1.0) -> list[dict]:
-    results = []
-    for i, name in enumerate(street_names):
-        try:
-            results.append(lookup_street(name))
-        except requests.RequestException as e:
-            results.append({
-                "street": name, "core_name": core_name(name),
-                "category": "error", "confidence": 0.0, "source": str(e),
-            })
+def _safe_lookup(name: str) -> dict:
+    try:
+        return lookup_street(name)
+    except requests.RequestException as e:
+        return {
+            "street": name, "core_name": core_name(name),
+            "category": "error", "confidence": 0.0, "source": str(e),
+        }
+
+
+def lookup_all_resumable(
+    street_names: list[str], cache_path, workers: int = 4, delay: float = 0.3
+) -> None:
+    """Append results to a JSONL cache, skipping names already present, so a
+    long run can be killed and restarted without losing progress. Uses a
+    small thread pool since each lookup is a couple of blocking HTTP calls;
+    the shared requests.Session's Retry adapter backs off on 429s so workers
+    self-throttle if we go too fast."""
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    done = set()
+    if cache_path.exists():
+        with cache_path.open() as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    done.add(json.loads(line)["street"])
+        print(f"Resuming: {len(done)}/{len(street_names)} already cached")
+
+    todo = [n for n in street_names if n not in done]
+    lock = threading.Lock()
+    count = 0
+
+    def worker(name: str):
+        nonlocal count
         time.sleep(delay)
-        if (i + 1) % 10 == 0:
-            print(f"  ...{i + 1}/{len(street_names)}")
-    return results
+        result = _safe_lookup(name)
+        with lock:
+            nonlocal_write(result)
+
+    def nonlocal_write(result):
+        nonlocal count
+        with cache_path.open("a") as f:
+            f.write(json.dumps(result, ensure_ascii=False) + "\n")
+        count += 1
+        if count % 25 == 0:
+            print(f"  ...{count}/{len(todo)} new ({len(done) + count}/{len(street_names)} total)")
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        list(pool.map(worker, todo))
 
 
 if __name__ == "__main__":
@@ -257,17 +283,14 @@ if __name__ == "__main__":
     from pathlib import Path
 
     sample_file = Path(sys.argv[1]) if len(sys.argv) > 1 else None
+    out_name = sys.argv[2] if len(sys.argv) > 2 else "pilot_wikidata.jsonl"
     if sample_file:
         names = [l.strip() for l in sample_file.read_text().splitlines() if l.strip()]
     else:
         names = ["Vesaliuslaan", "Jonathan Swiftlaan", "Philipslaan"]
 
-    print(f"Looking up {len(names)} streets on Wikidata...")
-    results = lookup_all(names)
-    out_path = Path(__file__).resolve().parent.parent / "data" / "enriched" / "pilot_wikidata.json"
+    out_path = Path(__file__).resolve().parent.parent / "data" / "enriched" / out_name
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(results, indent=2, ensure_ascii=False))
-    print(f"Wrote {out_path}")
-
-    resolved = [r for r in results if r["category"] not in ("unresolved", "error")]
-    print(f"Resolved {len(resolved)}/{len(results)} via Wikidata")
+    print(f"Looking up {len(names)} streets on Wikidata -> {out_path}")
+    lookup_all_resumable(names, out_path)
+    print("Done")
