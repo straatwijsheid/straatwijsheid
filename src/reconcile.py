@@ -173,6 +173,27 @@ def load_jsonl(path: Path) -> list[dict]:
     return [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
 
 
+def apply_manual_overrides(final: list[dict]) -> list[dict]:
+    """Individually researched corrections (web search or general knowledge),
+    applied last since they're the highest-quality evidence available."""
+    overrides_path = DATA_DIR / "enriched" / "manual_overrides.json"
+    if not overrides_path.exists():
+        return final
+    overrides = {o["street"]: o for o in load_json(overrides_path)["overrides"]}
+    for row in final:
+        o = overrides.get(row["street"])
+        if not o:
+            continue
+        row.update({
+            "category": o["category"], "subcategory": o.get("subcategory"),
+            "entity_label": o.get("entity_label"), "entity_description": o.get("entity_description"),
+            "confidence": o["confidence"], "source": o["source"],
+            "source_url": o.get("source_url"),
+            "notes": o.get("notes") or f"manually researched ({o['source']})",
+        })
+    return final
+
+
 def main():
     import sys
 
@@ -194,6 +215,8 @@ def main():
 
     themes_by_buurt = {t["buurt"]: t for t in themes}
     final = reconcile(wikidata_results, context, themes_by_buurt)
+    if full_run:
+        final = apply_manual_overrides(final)
 
     out_path.write_text(json.dumps(final, indent=2, ensure_ascii=False))
     print(f"Wrote {out_path} ({len(final)} streets)")

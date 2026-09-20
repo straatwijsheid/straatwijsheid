@@ -27,6 +27,9 @@ SOURCE_LABELS = {
     "wikidata_weak_match": "Wikidata (weak/unreliable match)",
     "wikidata_low_similarity": "Wikidata (low-confidence match)",
     "wikidata_no_match": "no match found",
+    "surname_unsupported": "Wikidata surname match rejected (no corroborating evidence)",
+    "web_search": "individually researched via web search",
+    "claude_knowledge": "individually researched from general knowledge (not web-verified)",
 }
 
 
@@ -52,12 +55,15 @@ def street_explanation(row) -> str:
     # the final classification -- if a buurt-theme override replaced it,
     # showing the rejected guess (e.g. "Pink" the singer for a street about
     # ship types) would be actively misleading
-    trusted_entity_sources = {"wikidata", "wikidata_surname_only"}
+    trusted_entity_sources = {"wikidata", "wikidata_surname_only", "web_search", "claude_knowledge"}
     if entity and source not in trusted_entity_sources:
         entity = None
 
     if entity:
         origin = f"Likely named after: <b>{entity}</b>" + (f" &mdash; {desc}" if desc else "")
+        url = clean(row.get("source_url"))
+        if url:
+            origin += f' &nbsp;<a href="{url}" target="_blank" rel="noopener">[source]</a>'
     else:
         theme = clean(row.get("buurt_theme"))
         if theme:
@@ -83,6 +89,7 @@ def main():
     streets["entity_label"] = streets["name"].map(lambda n: final.get(n, {}).get("entity_label"))
     streets["entity_description"] = streets["name"].map(lambda n: final.get(n, {}).get("entity_description"))
     streets["buurt_theme"] = streets["name"].map(lambda n: final.get(n, {}).get("buurt_theme"))
+    streets["source_url"] = streets["name"].map(lambda n: final.get(n, {}).get("source_url"))
 
     center = [51.4416, 5.4697]  # Eindhoven
     m = folium.Map(location=center, zoom_start=12, tiles="OpenStreetMap")
