@@ -55,7 +55,7 @@ def street_explanation(row) -> str:
     # the final classification -- if a buurt-theme override replaced it,
     # showing the rejected guess (e.g. "Pink" the singer for a street about
     # ship types) would be actively misleading
-    trusted_entity_sources = {"wikidata", "wikidata_surname_only", "web_search", "claude_knowledge"}
+    trusted_entity_sources = {"wikidata", "wikidata_surname_only", "wikidata_thing_match", "web_search", "claude_knowledge"}
     if entity and source not in trusted_entity_sources:
         entity = None
 

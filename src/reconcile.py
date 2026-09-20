@@ -14,6 +14,13 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CONFIDENT_THRESHOLD = 0.7
 STRONG_THEME_THRESHOLD = 0.8
 
+# sources whose entity_label/entity_description reflect an actual identification,
+# as opposed to a rejected/weak guess or a generic theme inference
+TRUSTED_ENTITY_SOURCES = {
+    "wikidata", "wikidata_surname_only", "wikidata_thing_match",
+    "web_search", "claude_knowledge",
+}
+
 # a title/honorific prefix is a strong, cheap signal that a street is named
 # after a person, regardless of what the buurt's dominant theme is (this is
 # what fixes cases like "Ingenieur Kalffstraat" getting swept into a
@@ -164,6 +171,19 @@ def reconcile(wikidata_results: list[dict], context: dict, themes_by_buurt: dict
                 )
                 row["entity_label"] = None
                 row["entity_description"] = None
+
+        # entity_label/entity_description only mean something when they come
+        # from a source that actually identifies a specific named thing --
+        # every other path here (buurt theme override/fallback, or a
+        # rejected/weak Wikidata guess kept as unresolved) leaves whatever
+        # raw wikidata_label was on the original hit sitting in the row,
+        # which silently looks like a real identification downstream (e.g.
+        # "Acaciastraat" showing entity 'Acacia' when that's just the
+        # rejected guess, not a confirmed match). Clear it here so entity
+        # presence reliably means "we know what this is specifically named after".
+        if row["source"] not in TRUSTED_ENTITY_SOURCES:
+            row["entity_label"] = None
+            row["entity_description"] = None
 
         final.append(row)
     return final
