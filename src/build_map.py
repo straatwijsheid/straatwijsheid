@@ -18,6 +18,73 @@ CATEGORY_COLORS = {
     "unclear": "#9ca3af",
 }
 
+# The ~50 raw subcategories are too many to show distinctly without the map
+# (and its legend) turning into visual noise. Bucket them into a handful of
+# meaningful groups per top-level category, each rendered as a shade of that
+# category's base hue -- close enough in color to still read as "person" /
+# "place" / "thing" at a glance, distinct enough to tell the groups apart.
+SUBGROUPS = {
+    "person": [
+        ("Arts (visual, sculpture, music)", "#1e3a8a",
+         {"artist_visual", "artist_visual_sculptor", "musician_composer"}),
+        ("Writers & legendary figures", "#2563eb",
+         {"writer_poet", "mythological_figure", "literary_mythical_figure"}),
+        ("Science & scholarship", "#3b82f6",
+         {"scientist", "scientist_physician", "scientist_engineer", "engineer",
+          "physician_medical", "legal_scholar", "cartographer", "aviation_pioneer",
+          "architect_or_historian"}),
+        ("Statesmen & military", "#60a5fa",
+         {"monarch_statesman", "politician_statesman", "military",
+          "military_naval_or_politician", "mayor_local", "boer_war_figure",
+          "statesman_liberator", "industrialist_philips", "philips_engineer",
+          "explorer", "activist", "human_rights_activist"}),
+        ("Religious figures", "#93c5fd", {"religious"}),
+        ("Other / unspecified", "#bfdbfe",
+         {"other", "unspecified_individual", None}),
+    ],
+    "place": [
+        ("Towns & regions", "#14532d",
+         {"foreign_town", "foreign_town_wwii", "dutch_region", "dutch_town",
+          "village", "city", "town", "country", "human settlement",
+          "south_africa", "dutch_east_indies", "alpine_geography"}),
+        ("Castles & estates", "#16a34a", {"castle_estate", "estate_feature"}),
+        ("Natural features", "#22c55e",
+         {"river", "mountain", "lake", "local_landscape_feature"}),
+        ("Biblical & mythological", "#4ade80", {"biblical", "mythological"}),
+        ("Local landmarks", "#86efac", {"local_landmark", None}),
+    ],
+    "thing": [
+        ("Flora", "#7c2d12",
+         {"flora", "flora_flower", "flora_herb", "flora_food", "wood_type", "fungus"}),
+        ("Fauna", "#c2410c",
+         {"fauna", "fauna_butterfly", "fauna_mammal", "fauna_fish", "fauna_and_flora"}),
+        ("Culture & craft", "#ea580c",
+         {"instrument", "occupation_guild", "occupation_guild_textile",
+          "fiction_title_or_motif", "sport", "currency", "dynasty"}),
+        ("Science & technology", "#fb923c",
+         {"astronomy", "technology_term", "mineral", "industrial_philips_term",
+          "infrastructure", "vessel_type"}),
+        ("Development / other", "#fed7aa",
+         {"development_concept", "local_landscape_feature", "local_landmark",
+          "dutch_east_indies", "mythological", "military", None}),
+    ],
+}
+
+
+def subgroup_color(category: str, subcategory) -> tuple[str, str]:
+    """Returns (group_label, color) for a (category, subcategory) pair,
+    falling back to the flat category color when category itself isn't
+    one of person/place/thing (mixed, unresolved, unclear)."""
+    groups = SUBGROUPS.get(category)
+    if not groups:
+        return category, CATEGORY_COLORS.get(category, "#9ca3af")
+    for label, color, members in groups:
+        if subcategory in members:
+            return label, color
+    # subcategory exists but wasn't anticipated in the grouping -- fall back
+    # to the category's own base color rather than silently drop it
+    return "Other / unspecified", CATEGORY_COLORS.get(category, "#9ca3af")
+
 SOURCE_LABELS = {
     "wikidata": "Wikidata match",
     "wikidata_surname_only": "Wikidata (surname only, individual not identified)",
@@ -113,7 +180,8 @@ def main():
 
     street_layer = folium.FeatureGroup(name="Streets", show=True)
     for _, row in streets.iterrows():
-        color = CATEGORY_COLORS.get(row["category"], "#9ca3af")
+        subcat = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else None
+        _, color = subgroup_color(row["category"], subcat)
         explanation = street_explanation(row)
         tooltip = f"<b>{row['name']}</b><br>{explanation}"
         folium.GeoJson(
@@ -124,16 +192,42 @@ def main():
         ).add_to(street_layer)
     street_layer.add_to(m)
 
-    legend_html = """
-    <div style="position: fixed; bottom: 30px; left: 30px; z-index: 1000;
+    def subgroup_rows(category):
+        return "".join(
+            f'<div style="margin:2px 0 2px 14px;"><span style="color:{color};">&#9632;</span> {label}</div>'
+            for label, color, _ in SUBGROUPS[category]
+        )
+
+    legend_html = f"""
+    <div id="legend-box" style="position: fixed; bottom: 30px; left: 30px; z-index: 1000;
                 background: white; padding: 10px 14px; border-radius: 6px;
-                box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: sans-serif; font-size: 13px;">
-      <b>Street naming category</b><br>
-      <span style="color:#2563eb;">&#9632;</span> Person<br>
-      <span style="color:#16a34a;">&#9632;</span> Place<br>
-      <span style="color:#ea580c;">&#9632;</span> Thing/concept<br>
-      <span style="color:#9333ea;">&#9632;</span> Mixed theme<br>
-      <span style="color:#9ca3af;">&#9632;</span> Unresolved<br>
+                box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-family: sans-serif; font-size: 13px;
+                max-height: 70vh; overflow-y: auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+        <b>Street naming category</b>
+        <button id="legend-toggle" onclick="
+            var d = document.getElementById('legend-detail');
+            var expanded = d.style.display !== 'none';
+            d.style.display = expanded ? 'none' : 'block';
+            this.textContent = expanded ? 'show detail' : 'hide detail';
+          " style="font-size:11px; padding:2px 6px; cursor:pointer; border:1px solid #ccc;
+                    border-radius:4px; background:#f8f8f8;">show detail</button>
+      </div>
+      <div style="margin-top:6px;">
+        <span style="color:#2563eb;">&#9632;</span> Person<br>
+        <span style="color:#16a34a;">&#9632;</span> Place<br>
+        <span style="color:#ea580c;">&#9632;</span> Thing/concept<br>
+        <span style="color:#9333ea;">&#9632;</span> Mixed theme<br>
+        <span style="color:#9ca3af;">&#9632;</span> Unresolved
+      </div>
+      <div id="legend-detail" style="display:none; margin-top:8px; border-top:1px solid #eee; padding-top:6px;">
+        <div style="color:#2563eb; font-weight:600;">Person</div>
+        {subgroup_rows("person")}
+        <div style="color:#16a34a; font-weight:600; margin-top:6px;">Place</div>
+        {subgroup_rows("place")}
+        <div style="color:#ea580c; font-weight:600; margin-top:6px;">Thing/concept</div>
+        {subgroup_rows("thing")}
+      </div>
     </div>
     """
     m.get_root().html.add_child(folium.Element(legend_html))
