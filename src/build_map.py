@@ -180,8 +180,16 @@ def main():
 
     street_layer = folium.FeatureGroup(name="Streets", show=True)
     for _, row in streets.iterrows():
-        subcat = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else None
-        _, color = subgroup_color(row["category"], subcat)
+        # color only reflects a specific, trusted identification (real entity_label);
+        # a street classified purely by buurt theme (no confirmed namesake) renders
+        # as unresolved gray -- the tooltip still explains the theme-based guess,
+        # but the color coding itself only highlights what's actually confirmed
+        has_specific_entity = isinstance(row["entity_label"], str) and bool(row["entity_label"])
+        if has_specific_entity:
+            subcat = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else None
+            _, color = subgroup_color(row["category"], subcat)
+        else:
+            color = CATEGORY_COLORS["unresolved"]
         explanation = street_explanation(row)
         tooltip = f"<b>{row['name']}</b><br>{explanation}"
         folium.GeoJson(
@@ -217,8 +225,12 @@ def main():
         <span style="color:#2563eb;">&#9632;</span> Person<br>
         <span style="color:#16a34a;">&#9632;</span> Place<br>
         <span style="color:#ea580c;">&#9632;</span> Thing/concept<br>
-        <span style="color:#9333ea;">&#9632;</span> Mixed theme<br>
-        <span style="color:#9ca3af;">&#9632;</span> Unresolved
+        <span style="color:#9ca3af;">&#9632;</span> No specific reference confirmed
+      </div>
+      <div style="margin-top:4px; font-size:11px; color:#666; max-width:220px;">
+        Color only shown when a specific namesake is confirmed (hover for details).
+        A buurt-theme guess with no confirmed individual reference is shown gray,
+        even though its category may still be known.
       </div>
       <div id="legend-detail" style="display:none; margin-top:8px; border-top:1px solid #eee; padding-top:6px;">
         <div style="color:#2563eb; font-weight:600;">Person</div>
