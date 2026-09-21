@@ -188,13 +188,18 @@ def main():
         if has_specific_entity:
             subcat = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else None
             _, color = subgroup_color(row["category"], subcat)
+            weight, opacity = 3, 0.8
         else:
+            # thinner and fainter so the unresolved majority doesn't drown out
+            # the confirmed streets when zoomed out -- they're still there on
+            # hover, just visually receding rather than competing for attention
             color = CATEGORY_COLORS["unresolved"]
+            weight, opacity = 1, 0.5
         explanation = street_explanation(row)
         tooltip = f"<b>{row['name']}</b><br>{explanation}"
         folium.GeoJson(
             row["geometry"],
-            style_function=lambda _, c=color: {"color": c, "weight": 3, "opacity": 0.8},
+            style_function=lambda _, c=color, w=weight, o=opacity: {"color": c, "weight": w, "opacity": o},
             tooltip=folium.Tooltip(tooltip, sticky=True),
             popup=folium.Popup(tooltip, max_width=320),
         ).add_to(street_layer)
