@@ -1,71 +1,125 @@
-"""Spatial analysis: does buurt-level theming cluster into larger wijk zones?
+"""Spatial analysis: do naming themes cluster at the wijk level, per gemeente?
 
-Since buurt themes were assigned by reading each buurt's own street list, of
-course each buurt looks monothematic -- that's true by construction, not a
-finding. The actual open question is whether neighboring buurten (grouped
-into a wijk) share a category, i.e. whether the theming pattern operates at
-a coarser geographic scale than the buurt itself.
+Each buurt's theme was assigned by reading its own street list, so a buurt looks
+monothematic by construction -- that is not a finding. The open question is whether
+buurten grouped into the same wijk share a theme more often than chance would give.
+
+"Uniformity" of a wijk = share of its buurten carrying the wijk's most common label.
+Raw uniformity is misleading on its own (if 60% of buurten are 'person', wijken look
+uniform by chance, and a gemeente with 3 wijken behaves very differently from one with
+20), so each gemeente is also tested against a permutation baseline: shuffle the labels
+across that gemeente's buurten, keep the wijk structure, and see how often chance matches
+the observed pooled uniformity. Two label levels: the top-level category (person / place /
+thing) and the finer legend group used on the map.
 """
 import json
+import random
 from collections import Counter, defaultdict
 from pathlib import Path
 
+from build_map import subgroup_color
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 OUT_DIR = Path(__file__).resolve().parent.parent / "output"
+PERMUTATIONS = 10_000
+SEED = 20260920
 
 
-def dominant_category(theme: dict) -> tuple[str, str, float]:
-    """Return (category, subcategory, weight) -- for a mixed theme, the
-    largest sub-theme; weight is 1.0 for a clean theme, else the sub-share."""
+def dominant_category(theme: dict) -> tuple[str, str | None]:
+    """(category, subcategory) of a buurt's theme; for a mixed theme, its largest sub-theme."""
     if theme["category"] != "mixed":
-        return theme["category"], theme.get("subcategory"), 1.0
+        return theme["category"], theme.get("subcategory")
     subthemes = theme.get("subthemes", [])
     if not subthemes:
-        return "mixed", None, 0.5
+        return "mixed", None
     best = max(subthemes, key=lambda s: s.get("share", 0))
-    return best["category"], best.get("subcategory"), best.get("share", 0.5)
+    return best["category"], best.get("subcategory")
+
+
+def labels_for(theme: dict) -> dict:
+    cat, sub = dominant_category(theme)
+    return {"category": cat, "group": subgroup_color(cat, sub)[0]}
+
+
+def pooled_uniformity(wijken: list[list[str]]) -> float:
+    """Share of buurten (in wijken with >=2) that match their wijk's modal label."""
+    kept = [w for w in wijken if len(w) >= 2]
+    return sum(Counter(w).most_common(1)[0][1] for w in kept) / sum(len(w) for w in kept)
+
+
+def permutation_test(wijken: list[list[str]], rng: random.Random) -> dict:
+    sizes = [len(w) for w in wijken]
+    pool = [x for w in wijken for x in w]
+    observed = pooled_uniformity(wijken)
+    at_least, null_sum = 0, 0.0
+    for _ in range(PERMUTATIONS):
+        rng.shuffle(pool)
+        i, shuffled = 0, []
+        for n in sizes:
+            shuffled.append(pool[i:i + n])
+            i += n
+        u = pooled_uniformity(shuffled)
+        null_sum += u
+        at_least += u >= observed
+    return {
+        "observed": round(observed, 3),
+        "chance_mean": round(null_sum / PERMUTATIONS, 3),
+        "p_value": round((at_least + 1) / (PERMUTATIONS + 1), 4),
+    }
 
 
 def main():
     themes = json.loads((DATA_DIR / "enriched" / "buurt_themes_full.json").read_text())["buurten"]
     themes = [t for t in themes if t["category"] != "unclear"]
 
-    by_wijk = defaultdict(list)
+    by_gemeente = defaultdict(lambda: defaultdict(list))
     for t in themes:
-        by_wijk[t["wijk"]].append(t)
+        by_gemeente[t.get("gemeente", "Eindhoven")][t["wijk"]].append(t)
 
-    rows = []
-    for wijk, buurten in sorted(by_wijk.items()):
-        cats = Counter(dominant_category(t)[0] for t in buurten)
-        top_cat, top_count = cats.most_common(1)[0]
-        homogeneity = top_count / len(buurten)
-        rows.append({
-            "wijk": wijk,
-            "n_buurten": len(buurten),
-            "dominant_category": top_cat,
-            "homogeneity": round(homogeneity, 2),
-            "category_breakdown": dict(cats),
-            "buurten": [t["buurt"] for t in buurten],
-            "buurt_themes": [t["theme"] for t in buurten],
-        })
-
-    rows.sort(key=lambda r: (-r["homogeneity"], -r["n_buurten"]))
+    rng = random.Random(SEED)
+    wijk_rows, tests = [], []
+    for gemeente, wijken in sorted(by_gemeente.items()):
+        for wijk, buurten in sorted(wijken.items()):
+            labs = [labels_for(t) for t in buurten]
+            cats = Counter(l["category"] for l in labs)
+            groups = Counter(l["group"] for l in labs)
+            wijk_rows.append({
+                "gemeente": gemeente, "wijk": wijk, "n_buurten": len(buurten),
+                "dominant_category": cats.most_common(1)[0][0],
+                "category_uniformity": round(cats.most_common(1)[0][1] / len(buurten), 2),
+                "dominant_group": groups.most_common(1)[0][0],
+                "group_uniformity": round(groups.most_common(1)[0][1] / len(buurten), 2),
+                "category_breakdown": dict(cats), "group_breakdown": dict(groups),
+                "buurten": [t["buurt"] for t in buurten],
+            })
+        for level in ("category", "group"):
+            wijk_labels = [[labels_for(t)[level] for t in b] for b in wijken.values()]
+            n_testable = sum(1 for w in wijk_labels if len(w) >= 2)
+            tests.append({
+                "gemeente": gemeente, "level": level,
+                "wijken_total": len(wijken), "wijken_testable": n_testable,
+                "buurten_testable": sum(len(w) for w in wijk_labels if len(w) >= 2),
+                **permutation_test(wijk_labels, rng),
+            })
 
     OUT_DIR.mkdir(exist_ok=True)
     out_path = OUT_DIR / "wijk_theme_clustering.json"
-    out_path.write_text(json.dumps(rows, indent=2, ensure_ascii=False))
+    out_path.write_text(json.dumps({"permutation_tests": tests, "wijken": wijk_rows},
+                                   indent=2, ensure_ascii=False))
     print(f"Wrote {out_path}\n")
 
-    multi_buurt = [r for r in rows if r["n_buurten"] >= 2]
-    fully_homogeneous = [r for r in multi_buurt if r["homogeneity"] == 1.0]
-    print(f"{len(multi_buurt)} wijken have >=2 classified buurten")
-    print(f"{len(fully_homogeneous)}/{len(multi_buurt)} of those are 100% single-category "
-          f"({len(fully_homogeneous) / len(multi_buurt):.0%})\n")
+    print("Permutation tests (observed pooled uniformity vs. shuffled-label baseline)")
+    print(f"{'gemeente':10s} {'level':9s} {'wijken':>6s} {'buurten':>7s} {'observed':>9s} {'chance':>7s} {'p':>8s}")
+    for t in tests:
+        print(f"{t['gemeente']:10s} {t['level']:9s} {t['wijken_testable']:>6d} {t['buurten_testable']:>7d} "
+              f"{t['observed']:>9.0%} {t['chance_mean']:>7.0%} {t['p_value']:>8.4f}")
 
-    print(f"{'wijk':30s} {'n':>3s} {'dominant':12s} {'homog':>6s}  buurten")
-    for r in multi_buurt:
-        print(f"{r['wijk']:30s} {r['n_buurten']:3d} {r['dominant_category']:12s} "
-              f"{r['homogeneity']:6.0%}  {', '.join(r['buurten'])}")
+    for gemeente in sorted(by_gemeente):
+        print(f"\n{gemeente}: wijken with >=2 analyzable buurten")
+        print(f"  {'wijk':34s} {'n':>3s} {'dominant group':32s} {'uniform':>8s}")
+        for r in sorted((r for r in wijk_rows if r["gemeente"] == gemeente and r["n_buurten"] >= 2),
+                        key=lambda r: (-r["group_uniformity"], -r["n_buurten"])):
+            print(f"  {r['wijk']:34s} {r['n_buurten']:3d} {r['dominant_group']:32s} {r['group_uniformity']:8.0%}")
 
 
 if __name__ == "__main__":
