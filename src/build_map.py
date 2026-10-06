@@ -143,27 +143,101 @@ def street_explanation(row) -> str:
     return f"{origin}<br>Category: {category}/{subcategory} &middot; confidence: {conf_label} ({conf})<br>Basis: {basis}"
 
 
+def gemeente_panel(registry: list[dict], map_name: str) -> str:
+    """Top-right control: multi-select checkboxes per gemeente (with an 'only' shortcut)
+    plus on/off toggles for the street and buurt layers. Each gemeente owns one street
+    FeatureGroup and one buurt FeatureGroup; toggling adds/removes them from the map,
+    and the view refits to whatever is selected."""
+    rows = "".join(
+        f'''<div class="gm-row"><label><input type="checkbox" class="gm-check" data-g="{g["name"]}" checked>
+        {g["name"]} <span class="gm-count">{g["streets"]:,} streets</span></label>
+        <a href="#" class="gm-only" data-g="{g["name"]}">only</a></div>'''
+        for g in registry
+    )
+    js_registry = json.dumps([
+        {k: g[k] for k in ("name", "street_group", "buurt_group", "bounds")} for g in registry
+    ])
+    return """
+    <div id="gm-panel" style="position:fixed; top:12px; right:12px; z-index:1000; background:white;
+         padding:10px 14px; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,0.3);
+         font-family:sans-serif; font-size:13px; min-width:190px;">
+      <style>
+        #gm-panel .gm-row {display:flex; justify-content:space-between; align-items:center; gap:10px; margin:3px 0;}
+        #gm-panel .gm-count {color:#888; font-size:11px;}
+        #gm-panel .gm-only {font-size:11px; color:#2563eb; text-decoration:none;}
+        #gm-panel .gm-sec {margin-top:8px; padding-top:6px; border-top:1px solid #eee;}
+      </style>
+      <b>Gemeente</b>
+      __ROWS__
+      <div class="gm-sec"><b>Layers</b>
+        <div class="gm-row"><label><input type="checkbox" class="ly-check" data-l="streets" checked> Streets</label></div>
+        <div class="gm-row"><label><input type="checkbox" class="ly-check" data-l="buurten" checked> Buurt themes</label></div>
+      </div>
+    </div>
+    <script>
+    window.addEventListener('load', function () {
+      var map = window[__MAP__], G = __REGISTRY__;
+      var on = {}, layers = {streets: true, buurten: true};
+      G.forEach(function (g) { on[g.name] = true; });
+
+      function apply(refit) {
+        var bounds = null;
+        G.forEach(function (g) {
+          [['streets', g.street_group], ['buurten', g.buurt_group]].forEach(function (p) {
+            var layer = window[p[1]], want = on[g.name] && layers[p[0]];
+            if (want && !map.hasLayer(layer)) { map.addLayer(layer); if (p[0] === 'buurten') layer.bringToBack(); }
+            if (!want && map.hasLayer(layer)) map.removeLayer(layer);
+          });
+          if (on[g.name]) { var b = L.latLngBounds(g.bounds); bounds = bounds ? bounds.extend(b) : b; }
+        });
+        if (refit && bounds) map.fitBounds(bounds, {padding: [20, 20]});
+      }
+      function sync() {
+        document.querySelectorAll('.gm-check').forEach(function (c) { c.checked = on[c.dataset.g]; });
+      }
+      document.querySelectorAll('.gm-check').forEach(function (c) {
+        c.addEventListener('change', function () { on[c.dataset.g] = c.checked; apply(true); });
+      });
+      document.querySelectorAll('.gm-only').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          G.forEach(function (g) { on[g.name] = (g.name === a.dataset.g); });
+          sync(); apply(true);
+        });
+      });
+      document.querySelectorAll('.ly-check').forEach(function (c) {
+        c.addEventListener('change', function () { layers[c.dataset.l] = c.checked; apply(false); });
+      });
+      apply(true);
+    });
+    </script>
+    """.replace("__ROWS__", rows).replace("__MAP__", json.dumps(map_name)).replace("__REGISTRY__", js_registry)
+
+
 def main():
     streets = gpd.read_file(DATA_DIR / "raw" / "streets.geojson")
-    final = {r["street"]: r for r in json.loads((DATA_DIR / "enriched" / "streets_final.json").read_text())}
-    themes = {t["buurt"]: t for t in json.loads((DATA_DIR / "enriched" / "buurt_themes_full.json").read_text())["buurten"]}
+    # a street name can exist in several gemeenten, so everything is keyed by (gemeente, name)
+    final = {(r["gemeente"], r["street"]): r
+             for r in json.loads((DATA_DIR / "enriched" / "streets_final.json").read_text())}
+    themes = {(t.get("gemeente", "Eindhoven"), t["buurt"]): t
+              for t in json.loads((DATA_DIR / "enriched" / "buurt_themes_full.json").read_text())["buurten"]}
     buurten = gpd.read_file(DATA_DIR / "raw" / "buurten.geojson")
 
-    streets["category"] = streets["name"].map(lambda n: final.get(n, {}).get("category", "unresolved"))
-    streets["subcategory"] = streets["name"].map(lambda n: final.get(n, {}).get("subcategory"))
-    streets["confidence"] = streets["name"].map(lambda n: final.get(n, {}).get("confidence"))
-    streets["source"] = streets["name"].map(lambda n: final.get(n, {}).get("source"))
-    streets["entity_label"] = streets["name"].map(lambda n: final.get(n, {}).get("entity_label"))
-    streets["entity_description"] = streets["name"].map(lambda n: final.get(n, {}).get("entity_description"))
-    streets["buurt_theme"] = streets["name"].map(lambda n: final.get(n, {}).get("buurt_theme"))
-    streets["source_url"] = streets["name"].map(lambda n: final.get(n, {}).get("source_url"))
+    keys = list(zip(streets["gemeente"], streets["name"]))
+    for field, default in (("category", "unresolved"), ("subcategory", None), ("confidence", None),
+                           ("source", None), ("entity_label", None), ("entity_description", None),
+                           ("buurt_theme", None), ("source_url", None)):
+        streets[field] = [final.get(k, {}).get(field, default) for k in keys]
 
-    center = [51.4416, 5.4697]  # Eindhoven
-    m = folium.Map(location=center, zoom_start=12, tiles="OpenStreetMap")
+    gemeenten = sorted(streets["gemeente"].unique())
+    # initial view is a placeholder; the panel's load handler fits to the selected gemeenten
+    m = folium.Map(location=[51.44, 5.47], zoom_start=12, tiles="OpenStreetMap")
 
-    buurt_layer = folium.FeatureGroup(name="Buurt themes", show=True)
+    buurt_groups = {g: folium.FeatureGroup(name=f"Buurt themes: {g}", show=True) for g in gemeenten}
+    street_groups = {g: folium.FeatureGroup(name=f"Streets: {g}", show=True) for g in gemeenten}
+
     for _, row in buurten.iterrows():
-        theme = themes.get(row["name"])
+        theme = themes.get((row["gemeente"], row["name"]))
         if not theme:
             continue
         color = CATEGORY_COLORS.get(theme["category"], "#9ca3af")
@@ -175,10 +249,10 @@ def main():
             },
             tooltip=f"{row['name']}: {theme['theme']}",
             popup=popup,
-        ).add_to(buurt_layer)
-    buurt_layer.add_to(m)
+        ).add_to(buurt_groups[row["gemeente"]])
+    for g in gemeenten:
+        buurt_groups[g].add_to(m)
 
-    street_layer = folium.FeatureGroup(name="Streets", show=True)
     for _, row in streets.iterrows():
         # color only reflects a specific, trusted identification (real entity_label);
         # a street classified purely by buurt theme (no confirmed namesake) renders
@@ -202,8 +276,20 @@ def main():
             style_function=lambda _, c=color, w=weight, o=opacity: {"color": c, "weight": w, "opacity": o},
             tooltip=folium.Tooltip(tooltip, sticky=True),
             popup=folium.Popup(tooltip, max_width=320),
-        ).add_to(street_layer)
-    street_layer.add_to(m)
+        ).add_to(street_groups[row["gemeente"]])
+    for g in gemeenten:
+        street_groups[g].add_to(m)
+
+    registry = []
+    for g in gemeenten:
+        gs = streets[streets["gemeente"] == g]
+        minx, miny, maxx, maxy = gs.total_bounds
+        registry.append({
+            "name": g, "streets": len(gs),
+            "street_group": street_groups[g].get_name(), "buurt_group": buurt_groups[g].get_name(),
+            "bounds": [[miny, minx], [maxy, maxx]],
+        })
+    m.get_root().html.add_child(folium.Element(gemeente_panel(registry, m.get_name())))
 
     def subgroup_rows(category):
         return "".join(
@@ -248,8 +334,6 @@ def main():
     </div>
     """
     m.get_root().html.add_child(folium.Element(legend_html))
-
-    folium.LayerControl().add_to(m)
 
     out_path = OUT_DIR / "eindhoven_streets_map.html"
     m.save(str(out_path))

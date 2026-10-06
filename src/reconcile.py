@@ -46,17 +46,23 @@ def load_json(path: Path):
 
 
 def reconcile(wikidata_results: list[dict], context: dict, themes_by_buurt: dict) -> list[dict]:
+    """context maps street name -> [{"gemeente", "buurt"}, ...] (a name can exist in
+    several gemeenten); themes_by_buurt is keyed by (gemeente, buurt). Wikidata results
+    are per street *name*, so the same result fans out to each gemeente that has it."""
     final = []
-    for r in wikidata_results:
+    unplaced = [{"gemeente": None, "buurt": None}]
+    pairs = [(r, place) for r in wikidata_results for place in context.get(r["street"], unplaced)]
+    for r, place in pairs:
         street = r["street"]
-        buurt = context.get(street, {}).get("buurt")
-        theme = themes_by_buurt.get(buurt)
+        buurt = place["buurt"]
+        theme = themes_by_buurt.get((place["gemeente"], buurt))
 
         wd_conf = r.get("confidence", 0.0)
         wd_category = r.get("category")
 
         row = {
             "street": street,
+            "gemeente": place["gemeente"],
             "buurt": buurt,
             "category": wd_category,
             "subcategory": r.get("subcategory"),
@@ -199,9 +205,10 @@ def apply_manual_overrides(final: list[dict]) -> list[dict]:
     overrides_path = DATA_DIR / "enriched" / "manual_overrides.json"
     if not overrides_path.exists():
         return final
-    overrides = {o["street"]: o for o in load_json(overrides_path)["overrides"]}
+    overrides = {(o.get("gemeente", "Eindhoven"), o["street"]): o
+                 for o in load_json(overrides_path)["overrides"]}
     for row in final:
-        o = overrides.get(row["street"])
+        o = overrides.get((row["gemeente"], row["street"]))
         if not o:
             continue
         row.update({
@@ -224,16 +231,21 @@ def main():
 
         wikidata_results = load_jsonl(DATA_DIR / "enriched" / "all_streets_wikidata.jsonl")
         gdf = gpd.read_file(DATA_DIR / "raw" / "streets.geojson")
-        context = {row["name"]: {"buurt": row["buurt"]} for _, row in gdf.iterrows()}
+        context = {}
+        for _, row in gdf.iterrows():
+            context.setdefault(row["name"], []).append({"gemeente": row["gemeente"], "buurt": row["buurt"]})
         themes = load_json(DATA_DIR / "enriched" / "buurt_themes_full.json")["buurten"]
         out_path = DATA_DIR / "enriched" / "streets_final.json"
     else:
         wikidata_results = load_json(DATA_DIR / "enriched" / "pilot_wikidata.json")
-        context = load_json(DATA_DIR / "enriched" / "pilot_context.json")
+        context = {
+            street: [{"gemeente": "Eindhoven", "buurt": c["buurt"]}]
+            for street, c in load_json(DATA_DIR / "enriched" / "pilot_context.json").items()
+        }
         themes = load_json(DATA_DIR / "enriched" / "buurt_themes_pilot.json")["buurten"]
         out_path = DATA_DIR / "enriched" / "pilot_final.json"
 
-    themes_by_buurt = {t["buurt"]: t for t in themes}
+    themes_by_buurt = {(t.get("gemeente", "Eindhoven"), t["buurt"]): t for t in themes}
     final = reconcile(wikidata_results, context, themes_by_buurt)
     if full_run:
         final = apply_manual_overrides(final)

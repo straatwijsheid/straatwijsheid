@@ -1,9 +1,14 @@
-"""Fetch Eindhoven's street network and buurt (neighborhood) boundaries from OSM.
+"""Fetch a gemeente's street network (OSM) and buurt boundaries (PDOK/CBS).
 
-Outputs:
-  data/raw/streets.geojson   one row per unique street name, merged geometry
-  data/raw/buurten.geojson   neighborhood polygons with street->buurt join done
+Usage: python src/acquire.py [Gemeente]   (default: Eindhoven)
+
+Outputs, per gemeente:
+  data/raw/streets_<slug>.geojson   one row per unique street name, merged geometry
+  data/raw/buurten_<slug>.geojson   neighborhood polygons
+and then the combined files every downstream script reads:
+  data/raw/streets.geojson, data/raw/buurten.geojson   (all gemeenten, with a `gemeente` column)
 """
+import sys
 from pathlib import Path
 
 import geopandas as gpd
@@ -13,7 +18,8 @@ import requests
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 
-PLACE = "Eindhoven, North Brabant, Netherlands"
+GEMEENTE = "Eindhoven"
+PLACE = f"{GEMEENTE}, North Brabant, Netherlands"
 PDOK_WFS_URL = "https://service.pdok.nl/cbs/wijkenbuurten/2024/wfs/v1_0"
 
 
@@ -56,7 +62,7 @@ def fetch_buurten() -> gpd.GeoDataFrame:
             "typeNames": "wijkenbuurten:buurten",
             "outputFormat": "json",
             "srsName": "EPSG:4326",
-            "filter": _gemeente_filter("Eindhoven"),
+            "filter": _gemeente_filter(GEMEENTE),
         },
         timeout=60,
     )
@@ -72,7 +78,7 @@ def fetch_buurten() -> gpd.GeoDataFrame:
             "typeNames": "wijkenbuurten:wijken",
             "outputFormat": "json",
             "srsName": "EPSG:4326",
-            "filter": _gemeente_filter("Eindhoven"),
+            "filter": _gemeente_filter(GEMEENTE),
         },
         timeout=60,
     )
@@ -83,6 +89,7 @@ def fetch_buurten() -> gpd.GeoDataFrame:
     buurten = buurten.rename(columns={"buurtnaam": "name"})
     buurten["wijk"] = buurten["wijkcode"].map(wijk_lookup)
     buurten = buurten[["name", "wijk", "geometry"]].reset_index(drop=True)
+    buurten["gemeente"] = GEMEENTE
     print(f"Found {len(buurten)} buurt polygons across {buurten['wijk'].nunique()} wijken")
     return buurten
 
@@ -106,22 +113,43 @@ def join_streets_to_buurten(
     return streets
 
 
+def slug(gemeente: str) -> str:
+    return gemeente.lower().replace(" ", "-")
+
+
+def combine() -> None:
+    """Merge every per-gemeente file into the combined files downstream reads."""
+    import pandas as pd
+
+    for kind in ("streets", "buurten"):
+        parts = [gpd.read_file(p) for p in sorted(RAW_DIR.glob(f"{kind}_*.geojson"))]
+        combined = gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=parts[0].crs)
+        combined.to_file(RAW_DIR / f"{kind}.geojson", driver="GeoJSON")
+        print(f"Wrote {kind}.geojson: {len(combined)} rows from {combined['gemeente'].nunique()} gemeente(n)")
+
+
 def main():
+    global GEMEENTE, PLACE
+    if len(sys.argv) > 1:
+        GEMEENTE = sys.argv[1]
+        PLACE = f"{GEMEENTE}, North Brabant, Netherlands"
+
     streets = fetch_streets()
+    streets["gemeente"] = GEMEENTE
     try:
         buurten = fetch_buurten()
     except Exception as e:
         print(f"Buurt fetch failed ({e}); continuing without neighborhood join")
-        buurten = gpd.GeoDataFrame(columns=["name", "geometry"])
+        buurten = gpd.GeoDataFrame(columns=["name", "geometry", "gemeente"])
 
     if len(buurten):
         streets = join_streets_to_buurten(streets, buurten)
-        buurten.to_file(RAW_DIR / "buurten.geojson", driver="GeoJSON")
+        buurten.to_file(RAW_DIR / f"buurten_{slug(GEMEENTE)}.geojson", driver="GeoJSON")
     else:
         streets["buurt"] = None
 
-    streets.to_file(RAW_DIR / "streets.geojson", driver="GeoJSON")
-    print(f"Wrote {RAW_DIR / 'streets.geojson'}")
+    streets.to_file(RAW_DIR / f"streets_{slug(GEMEENTE)}.geojson", driver="GeoJSON")
+    combine()
 
 
 if __name__ == "__main__":
