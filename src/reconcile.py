@@ -17,7 +17,7 @@ STRONG_THEME_THRESHOLD = 0.8
 # sources whose entity_label/entity_description reflect an actual identification,
 # as opposed to a rejected/weak guess or a generic theme inference
 TRUSTED_ENTITY_SOURCES = {
-    "wikidata", "wikidata_surname_only", "wikidata_thing_match",
+    "wikidata", "wikidata_surname_only",
     "web_search", "claude_knowledge",
 }
 
@@ -187,7 +187,9 @@ def reconcile(wikidata_results: list[dict], context: dict, themes_by_buurt: dict
         # "Acaciastraat" showing entity 'Acacia' when that's just the
         # rejected guess, not a confirmed match). Clear it here so entity
         # presence reliably means "we know what this is specifically named after".
-        if row["source"] not in TRUSTED_ENTITY_SOURCES:
+        # a bare "family name" Wikidata item says the surname exists, not whom the street
+        # honors, so it never counts as an identification (the person category still stands)
+        if row["source"] not in TRUSTED_ENTITY_SOURCES or row["source"] == "wikidata_surname_only":
             row["entity_label"] = None
             row["entity_description"] = None
 

@@ -60,7 +60,8 @@ SUBGROUPS = {
          {"fauna", "fauna_butterfly", "fauna_mammal", "fauna_fish", "fauna_and_flora"}),
         ("Culture & craft", "#ea580c",
          {"instrument", "occupation_guild", "occupation_guild_textile",
-          "fiction_title_or_motif", "sport", "currency", "dynasty"}),
+          "fiction_title_or_motif", "sport", "currency", "dynasty",
+          "architecture_term", "archaeology_term"}),
         ("Science & technology", "#fb923c",
          {"astronomy", "technology_term", "mineral", "industrial_philips_term",
           "infrastructure", "vessel_type"}),
@@ -125,7 +126,7 @@ def street_explanation(row) -> str:
     # the final classification -- if a buurt-theme override replaced it,
     # showing the rejected guess (e.g. "Pink" the singer for a street about
     # ship types) would be actively misleading
-    trusted_entity_sources = {"wikidata", "wikidata_surname_only", "wikidata_thing_match", "web_search", "claude_knowledge"}
+    trusted_entity_sources = {"wikidata", "wikidata_surname_only", "web_search", "claude_knowledge"}
     if entity and source not in trusted_entity_sources:
         entity = None
 
@@ -211,7 +212,14 @@ def gemeente_panel(registry: list[dict], map_name: str) -> str:
       document.querySelectorAll('.ly-check').forEach(function (c) {
         c.addEventListener('change', function () { layers[c.dataset.l] = c.checked; apply(false); });
       });
-      apply(true);
+      // fitBounds on a zero-sized container clamps to max zoom, so wait until the map has a size
+      function initialFit() {
+        map.invalidateSize();
+        if (map.getSize().x === 0) return false;
+        apply(true);
+        return true;
+      }
+      if (!initialFit()) { map.on('resize', function once() { if (initialFit()) map.off('resize', once); }); }
     });
     </script>
     """.replace("__ROWS__", rows).replace("__MAP__", json.dumps(map_name)).replace("__REGISTRY__", js_registry)
@@ -348,7 +356,7 @@ def main():
     """
     m.get_root().html.add_child(folium.Element(legend_html))
 
-    out_path = OUT_DIR / "eindhoven_streets_map.html"
+    out_path = OUT_DIR / "streets_map.html"
     m.save(str(out_path))
     print(f"Wrote {out_path}")
 
