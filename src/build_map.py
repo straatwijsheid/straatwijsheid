@@ -115,6 +115,9 @@ def street_explanation(row) -> str:
         conf = None
     source = clean(row["source"])
 
+    if not row.get("analyzed", True):
+        return "Not yet analyzed (street geometry only)"
+
     if category == "unresolved" or category is None:
         return "Origin not identified (no confident match found)"
 
@@ -190,7 +193,7 @@ def gemeente_panel(registry: list[dict], map_name: str) -> str:
           });
           if (on[g.name]) { var b = L.latLngBounds(g.bounds); bounds = bounds ? bounds.extend(b) : b; }
         });
-        if (refit && bounds) map.fitBounds(bounds, {padding: [20, 20]});
+        if (refit && bounds) map.fitBounds(bounds, {padding: [20, 20], animate: false});
       }
       function sync() {
         document.querySelectorAll('.gm-check').forEach(function (c) { c.checked = on[c.dataset.g]; });
@@ -229,7 +232,9 @@ def main():
                            ("buurt_theme", None), ("source_url", None)):
         streets[field] = [final.get(k, {}).get(field, default) for k in keys]
 
+    streets["analyzed"] = [k in final for k in keys]
     gemeenten = sorted(streets["gemeente"].unique())
+    analyzed_gemeenten = set(streets.loc[streets["analyzed"], "gemeente"])
     # initial view is a placeholder; the panel's load handler fits to the selected gemeenten
     m = folium.Map(location=[51.44, 5.47], zoom_start=12, tiles="OpenStreetMap")
 
@@ -239,6 +244,14 @@ def main():
     for _, row in buurten.iterrows():
         theme = themes.get((row["gemeente"], row["name"]))
         if not theme:
+            # buurt not labeled yet: outline only, so the area is still visible
+            folium.GeoJson(
+                row["geometry"],
+                style_function=lambda _: {"fillOpacity": 0, "color": "#6b7280", "weight": 1, "dashArray": "4"},
+                tooltip=f"{row['name']} ({row['wijk']}): " + (
+                    "no theme assigned (no named streets here)" if row["gemeente"] in analyzed_gemeenten
+                    else "naming theme not yet analyzed"),
+            ).add_to(buurt_groups[row["gemeente"]])
             continue
         color = CATEGORY_COLORS.get(theme["category"], "#9ca3af")
         popup = f"<b>{row['name']}</b> ({theme['wijk']})<br>{theme['theme']}<br>confidence: {theme['confidence']}"
