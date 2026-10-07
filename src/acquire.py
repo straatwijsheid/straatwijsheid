@@ -8,12 +8,24 @@ Outputs, per gemeente:
 and then the combined files every downstream script reads:
   data/raw/streets.geojson, data/raw/buurten.geojson   (all gemeenten, with a `gemeente` column)
 """
+import os
 import sys
 from pathlib import Path
 
 import geopandas as gpd
 import osmnx as ox
 import requests
+
+# osmnx pins every Overpass request to ONE IPv4 address (socket.gethostbyname) so its
+# slot-availability check and the query hit the same machine. If that machine is down
+# the whole fetch fails even though the host has other working addresses. Skipping the
+# pin lets requests/urllib3 fall back across addresses; the cost is that the status
+# check and the query may hit different servers, which is harmless for a one-off fetch.
+import osmnx._http as _ox_http  # noqa: E402
+
+_ox_http._config_dns = lambda url: None
+if os.environ.get("OVERPASS_URL"):
+    ox.settings.overpass_url = os.environ["OVERPASS_URL"]
 
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 RAW_DIR.mkdir(parents=True, exist_ok=True)

@@ -31,6 +31,7 @@ PERSON_TITLE_PREFIXES = [
     "Dominee", "Rector", "Kanunnik", "Deken", "Baron", "Graaf", "Hertog",
     "Prins", "Prinses", "Koning", "Koningin", "Vicaris", "Pater", "President",
     "Minister", "Veldmaarschalk", "Kolonel", "Majoor", "Admiraal",
+    "Dokter", "Wethouder", "Prelaat", "Heer",
 ]
 _TITLE_RE = re.compile(
     r"^(" + "|".join(re.escape(p) for p in PERSON_TITLE_PREFIXES) + r")\s+\S", re.IGNORECASE
