@@ -42,6 +42,27 @@ def has_person_title(street_name: str) -> bool:
     return bool(_TITLE_RE.match(street_name))
 
 
+# Wikidata descriptions / labels of things that are NOT the person a title-prefixed
+# street honors: the street itself, a stop, a district, a windmill...
+_NOT_A_PERSON_DESC = re.compile(
+    r"street|tram stop|district|windmill|village|town|hamlet|city|sculpture|barracks|"
+    r"farmhouse|monument|flat\b|park\b|square|road|building|noble title|municipality",
+    re.IGNORECASE,
+)
+_STREET_WORD_LABEL = re.compile(
+    r"(straat|laan|plein|weg|pad|hof|dreef|plantsoen|kazerne|flat|monument|park)\b", re.IGNORECASE
+)
+
+
+def plausible_person_entity(label, description) -> bool:
+    """For title-prefixed streets ("Generaal Anthinglaan") Wikidata usually only finds the
+    street itself, a tram stop, a windmill... Keep a matched entity only if it looks like
+    an actual person."""
+    if not label or not description:
+        return False
+    return not (_NOT_A_PERSON_DESC.search(description) or _STREET_WORD_LABEL.search(label))
+
+
 def load_json(path: Path):
     return json.loads(path.read_text())
 
@@ -105,6 +126,9 @@ def reconcile(wikidata_results: list[dict], context: dict, themes_by_buurt: dict
                 f"street name starts with the person-title '{title}', overriding the "
                 f"{wd_category or 'unresolved'} guess from Wikidata/buurt theme"
             )
+            if not plausible_person_entity(row["entity_label"], row["entity_description"]):
+                row["entity_label"] = None
+                row["entity_description"] = None
             final.append(row)
             continue
 

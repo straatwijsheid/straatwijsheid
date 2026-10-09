@@ -30,7 +30,14 @@ if os.environ.get("OVERPASS_URL"):
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 
+# short name used in the data and on the map -> (official CBS/PDOK name, OSM place query)
+# for gemeenten whose official name is unwieldy or that Nominatim cannot geocode
+ALIASES = {
+    "Nuenen": ("Nuenen, Gerwen en Nederwetten", "Nuenen, North Brabant, Netherlands"),
+}
+
 GEMEENTE = "Eindhoven"
+PDOK_NAME = GEMEENTE
 PLACE = f"{GEMEENTE}, North Brabant, Netherlands"
 PDOK_WFS_URL = "https://service.pdok.nl/cbs/wijkenbuurten/2024/wfs/v1_0"
 
@@ -74,7 +81,7 @@ def fetch_buurten() -> gpd.GeoDataFrame:
             "typeNames": "wijkenbuurten:buurten",
             "outputFormat": "json",
             "srsName": "EPSG:4326",
-            "filter": _gemeente_filter(GEMEENTE),
+            "filter": _gemeente_filter(PDOK_NAME),
         },
         timeout=60,
     )
@@ -90,7 +97,7 @@ def fetch_buurten() -> gpd.GeoDataFrame:
             "typeNames": "wijkenbuurten:wijken",
             "outputFormat": "json",
             "srsName": "EPSG:4326",
-            "filter": _gemeente_filter(GEMEENTE),
+            "filter": _gemeente_filter(PDOK_NAME),
         },
         timeout=60,
     )
@@ -141,10 +148,12 @@ def combine() -> None:
 
 
 def main():
-    global GEMEENTE, PLACE
+    global GEMEENTE, PDOK_NAME, PLACE
     if len(sys.argv) > 1:
         GEMEENTE = sys.argv[1]
-        PLACE = f"{GEMEENTE}, North Brabant, Netherlands"
+        PDOK_NAME, PLACE = ALIASES.get(
+            GEMEENTE, (GEMEENTE, f"{GEMEENTE}, North Brabant, Netherlands")
+        )
 
     streets = fetch_streets()
     streets["gemeente"] = GEMEENTE
