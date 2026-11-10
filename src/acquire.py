@@ -35,6 +35,14 @@ RAW_DIR.mkdir(parents=True, exist_ok=True)
 ALIASES = {
     "Nuenen": ("Nuenen, Gerwen en Nederwetten", "Nuenen, North Brabant, Netherlands"),
 }
+# Gemeenten that were merged away after the CBS boundaries were drawn: the area is the set of
+# buurten of the absorbing gemeente whose code starts with the prefix, and streets are fetched
+# from the outline of those buurten. short name -> (absorbing gemeente in PDOK, buurtcode prefix)
+MERGED = {
+    "Weesp": ("Amsterdam", "BU0363S"),  # merged into Amsterdam in 2022
+}
+BUURT_PREFIX = None
+AREA = None  # polygon to fetch streets from, when set
 
 GEMEENTE = "Eindhoven"
 PDOK_NAME = GEMEENTE
@@ -43,8 +51,12 @@ PDOK_WFS_URL = "https://service.pdok.nl/cbs/wijkenbuurten/2024/wfs/v1_0"
 
 
 def fetch_streets() -> gpd.GeoDataFrame:
-    print(f"Fetching street network for: {PLACE}")
-    graph = ox.graph_from_place(PLACE, network_type="drive", retain_all=False)
+    if AREA is not None:
+        print(f"Fetching street network for the {GEMEENTE} outline")
+        graph = ox.graph_from_polygon(AREA, network_type="drive", retain_all=False)
+    else:
+        print(f"Fetching street network for: {PLACE}")
+        graph = ox.graph_from_place(PLACE, network_type="drive", retain_all=False)
     edges = ox.graph_to_gdfs(graph, nodes=False, edges=True)
 
     edges = edges[edges["name"].notna()].copy()
@@ -87,6 +99,8 @@ def fetch_buurten() -> gpd.GeoDataFrame:
     )
     resp.raise_for_status()
     buurten = gpd.GeoDataFrame.from_features(resp.json()["features"], crs="EPSG:4326")
+    if BUURT_PREFIX:
+        buurten = buurten[buurten["buurtcode"].str.startswith(BUURT_PREFIX)]
 
     wijk_resp = requests.get(
         PDOK_WFS_URL,
@@ -102,7 +116,8 @@ def fetch_buurten() -> gpd.GeoDataFrame:
         timeout=60,
     )
     wijk_resp.raise_for_status()
-    wijk_props = [f["properties"] for f in wijk_resp.json()["features"]]
+    wijk_props = [f["properties"] for f in wijk_resp.json()["features"]
+                  if not BUURT_PREFIX or f["properties"]["wijkcode"].replace("WK", "BU").startswith(BUURT_PREFIX)]
     wijk_lookup = {w["wijkcode"]: w["wijknaam"] for w in wijk_props}
 
     buurten = buurten.rename(columns={"buurtnaam": "name"})
@@ -148,9 +163,20 @@ def combine() -> None:
 
 
 def main():
-    global GEMEENTE, PDOK_NAME, PLACE
+    global GEMEENTE, PDOK_NAME, PLACE, BUURT_PREFIX, AREA
     if len(sys.argv) > 1:
         GEMEENTE = sys.argv[1]
+        if GEMEENTE in MERGED:
+            PDOK_NAME, BUURT_PREFIX = MERGED[GEMEENTE]
+            buurten = fetch_buurten()
+            AREA = buurten.geometry.union_all()
+            streets = fetch_streets()
+            streets["gemeente"] = GEMEENTE
+            streets = join_streets_to_buurten(streets, buurten)
+            buurten.to_file(RAW_DIR / f"buurten_{slug(GEMEENTE)}.geojson", driver="GeoJSON")
+            streets.to_file(RAW_DIR / f"streets_{slug(GEMEENTE)}.geojson", driver="GeoJSON")
+            combine()
+            return
         PDOK_NAME, PLACE = ALIASES.get(
             GEMEENTE, (GEMEENTE, f"{GEMEENTE}, North Brabant, Netherlands")
         )
