@@ -35,11 +35,15 @@ RAW_DIR.mkdir(parents=True, exist_ok=True)
 ALIASES = {
     "Nuenen": ("Nuenen, Gerwen en Nederwetten", "Nuenen, North Brabant, Netherlands"),
 }
-# Gemeenten that were merged away after the CBS boundaries were drawn: the area is the set of
-# buurten of the absorbing gemeente whose code starts with the prefix, and streets are fetched
-# from the outline of those buurten. short name -> (absorbing gemeente in PDOK, buurtcode prefix)
+# Gemeenten fetched from the outline of their CBS buurten instead of an OSM place polygon:
+# either merged away after the CBS boundaries were drawn (the area is the buurten of the
+# absorbing gemeente whose code starts with the prefix), or gemeenten whose OSM place
+# polygon is only the old core ("'s-Hertogenbosch" misses Rosmalen, Nuland, Vinkel...).
+# short name -> (gemeente in PDOK, buurtcode prefix; "BU" = all its buurten)
 MERGED = {
+    "'s-Hertogenbosch": ("'s-Hertogenbosch", "BU"),
     "Weesp": ("Amsterdam", "BU0363S"),  # merged into Amsterdam in 2022
+    "Sint-Oedenrode": ("Meierijstad", "BU194803"),  # merged into Meierijstad in 2017
 }
 BUURT_PREFIX = None
 AREA = None  # polygon to fetch streets from, when set

@@ -14,6 +14,7 @@ thing) and the finer legend group used on the map.
 """
 import json
 import random
+import zlib
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -76,7 +77,6 @@ def main():
     for t in themes:
         by_gemeente[t.get("gemeente", "Eindhoven")][t["wijk"]].append(t)
 
-    rng = random.Random(SEED)
     wijk_rows, tests = [], []
     for gemeente, wijken in sorted(by_gemeente.items()):
         for wijk, buurten in sorted(wijken.items()):
@@ -93,6 +93,8 @@ def main():
                 "buurten": [t["buurt"] for t in buurten],
             })
         for level in ("category", "group"):
+            # seed per (gemeente, level) so adding a gemeente never shifts earlier results
+            rng = random.Random(SEED + zlib.crc32(f"{gemeente}|{level}".encode()))
             wijk_labels = [[labels_for(t)[level] for t in b] for b in wijken.values()]
             n_testable = sum(1 for w in wijk_labels if len(w) >= 2)
             tests.append({
