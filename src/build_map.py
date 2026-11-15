@@ -5,6 +5,10 @@ from pathlib import Path
 
 import folium
 import geopandas as gpd
+import numpy as np
+import shapely
+from branca.element import MacroElement
+from jinja2 import Template
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 OUT_DIR = Path(__file__).resolve().parent.parent / "output"
@@ -101,6 +105,58 @@ SOURCE_LABELS = {
 }
 
 
+# reconcile only keeps a plausible person for title_heuristic rows
+TRUSTED_ENTITY_SOURCES = {"wikidata", "wikidata_surname_only", "web_search", "claude_knowledge", "title_heuristic"}
+UNRESOLVED_TEXT = "Origin not identified (no confident match found)"
+
+
+class StreetLayer(MacroElement):
+    """One Leaflet layer holding all of a gemeente's streets. Each feature carries only
+    geometry + a few short properties; style and tooltip/popup HTML are built in the
+    browser from them, so the file doesn't repeat per-street markup.
+    Gray streets: {n: name}. Colored: {n, k: palette index, e: entity, d: description,
+    u: source url, c: category, s: subcategory, f: confidence, l: conf label, b: source}."""
+    _template = Template("""
+        {% macro script(this, kwargs) %}
+        (function() {
+            var pal = {{ this.palette }}, basis = {{ this.basis }}, gray = {{ this.gray }};
+            var esc = function(t) { return String(t).replace(/[&<>"']/g,
+                function(c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
+            var tpl = function(f) {
+                var p = f.properties, h = "<b>" + esc(p.n) + "</b><br>";
+                if (p.e === undefined) return h + {{ this.unresolved }};
+                h += "Likely named after: <b>" + esc(p.e) + "</b>" + (p.d ? " &mdash; " + esc(p.d) : "");
+                if (p.u) h += ' &nbsp;<a href="' + esc(p.u) + '" target="_blank" rel="noopener">[source]</a>';
+                return h + "<br>Category: " + esc(p.c) + "/" + esc(p.s || "") + " &middot; confidence: " + p.l + " (" + p.f
+                    + ")<br>Basis: " + esc(basis[p.b] || p.b || "unknown");
+            };
+            var layer = L.geoJson({{ this.data }}, {
+                style: function(f) { return f.properties.k === undefined ? gray
+                    : {color: pal[f.properties.k], weight: 3, opacity: 0.8}; },
+                onEachFeature: function(f, l) {
+                    l.bindTooltip(tpl(f), {sticky: true});
+                    l.bindPopup(tpl(f), {maxWidth: 320});
+                }
+            });
+            layer.addTo({{ this._parent.get_name() }});
+        })();
+        {% endmacro %}
+    """)
+
+    def __init__(self, features: list, palette: list, basis: dict, gray: dict, unresolved: str):
+        super().__init__()
+        self._name = "StreetLayer"
+        j = lambda o: json.dumps(o, separators=(",", ":"), ensure_ascii=False)
+        self.data = j({"type": "FeatureCollection", "features": features})
+        self.palette, self.basis, self.gray, self.unresolved = j(palette), j(basis), j(gray), j(unresolved)
+
+
+def round_geom(g, nd=5):
+    """~1 m precision plus ~0.5 m simplification: invisible on the map, ~3x smaller."""
+    g = g.simplify(0.000005, preserve_topology=True)
+    return shapely.transform(g, lambda c: np.round(c, nd))
+
+
 def street_explanation(row) -> str:
     """A short, human-readable answer to 'what is this street actually named after,
     and how sure are we', for the map tooltip."""
@@ -120,15 +176,13 @@ def street_explanation(row) -> str:
         return "Not yet analyzed (street geometry only)"
 
     if category == "unresolved" or category is None:
-        return "Origin not identified (no confident match found)"
+        return UNRESOLVED_TEXT
 
     # only trust the Wikidata entity_label when it's actually the source of
     # the final classification -- if a buurt-theme override replaced it,
     # showing the rejected guess (e.g. "Pink" the singer for a street about
     # ship types) would be actively misleading
-    trusted_entity_sources = {"wikidata", "wikidata_surname_only", "web_search", "claude_knowledge",
-                              "title_heuristic"}  # reconcile only keeps a plausible person here
-    if entity and source not in trusted_entity_sources:
+    if entity and source not in TRUSTED_ENTITY_SOURCES:
         entity = None
 
     if entity:
@@ -234,6 +288,8 @@ def main():
     themes = {(t.get("gemeente", "Eindhoven"), t["buurt"]): t
               for t in json.loads((DATA_DIR / "enriched" / "buurt_themes_full.json").read_text())["buurten"]}
     buurten = gpd.read_file(DATA_DIR / "raw" / "buurten.geojson")
+    streets["geometry"] = streets.geometry.apply(round_geom)
+    buurten["geometry"] = buurten.geometry.apply(round_geom)
 
     keys = list(zip(streets["gemeente"], streets["name"]))
     for field, default in (("category", "unresolved"), ("subcategory", None), ("confidence", None),
@@ -275,31 +331,38 @@ def main():
     for g in gemeenten:
         buurt_groups[g].add_to(m)
 
+    palette = []
+    def color_index(c):
+        if c not in palette:
+            palette.append(c)
+        return palette.index(c)
+
+    feats = {g: [] for g in gemeenten}
     for _, row in streets.iterrows():
-        # color only reflects a specific, trusted identification (real entity_label);
-        # a street classified purely by buurt theme (no confirmed namesake) renders
-        # as unresolved gray -- the tooltip still explains the theme-based guess,
-        # but the color coding itself only highlights what's actually confirmed
-        has_specific_entity = isinstance(row["entity_label"], str) and bool(row["entity_label"])
-        if has_specific_entity:
-            subcat = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else None
-            _, color = subgroup_color(row["category"], subcat)
-            weight, opacity = 3, 0.8
-        else:
-            # thinner and fainter so the unresolved majority doesn't drown out
-            # the confirmed streets when zoomed out -- they're still there on
-            # hover, just visually receding rather than competing for attention
-            color = CATEGORY_COLORS["unresolved"]
-            weight, opacity = 1, 0.5
-        explanation = street_explanation(row)
-        tooltip = f"<b>{row['name']}</b><br>{explanation}"
-        folium.GeoJson(
-            row["geometry"],
-            style_function=lambda _, c=color, w=weight, o=opacity: {"color": c, "weight": w, "opacity": o},
-            tooltip=folium.Tooltip(tooltip, sticky=True),
-            popup=folium.Popup(tooltip, max_width=320),
-        ).add_to(street_groups[row["gemeente"]])
+        # color only reflects a specific, identified namesake (real entity_label);
+        # everything else is thin gray with one shared "origin not identified" tooltip
+        # (a buurt's naming theme is shown by the buurt polygon itself)
+        geom = row["geometry"].__geo_interface__
+        entity = row["entity_label"] if isinstance(row["entity_label"], str) and row["entity_label"] else None
+        if entity and row["source"] not in TRUSTED_ENTITY_SOURCES:
+            entity = None  # e.g. a weak Wikidata guess: don't present it as identified
+        if entity is None or not row.get("analyzed", True):
+            feats[row["gemeente"]].append({"type": "Feature", "properties": {"n": row["name"]}, "geometry": geom})
+            continue
+        subcat = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else None
+        _, color = subgroup_color(row["category"], subcat)
+        conf = row["confidence"]
+        conf = None if conf is None or conf != conf else conf
+        props = {"n": row["name"], "k": color_index(color), "e": entity, "c": row["category"], "s": subcat or "",
+                 "f": conf, "l": "high" if (conf or 0) >= 0.75 else "medium" if (conf or 0) >= 0.5 else "low",
+                 "b": row["source"] if isinstance(row["source"], str) else ""}
+        for key, field in (("d", "entity_description"), ("u", "source_url")):
+            if isinstance(row[field], str) and row[field]:
+                props[key] = row[field]
+        feats[row["gemeente"]].append({"type": "Feature", "properties": props, "geometry": geom})
+    gray_style = {"color": CATEGORY_COLORS["unresolved"], "weight": 1, "opacity": 0.5}
     for g in gemeenten:
+        StreetLayer(feats[g], palette, SOURCE_LABELS, gray_style, UNRESOLVED_TEXT).add_to(street_groups[g])
         street_groups[g].add_to(m)
 
     registry = []
