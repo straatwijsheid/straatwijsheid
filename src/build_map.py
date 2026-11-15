@@ -130,15 +130,28 @@ class StreetLayer(MacroElement):
                 return h + "<br>Category: " + esc(p.c) + "/" + esc(p.s || "") + " &middot; confidence: " + p.l + " (" + p.f
                     + ")<br>Basis: " + esc(basis[p.b] || p.b || "unknown");
             };
-            var layer = L.geoJson({{ this.data }}, {
-                style: function(f) { return f.properties.k === undefined ? gray
-                    : {color: pal[f.properties.k], weight: 3, opacity: 0.8}; },
-                onEachFeature: function(f, l) {
-                    l.bindTooltip(tpl(f), {sticky: true});
-                    l.bindPopup(tpl(f), {maxWidth: 320});
-                }
-            });
-            layer.addTo({{ this._parent.get_name() }});
+            // Visual line and hover/click zone are separate: the visible line stays thin and
+            // faint (non-interactive), while an invisible, wider line on top catches the
+            // mouse. Gray hit zones go under the colored ones so a gray street never
+            // steals hover from a colored one it runs alongside.
+            var data = {{ this.data }}, parent = {{ this._parent.get_name() }};
+            var isColored = function(f) { return f.properties.k !== undefined; };
+            var hits = function(keep, weight) {
+                return L.geoJson(data, {
+                    filter: keep,
+                    style: function() { return {weight: weight, opacity: 0, fill: false}; },
+                    onEachFeature: function(f, l) {
+                        l.bindTooltip(tpl(f), {sticky: true});
+                        l.bindPopup(tpl(f), {maxWidth: 320});
+                    }
+                });
+            };
+            hits(function(f) { return !isColored(f); }, 14).addTo(parent);
+            L.geoJson(data, {
+                interactive: false,
+                style: function(f) { return isColored(f) ? {color: pal[f.properties.k], weight: 3, opacity: 0.8} : gray; }
+            }).addTo(parent);
+            hits(isColored, 9).addTo(parent);
         })();
         {% endmacro %}
     """)
