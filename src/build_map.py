@@ -168,7 +168,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
     owns one street and one buurt FeatureGroup that toggling adds/removes. The view refits
     to whatever is selected."""
     rows = "".join(
-        f'''<div class="gm-row"><label><input type="checkbox" class="gm-check" data-g="{g["name"]}"{" checked" if g["name"] in initial else ""}>
+        f'''<div class="gm-row"><label><input type="checkbox" class="gm-check" autocomplete="off" data-g="{g["name"]}"{" checked" if g["name"] in initial else ""}>
         {g["name"]} <span class="gm-count" data-g="{g["name"]}">{g["streets"]:,} streets</span></label>
         <a href="#" class="gm-only" data-g="{g["name"]}">only</a></div>'''
         for g in registry
@@ -186,11 +186,11 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         #gm-panel .gm-only {font-size:11px; color:#2563eb; text-decoration:none;}
         #gm-panel .gm-sec {margin-top:8px; padding-top:6px; border-top:1px solid #eee;}
       </style>
-      <b>Gemeente</b>
+      <b>Streets: gemeente</b>
       __ROWS__
       <div class="gm-sec"><b>Layers</b>
-        <div class="gm-row"><label><input type="checkbox" class="ly-check" data-l="streets" checked> Streets</label></div>
-        <div class="gm-row"><label><input type="checkbox" class="ly-check" data-l="buurten" checked> Buurt themes</label></div>
+        <div class="gm-row"><label><input type="checkbox" class="ly-check" autocomplete="off" data-l="streets" checked> Streets</label></div>
+        <div class="gm-row"><label><input type="checkbox" class="ly-check" autocomplete="off" data-l="buurten" checked> Buurt themes (all gemeenten)</label></div>
       </div>
     </div>
     <script>
@@ -265,7 +265,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
           sc.src = "data/" + g.slug + ".js";
           sc.onload = function () {
             var d = window.GM_DATA[g.slug];
-            built[g.name] = {streets: buildStreets(d.streets), buurten: buildBuurten(d.buurten)};
+            built[g.name] = buildStreets(d);
             if (lab) lab.textContent = orig;
             resolve(built[g.name]);
           };
@@ -278,26 +278,42 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         });
       }
 
-      function apply(refit) {
+      // Buurt polygons for every gemeente come from one file loaded at startup; the gemeente
+      // selector only controls which gemeenten' streets are loaded and drawn.
+      var buurtLayer = null, allBounds = L.latLngBounds(G.map(function (g) { return g.bounds; })[0]);
+      G.forEach(function (g) { allBounds.extend(g.bounds); });
+      function loadBuurten() {
+        var sc = document.createElement("script");
+        sc.src = "data/buurten.js";
+        sc.onload = function () { buurtLayer = buildBuurten(window.GM_BUURTEN); apply(false); };
+        sc.onerror = function () { console.error("could not load " + sc.src); };
+        document.head.appendChild(sc);
+      }
+      // The view follows the selected gemeenten' streets (the whole region if none are selected).
+      function fitSelection() {
         var bounds = null;
+        G.forEach(function (g) { if (on[g.name]) { var b = L.latLngBounds(g.bounds); bounds = bounds ? bounds.extend(b) : b; } });
+        map.fitBounds(bounds || allBounds, {padding: [20, 20], animate: false});
+      }
+      function apply(refit) {
+        if (buurtLayer) {
+          if (layers.buurten && !map.hasLayer(buurtLayer)) { map.addLayer(buurtLayer); buurtLayer.bringToBack(); }
+          if (!layers.buurten && map.hasLayer(buurtLayer)) map.removeLayer(buurtLayer);
+        }
         G.forEach(function (g) {
-          if (on[g.name]) {
-            var b = L.latLngBounds(g.bounds); bounds = bounds ? bounds.extend(b) : b;
-            if (!built[g.name]) { load(g).then(function () { apply(false); }, function () {}); return; }
-          }
-          var bl = built[g.name];
-          if (!bl) return;
-          [['streets', bl.streets], ['buurten', bl.buurten]].forEach(function (p) {
-            var layer = p[1], want = on[g.name] && layers[p[0]];
-            if (want && !map.hasLayer(layer)) { map.addLayer(layer); if (p[0] === 'buurten') layer.bringToBack(); }
-            if (!want && map.hasLayer(layer)) map.removeLayer(layer);
-          });
+          if (on[g.name] && !built[g.name]) { load(g).then(function () { apply(false); }, function () {}); return; }
+          var layer = built[g.name];
+          if (!layer) return;
+          var want = on[g.name] && layers.streets;
+          if (want && !map.hasLayer(layer)) map.addLayer(layer);
+          if (!want && map.hasLayer(layer)) map.removeLayer(layer);
         });
-        if (refit && bounds) map.fitBounds(bounds, {padding: [20, 20], animate: false});
+        if (refit) fitSelection();
       }
       function sync() {
         document.querySelectorAll('.gm-check').forEach(function (c) { c.checked = on[c.dataset.g]; });
       }
+      sync(); document.querySelectorAll('.ly-check').forEach(function (c) { c.checked = layers[c.dataset.l]; });
       document.querySelectorAll('.gm-check').forEach(function (c) {
         c.addEventListener('change', function () { on[c.dataset.g] = c.checked; apply(true); });
       });
@@ -318,6 +334,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         apply(true);
         return true;
       }
+      loadBuurten();
       if (!initialFit()) { map.on('resize', function once() { if (initialFit()) map.off('resize', once); }); }
     });
     </script>
@@ -400,14 +417,17 @@ def main():
         old.unlink()
     registry = []
     for g in gemeenten:
-        payload = {"streets": {"type": "FeatureCollection", "features": feats[g]},
-                   "buurten": {"type": "FeatureCollection", "features": bfeats[g]}}
+        payload = {"type": "FeatureCollection", "features": feats[g]}
         (data_dir / f"{slug(g)}.js").write_text(
             f"(window.GM_DATA=window.GM_DATA||{{}})[{json.dumps(slug(g))}]="
             + json.dumps(payload, separators=(",", ":"), ensure_ascii=False) + ";\n")
         gs = streets[streets["gemeente"] == g]
         minx, miny, maxx, maxy = gs.total_bounds
         registry.append({"name": g, "slug": slug(g), "streets": len(gs), "bounds": [[miny, minx], [maxy, maxx]]})
+    allb = [f for g in gemeenten for f in bfeats[g]]
+    (data_dir / "buurten.js").write_text(
+        "window.GM_BUURTEN=" + json.dumps({"type": "FeatureCollection", "features": allb},
+                                          separators=(",", ":"), ensure_ascii=False) + ";\n")
     render = {"palette": palette, "basis": SOURCE_LABELS, "gray": gray_style, "unresolved": UNRESOLVED_TEXT}
     initial = [DEFAULT_GEMEENTE] if DEFAULT_GEMEENTE in gemeenten else gemeenten
     m.get_root().html.add_child(folium.Element(gemeente_panel(registry, m.get_name(), render, initial)))
