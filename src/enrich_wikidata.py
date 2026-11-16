@@ -6,6 +6,7 @@ occupation, citizenship, description) to classify the street with a confidence
 score. Streets with no confident match are left for the LLM fallback pass.
 """
 import difflib
+import os
 import re
 import time
 from dataclasses import dataclass, field
@@ -14,7 +15,11 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 WD_API = "https://www.wikidata.org/w/api.php"
-USER_AGENT = "EindhovenStreetsResearch/0.1 (personal research project; contact: contact-omitted)"
+# Generic client name. Wikimedia asks for a contact in the User-Agent; to provide one,
+# set WIKIDATA_CONTACT in the environment (it is never stored in this file).
+USER_AGENT = "StreetEtymologyResearch/0.1 (personal research project" + (
+    f"; contact: {os.environ['WIKIDATA_CONTACT']}" if os.environ.get("WIKIDATA_CONTACT") else ""
+) + ")"
 
 _session = requests.Session()
 _session.headers.update({"User-Agent": USER_AGENT})

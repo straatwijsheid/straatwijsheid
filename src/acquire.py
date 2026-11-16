@@ -39,11 +39,14 @@ ALIASES = {
 # either merged away after the CBS boundaries were drawn (the area is the buurten of the
 # absorbing gemeente whose code starts with the prefix), or gemeenten whose OSM place
 # polygon is only the old core ("'s-Hertogenbosch" misses Rosmalen, Nuland, Vinkel...).
-# short name -> (gemeente in PDOK, buurtcode prefix; "BU" = all its buurten)
+# short name -> (gemeente in PDOK, buurtcode prefix(es), comma-separated; "BU" = all its buurten)
 MERGED = {
     "'s-Hertogenbosch": ("'s-Hertogenbosch", "BU"),
     "Weesp": ("Amsterdam", "BU0363S"),  # merged into Amsterdam in 2022
     "Sint-Oedenrode": ("Meierijstad", "BU194803"),  # merged into Meierijstad in 2017
+    "Uden": ("Maashorst", "BU199101,BU199102"),  # Uden + Volkel; merged with Landerd into Maashorst in 2022
+    "Schijndel": ("Meierijstad", "BU194802"),  # ditto
+    "Veghel": ("Meierijstad", "BU194801,BU194804"),  # ditto: Erp/Boerdonk/Keldonk + Veghel (comma = several prefixes)
 }
 BUURT_PREFIX = None
 AREA = None  # polygon to fetch streets from, when set
@@ -104,7 +107,8 @@ def fetch_buurten() -> gpd.GeoDataFrame:
     resp.raise_for_status()
     buurten = gpd.GeoDataFrame.from_features(resp.json()["features"], crs="EPSG:4326")
     if BUURT_PREFIX:
-        buurten = buurten[buurten["buurtcode"].str.startswith(BUURT_PREFIX)]
+        prefixes = tuple(BUURT_PREFIX.split(","))
+        buurten = buurten[buurten["buurtcode"].str.startswith(prefixes)]
 
     wijk_resp = requests.get(
         PDOK_WFS_URL,
@@ -121,7 +125,7 @@ def fetch_buurten() -> gpd.GeoDataFrame:
     )
     wijk_resp.raise_for_status()
     wijk_props = [f["properties"] for f in wijk_resp.json()["features"]
-                  if not BUURT_PREFIX or f["properties"]["wijkcode"].replace("WK", "BU").startswith(BUURT_PREFIX)]
+                  if not BUURT_PREFIX or f["properties"]["wijkcode"].replace("WK", "BU").startswith(tuple(BUURT_PREFIX.split(",")))]
     wijk_lookup = {w["wijkcode"]: w["wijknaam"] for w in wijk_props}
 
     buurten = buurten.rename(columns={"buurtnaam": "name"})
