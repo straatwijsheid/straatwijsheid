@@ -7,8 +7,7 @@ import folium
 import geopandas as gpd
 import numpy as np
 import shapely
-from branca.element import MacroElement
-from jinja2 import Template
+import re
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 OUT_DIR = Path(__file__).resolve().parent.parent / "output"
@@ -107,61 +106,8 @@ SOURCE_LABELS = {
 
 # reconcile only keeps a plausible person for title_heuristic rows
 TRUSTED_ENTITY_SOURCES = {"wikidata", "wikidata_surname_only", "web_search", "claude_knowledge", "title_heuristic"}
+DEFAULT_GEMEENTE = "Eindhoven"  # the only gemeente switched on at load; the rest load when ticked
 UNRESOLVED_TEXT = "Origin not identified (no confident match found)"
-
-
-class StreetLayer(MacroElement):
-    """One Leaflet layer holding all of a gemeente's streets. Each feature carries only
-    geometry + a few short properties; style and tooltip/popup HTML are built in the
-    browser from them, so the file doesn't repeat per-street markup.
-    Gray streets: {n: name}. Colored: {n, k: palette index, e: entity, d: description,
-    u: source url, c: category, s: subcategory, f: confidence, l: conf label, b: source}."""
-    _template = Template("""
-        {% macro script(this, kwargs) %}
-        (function() {
-            var pal = {{ this.palette }}, basis = {{ this.basis }}, gray = {{ this.gray }};
-            var esc = function(t) { return String(t).replace(/[&<>"']/g,
-                function(c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
-            var tpl = function(f) {
-                var p = f.properties, h = "<b>" + esc(p.n) + "</b><br>";
-                if (p.e === undefined) return h + {{ this.unresolved }};
-                h += "Likely named after: <b>" + esc(p.e) + "</b>" + (p.d ? " &mdash; " + esc(p.d) : "");
-                if (p.u) h += ' &nbsp;<a href="' + esc(p.u) + '" target="_blank" rel="noopener">[source]</a>';
-                return h + "<br>Category: " + esc(p.c) + "/" + esc(p.s || "") + " &middot; confidence: " + p.l + " (" + p.f
-                    + ")<br>Basis: " + esc(basis[p.b] || p.b || "unknown");
-            };
-            // Visual line and hover/click zone are separate: the visible line stays thin and
-            // faint (non-interactive), while an invisible, wider line on top catches the
-            // mouse. Gray hit zones go under the colored ones so a gray street never
-            // steals hover from a colored one it runs alongside.
-            var data = {{ this.data }}, parent = {{ this._parent.get_name() }};
-            var isColored = function(f) { return f.properties.k !== undefined; };
-            var hits = function(keep, weight) {
-                return L.geoJson(data, {
-                    filter: keep,
-                    style: function() { return {weight: weight, opacity: 0, fill: false}; },
-                    onEachFeature: function(f, l) {
-                        l.bindTooltip(tpl(f), {sticky: true});
-                        l.bindPopup(tpl(f), {maxWidth: 320});
-                    }
-                });
-            };
-            hits(function(f) { return !isColored(f); }, 14).addTo(parent);
-            L.geoJson(data, {
-                interactive: false,
-                style: function(f) { return isColored(f) ? {color: pal[f.properties.k], weight: 3, opacity: 0.8} : gray; }
-            }).addTo(parent);
-            hits(isColored, 9).addTo(parent);
-        })();
-        {% endmacro %}
-    """)
-
-    def __init__(self, features: list, palette: list, basis: dict, gray: dict, unresolved: str):
-        super().__init__()
-        self._name = "StreetLayer"
-        j = lambda o: json.dumps(o, separators=(",", ":"), ensure_ascii=False)
-        self.data = j({"type": "FeatureCollection", "features": features})
-        self.palette, self.basis, self.gray, self.unresolved = j(palette), j(basis), j(gray), j(unresolved)
 
 
 def round_geom(g, nd=5):
@@ -215,19 +161,20 @@ def street_explanation(row) -> str:
     return f"{origin}<br>Category: {category}/{subcategory} &middot; confidence: {conf_label} ({conf})<br>Basis: {basis}"
 
 
-def gemeente_panel(registry: list[dict], map_name: str) -> str:
+def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: list[str]) -> str:
     """Top-right control: multi-select checkboxes per gemeente (with an 'only' shortcut)
-    plus on/off toggles for the street and buurt layers. Each gemeente owns one street
-    FeatureGroup and one buurt FeatureGroup; toggling adds/removes them from the map,
-    and the view refits to whatever is selected."""
+    plus on/off toggles for the street and buurt layers. A gemeente's data lives in its own
+    script file (data/<slug>.js) that is fetched the first time it is switched on; it then
+    owns one street and one buurt FeatureGroup that toggling adds/removes. The view refits
+    to whatever is selected."""
     rows = "".join(
-        f'''<div class="gm-row"><label><input type="checkbox" class="gm-check" data-g="{g["name"]}" checked>
-        {g["name"]} <span class="gm-count">{g["streets"]:,} streets</span></label>
+        f'''<div class="gm-row"><label><input type="checkbox" class="gm-check" data-g="{g["name"]}"{" checked" if g["name"] in initial else ""}>
+        {g["name"]} <span class="gm-count" data-g="{g["name"]}">{g["streets"]:,} streets</span></label>
         <a href="#" class="gm-only" data-g="{g["name"]}">only</a></div>'''
         for g in registry
     )
     js_registry = json.dumps([
-        {k: g[k] for k in ("name", "street_group", "buurt_group", "bounds")} for g in registry
+        {k: g[k] for k in ("name", "slug", "bounds")} for g in registry
     ])
     return """
     <div id="gm-panel" style="position:fixed; top:12px; right:12px; z-index:1000; background:white;
@@ -248,19 +195,103 @@ def gemeente_panel(registry: list[dict], map_name: str) -> str:
     </div>
     <script>
     window.addEventListener('load', function () {
-      var map = window[__MAP__], G = __REGISTRY__;
-      var on = {}, layers = {streets: true, buurten: true};
-      G.forEach(function (g) { on[g.name] = true; });
+      var map = window[__MAP__], G = __REGISTRY__, R = __RENDER__, INITIAL = __INITIAL__;
+      var on = {}, layers = {streets: true, buurten: true}, built = {}, loading = {};
+      G.forEach(function (g) { on[g.name] = INITIAL.indexOf(g.name) >= 0; });
+
+      var esc = function (t) { return String(t).replace(/[&<>"']/g,
+        function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]; }); };
+      var tpl = function (f) {
+        var p = f.properties, h = "<b>" + esc(p.n) + "</b><br>";
+        if (p.e === undefined) return h + R.unresolved;
+        h += "Likely named after: <b>" + esc(p.e) + "</b>" + (p.d ? " &mdash; " + esc(p.d) : "");
+        if (p.u) h += ' &nbsp;<a href="' + esc(p.u) + '" target="_blank" rel="noopener">[source]</a>';
+        return h + "<br>Category: " + esc(p.c) + "/" + esc(p.s || "") + " &middot; confidence: " + p.l + " (" + p.f
+          + ")<br>Basis: " + esc(R.basis[p.b] || p.b || "unknown");
+      };
+      // Visual line and hover/click zone are separate: the visible line stays thin and
+      // faint (non-interactive), while an invisible, wider line on top catches the
+      // mouse. Gray hit zones go under the colored ones so a gray street never
+      // steals hover from a colored one it runs alongside.
+      function buildStreets(data) {
+        var grp = L.featureGroup();
+        var isColored = function (f) { return f.properties.k !== undefined; };
+        var hits = function (keep, weight) {
+          return L.geoJson(data, {
+            filter: keep,
+            style: function () { return {weight: weight, opacity: 0, fill: false}; },
+            onEachFeature: function (f, l) {
+              l.bindTooltip(tpl(f), {sticky: true});
+              l.bindPopup(tpl(f), {maxWidth: 320});
+            }
+          });
+        };
+        hits(function (f) { return !isColored(f); }, 14).addTo(grp);
+        L.geoJson(data, {
+          interactive: false,
+          style: function (f) { return isColored(f) ? {color: R.palette[f.properties.k], weight: 3, opacity: 0.8} : R.gray; }
+        }).addTo(grp);
+        hits(isColored, 9).addTo(grp);
+        return grp;
+      }
+      // buurt polygons: p.t = theme text, p.c = colour; no p.t means no theme (p.o says why)
+      function buildBuurten(data) {
+        return L.geoJson(data, {
+          style: function (f) {
+            var p = f.properties;
+            return p.t === undefined ? {fillOpacity: 0, color: "#6b7280", weight: 1, dashArray: "4"}
+                                     : {fillColor: p.c, color: p.c, weight: 1, fillOpacity: 0.15};
+          },
+          onEachFeature: function (f, l) {
+            var p = f.properties;
+            if (p.t === undefined) {
+              l.bindTooltip(esc(p.n) + " (" + esc(p.w) + "): " + (p.o ? "no theme assigned (no named streets here)"
+                : "naming theme not yet analyzed"), {sticky: true});
+            } else {
+              l.bindTooltip(esc(p.n) + ": " + esc(p.t), {sticky: true});
+              l.bindPopup("<b>" + esc(p.n) + "</b> (" + esc(p.w) + ")<br>" + esc(p.t) + "<br>confidence: " + p.f);
+            }
+          }
+        });
+      }
+      function countLabel(name) { return document.querySelector('.gm-count[data-g="' + name.replace(/"/g, '\\"') + '"]'); }
+      function load(g) {
+        if (built[g.name]) return Promise.resolve(built[g.name]);
+        if (loading[g.name]) return loading[g.name];
+        var lab = countLabel(g.name), orig = lab && lab.textContent;
+        if (lab) lab.textContent = "loading\u2026";
+        return loading[g.name] = new Promise(function (resolve, reject) {
+          var sc = document.createElement("script");
+          sc.src = "data/" + g.slug + ".js";
+          sc.onload = function () {
+            var d = window.GM_DATA[g.slug];
+            built[g.name] = {streets: buildStreets(d.streets), buurten: buildBuurten(d.buurten)};
+            if (lab) lab.textContent = orig;
+            resolve(built[g.name]);
+          };
+          sc.onerror = function () {
+            delete loading[g.name];
+            if (lab) lab.textContent = "failed to load";
+            reject(new Error("could not load " + sc.src));
+          };
+          document.head.appendChild(sc);
+        });
+      }
 
       function apply(refit) {
         var bounds = null;
         G.forEach(function (g) {
-          [['streets', g.street_group], ['buurten', g.buurt_group]].forEach(function (p) {
-            var layer = window[p[1]], want = on[g.name] && layers[p[0]];
+          if (on[g.name]) {
+            var b = L.latLngBounds(g.bounds); bounds = bounds ? bounds.extend(b) : b;
+            if (!built[g.name]) { load(g).then(function () { apply(false); }, function () {}); return; }
+          }
+          var bl = built[g.name];
+          if (!bl) return;
+          [['streets', bl.streets], ['buurten', bl.buurten]].forEach(function (p) {
+            var layer = p[1], want = on[g.name] && layers[p[0]];
             if (want && !map.hasLayer(layer)) { map.addLayer(layer); if (p[0] === 'buurten') layer.bringToBack(); }
             if (!want && map.hasLayer(layer)) map.removeLayer(layer);
           });
-          if (on[g.name]) { var b = L.latLngBounds(g.bounds); bounds = bounds ? bounds.extend(b) : b; }
         });
         if (refit && bounds) map.fitBounds(bounds, {padding: [20, 20], animate: false});
       }
@@ -290,7 +321,8 @@ def gemeente_panel(registry: list[dict], map_name: str) -> str:
       if (!initialFit()) { map.on('resize', function once() { if (initialFit()) map.off('resize', once); }); }
     });
     </script>
-    """.replace("__ROWS__", rows).replace("__MAP__", json.dumps(map_name)).replace("__REGISTRY__", js_registry)
+    """.replace("__ROWS__", rows).replace("__MAP__", json.dumps(map_name)).replace("__REGISTRY__", js_registry)\
+        .replace("__RENDER__", json.dumps(render, separators=(",", ":"), ensure_ascii=False)).replace("__INITIAL__", json.dumps(initial))
 
 
 def main():
@@ -316,33 +348,19 @@ def main():
     # initial view is a placeholder; the panel's load handler fits to the selected gemeenten
     m = folium.Map(location=[51.44, 5.47], zoom_start=12, tiles="OpenStreetMap")
 
-    buurt_groups = {g: folium.FeatureGroup(name=f"Buurt themes: {g}", show=True) for g in gemeenten}
-    street_groups = {g: folium.FeatureGroup(name=f"Streets: {g}", show=True) for g in gemeenten}
+    def slug(g):
+        return re.sub(r"[^a-z0-9]+", "-", g.lower()).strip("-")
 
+    bfeats = {g: [] for g in gemeenten}
     for _, row in buurten.iterrows():
         theme = themes.get((row["gemeente"], row["name"]))
-        if not theme:
-            # buurt not labeled yet: outline only, so the area is still visible
-            folium.GeoJson(
-                row["geometry"],
-                style_function=lambda _: {"fillOpacity": 0, "color": "#6b7280", "weight": 1, "dashArray": "4"},
-                tooltip=f"{row['name']} ({row['wijk']}): " + (
-                    "no theme assigned (no named streets here)" if row["gemeente"] in analyzed_gemeenten
-                    else "naming theme not yet analyzed"),
-            ).add_to(buurt_groups[row["gemeente"]])
-            continue
-        color = CATEGORY_COLORS.get(theme["category"], "#9ca3af")
-        popup = f"<b>{row['name']}</b> ({theme['wijk']})<br>{theme['theme']}<br>confidence: {theme['confidence']}"
-        folium.GeoJson(
-            row["geometry"],
-            style_function=lambda _, c=color: {
-                "fillColor": c, "color": c, "weight": 1, "fillOpacity": 0.15,
-            },
-            tooltip=f"{row['name']}: {theme['theme']}",
-            popup=popup,
-        ).add_to(buurt_groups[row["gemeente"]])
-    for g in gemeenten:
-        buurt_groups[g].add_to(m)
+        props = {"n": row["name"], "w": row["wijk"]}
+        if theme:
+            props.update(t=theme["theme"], c=CATEGORY_COLORS.get(theme["category"], "#9ca3af"), f=theme["confidence"])
+        else:
+            # not labeled: outline only, so the area is still visible; o=1 if analyzed but no streets
+            props["o"] = int(row["gemeente"] in analyzed_gemeenten)
+        bfeats[row["gemeente"]].append({"type": "Feature", "properties": props, "geometry": row["geometry"].__geo_interface__})
 
     palette = []
     def color_index(c):
@@ -374,20 +392,25 @@ def main():
                 props[key] = row[field]
         feats[row["gemeente"]].append({"type": "Feature", "properties": props, "geometry": geom})
     gray_style = {"color": CATEGORY_COLORS["unresolved"], "weight": 1, "opacity": 0.5}
-    for g in gemeenten:
-        StreetLayer(feats[g], palette, SOURCE_LABELS, gray_style, UNRESOLVED_TEXT).add_to(street_groups[g])
-        street_groups[g].add_to(m)
-
+    # one script per gemeente, loaded on demand (a <script> rather than fetch() so the map
+    # still works when streets_map.html is opened straight from disk)
+    data_dir = OUT_DIR / "data"
+    data_dir.mkdir(exist_ok=True)
+    for old in data_dir.glob("*.js"):
+        old.unlink()
     registry = []
     for g in gemeenten:
+        payload = {"streets": {"type": "FeatureCollection", "features": feats[g]},
+                   "buurten": {"type": "FeatureCollection", "features": bfeats[g]}}
+        (data_dir / f"{slug(g)}.js").write_text(
+            f"(window.GM_DATA=window.GM_DATA||{{}})[{json.dumps(slug(g))}]="
+            + json.dumps(payload, separators=(",", ":"), ensure_ascii=False) + ";\n")
         gs = streets[streets["gemeente"] == g]
         minx, miny, maxx, maxy = gs.total_bounds
-        registry.append({
-            "name": g, "streets": len(gs),
-            "street_group": street_groups[g].get_name(), "buurt_group": buurt_groups[g].get_name(),
-            "bounds": [[miny, minx], [maxy, maxx]],
-        })
-    m.get_root().html.add_child(folium.Element(gemeente_panel(registry, m.get_name())))
+        registry.append({"name": g, "slug": slug(g), "streets": len(gs), "bounds": [[miny, minx], [maxy, maxx]]})
+    render = {"palette": palette, "basis": SOURCE_LABELS, "gray": gray_style, "unresolved": UNRESOLVED_TEXT}
+    initial = [DEFAULT_GEMEENTE] if DEFAULT_GEMEENTE in gemeenten else gemeenten
+    m.get_root().html.add_child(folium.Element(gemeente_panel(registry, m.get_name(), render, initial)))
 
     def subgroup_rows(category):
         return "".join(
