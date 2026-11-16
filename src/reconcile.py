@@ -261,6 +261,8 @@ def main():
         context = {}
         for _, row in gdf.iterrows():
             context.setdefault(row["name"], []).append({"gemeente": row["gemeente"], "buurt": row["buurt"]})
+        # the cache keeps lookups for gemeenten that were dropped from the map: don't emit unplaced rows for them
+        wikidata_results = [r for r in wikidata_results if r["street"] in context]
         themes = load_json(DATA_DIR / "enriched" / "buurt_themes_full.json")["buurten"]
         out_path = DATA_DIR / "enriched" / "streets_final.json"
     else:

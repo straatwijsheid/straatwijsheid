@@ -47,7 +47,12 @@ MERGED = {
     "Uden": ("Maashorst", "BU199101,BU199102"),  # Uden + Volkel; merged with Landerd into Maashorst in 2022
     "Schijndel": ("Meierijstad", "BU194802"),  # ditto
     "Veghel": ("Meierijstad", "BU194801,BU194804"),  # ditto: Erp/Boerdonk/Keldonk + Veghel (comma = several prefixes)
+    "Landerd": ("Maashorst", "BU199103,BU199104,BU199105,BU199106"),  # Odiliapeel, Schaijk, Reek, Zeeland; the rest of Maashorst
 }
+# Gemeenten fetched from the outline of their own CBS buurten (the OSM place polygon may be stale or
+# fail to geocode): short name -> (PDOK name, all buurten)
+for _g in ("Waalre", "Sint-Michielsgestel", "Bernheze", "Heeze-Leende", "Someren", "Asten", "Deurne", "Heusden", "Oss"):
+    MERGED[_g] = (_g, "BU")
 BUURT_PREFIX = None
 AREA = None  # polygon to fetch streets from, when set
 
