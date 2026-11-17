@@ -179,7 +179,8 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
     return """
     <div id="gm-panel" style="position:fixed; top:12px; right:12px; z-index:1000; background:white;
          padding:10px 14px; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,0.3);
-         font-family:sans-serif; font-size:13px; min-width:190px;">
+         font-family:sans-serif; font-size:13px; min-width:190px;
+         max-height:calc(100vh - 24px); overflow-y:auto; box-sizing:border-box;">
       <style>
         #gm-panel .gm-row {display:flex; justify-content:space-between; align-items:center; gap:10px; margin:3px 0;}
         #gm-panel .gm-count {color:#888; font-size:11px;}
