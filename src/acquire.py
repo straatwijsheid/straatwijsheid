@@ -51,7 +51,8 @@ MERGED = {
 }
 # Gemeenten fetched from the outline of their own CBS buurten (the OSM place polygon may be stale or
 # fail to geocode): short name -> (PDOK name, all buurten)
-for _g in ("Waalre", "Sint-Michielsgestel", "Bernheze", "Heeze-Leende", "Someren", "Asten", "Deurne", "Heusden", "Oss"):
+for _g in ("Waalre", "Sint-Michielsgestel", "Bernheze", "Heeze-Leende", "Someren", "Asten", "Deurne", "Heusden", "Oss",
+           "Eersel", "Bladel", "Reusel-De Mierden", "Bergeijk", "Cranendonck", "Hilvarenbeek", "Goirle"):
     MERGED[_g] = (_g, "BU")
 BUURT_PREFIX = None
 AREA = None  # polygon to fetch streets from, when set
