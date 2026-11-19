@@ -22,6 +22,7 @@ from rules.base import Context, Override, DATA                                  
 from tiers import evidence_tier                                                               # noqa: E402
 
 OVERRIDES = DATA / "enriched" / "manual_overrides.json"
+EXCLUSIONS = DATA / "knowledge" / "rule_exclusions.json"
 STRONG = {1, 2}   # tiers that name a specific namesake
 
 
@@ -103,6 +104,12 @@ def main(argv=None):
     pending = {}
     for n in names:
         proposals = RULES[n][0](ctx)
+        excluded = json.loads(EXCLUSIONS.read_text()).get(n, {}) if EXCLUSIONS.exists() else {}
+        if excluded:
+            dropped = [o for o in proposals if o.street in excluded]
+            proposals = [o for o in proposals if o.street not in excluded]
+            if dropped:
+                print(f"\n[{n}] excluded {len(dropped)} reviewed-and-rejected: {sorted({o.street for o in dropped})}")
         same, diff, examples = compare(ctx, proposals)
         print(f"\n[{n}] proposes {len(proposals)}: {same} already in the data, {diff} would change")
         for e in examples:
