@@ -11,6 +11,7 @@ import re
 from functools import lru_cache
 
 from .base import KNOWLEDGE, core, Override, person
+from . import species
 
 RULE = "vocabulary"
 
@@ -34,6 +35,23 @@ def candidates(name: str) -> list[str]:
     return c
 
 
+def _saint_word(token: str) -> str:
+    """The saint's name without the road word or genitive ending ('Catharinastraat' -> 'Catharina', 'Jansstraat' -> 'Jan')."""
+    word, saints = core(token), vocab()["SAINT"]
+    for w in (word, word[:-1] if word.lower().endswith("s") else word):
+        if w.lower() in saints:
+            return w
+    return word
+
+
+def _bio(o):
+    """Plant/animal overrides carry the species (English name, Latin; Dutch stem) when the species dictionary knows it."""
+    hit = species.describe(o.street)
+    if hit:
+        o.entity_label, o.entity_description = hit[0], species.description(hit[1], hit[2])
+    return o
+
+
 def _layer1(g, name, v):
     cs, full = candidates(name), name.lower()
 
@@ -50,18 +68,20 @@ def _layer1(g, name, v):
     k = hit(v["ROYAL"])
     if k:
         label, conf = v["ROYAL"][k]
-        return Override(g, name, "person", "monarch_statesman", label, None, conf, rule=RULE)
+        # a name many people share (Willem, Isabella, Oranje...) asserts only the kind of namesake -> evidence tier 3
+        desc = "Name shared by several people; only the kind of namesake is asserted" if k in v["KIND_ONLY_ROYAL"] else None
+        return Override(g, name, "person", "monarch_statesman", label, desc, conf, rule=RULE)
     m = re.match(r"^Sint[ -](\w+)", name)
     if m:
-        nm = m.group(1).lower()
-        return Override(g, name, "person", "religious", v["SAINT"].get(nm) or "Saint " + m.group(1), None, 0.4, rule=RULE)
+        word = _saint_word(m.group(1))
+        return Override(g, name, "person", "religious", v["SAINT"].get(word.lower()) or "Saint " + word, None, 0.4, rule=RULE)
     for k in cs:
         for table, cat, sub, desc, conf in ((v["FLOWER"], "thing", "flora_flower", "Flower", 0.5), (v["HERB"], "thing", "flora_herb", "Herb", 0.45),
                                             (v["FOOD"], "thing", "flora_food", "Crop or fruit", 0.45), (v["TREE"], "thing", "flora", "Tree or plant", 0.45),
                                             (v["BIRD"], "thing", "fauna", "Bird", 0.5), (v["MAMMAL"], "thing", "fauna_mammal", "Mammal", 0.5),
                                             (v["FISH"], "thing", "fauna_fish", "Fish", 0.5)):
             if k in table:
-                return Override(g, name, cat, sub, core(name), desc, conf, rule=RULE)
+                return _bio(Override(g, name, cat, sub, core(name), desc, conf, rule=RULE))
 
 
 def _layer2(g, name, v):
