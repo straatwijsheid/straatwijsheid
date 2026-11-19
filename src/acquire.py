@@ -54,7 +54,8 @@ MERGED = {
 for _g in ("Waalre", "Sint-Michielsgestel", "Bernheze", "Heeze-Leende", "Someren", "Asten", "Deurne", "Heusden", "Oss",
            "Eersel", "Bladel", "Reusel-De Mierden", "Bergeijk", "Cranendonck", "Hilvarenbeek", "Goirle",
            "Tilburg", "Waalwijk", "Loon op Zand", "Dongen", "Alphen-Chaam", "Baarle-Nassau", "Land van Cuijk", "Altena",
-           "Gilze en Rijen", "Oosterhout", "Geertruidenberg", "Drimmelen", "Zundert", "Breda"):
+           "Gilze en Rijen", "Oosterhout", "Geertruidenberg", "Drimmelen", "Zundert", "Breda",
+           "Etten-Leur", "Rucphen", "Halderberge", "Moerdijk", "Steenbergen", "Roosendaal", "Bergen op Zoom", "Woensdrecht"):
     MERGED[_g] = (_g, "BU")
 BUURT_PREFIX = None
 AREA = None  # polygon to fetch streets from, when set
