@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from names import candidates as C, resolve as R            # noqa: E402
+from names import adjacency as A, candidates as C, resolve as R   # noqa: E402
 from rules.base import Context, DATA                          # noqa: E402
 from tiers import evidence_tier                               # noqa: E402
 
@@ -81,9 +81,11 @@ def backtest(ctx, table, n=4000, seed=7):
     rng = random.Random(seed)
     truth = [r for r in ctx.final if evidence_tier(r) <= 2 and R.norm_kind(r) is not None and r.get("entity_label")]
     sample = rng.sample(truth, min(n, len(truth)))
-    idx = R.ContextIndex(ctx)
+    adj = A.load()
+    idx = R.ContextIndex(ctx, adjacency=adj)
     modes = {"name only (prior)": dict(mode="prior"), "buurt context only": dict(mode="context"), "full: name + buurt/wijk": dict(mode="full"),
-             "full, no Wikidata evidence": dict(mode="full", use_wikidata=False)}
+             "adjacent streets only (context)": dict(mode="context", adj=True, only_adj=True), "full: name + adjacent streets": dict(mode="full", adj=True),
+             "full + adjacent, no Wikidata": dict(mode="full", adj=True, use_wikidata=False), "full, no Wikidata evidence": dict(mode="full", use_wikidata=False)}
     scores = {m: Score() for m in modes}
     t1 = {m: Score() for m in modes}
     for r in sample:
@@ -91,8 +93,12 @@ def backtest(ctx, table, n=4000, seed=7):
         k = R.norm_kind(r)
         idx.remove(r)
         bc, wc = idx.counters(r)
+        ac = idx.adjacent(r)
         for m, kw in modes.items():
-            res = R.resolve_street(entry, bc, wc, street=(r["gemeente"], r["street"]), exclude=(r["gemeente"], r["street"]), **kw)
+            kw = dict(kw)
+            use_adj, only_adj = kw.pop("adj", False), kw.pop("only_adj", False)
+            res = R.resolve_street(entry, collections.Counter() if only_adj else bc, collections.Counter() if only_adj else wc,
+                                   street=(r["gemeente"], r["street"]), exclude=(r["gemeente"], r["street"]), adj_c=ac if use_adj else None, **kw)
             scores[m].add(k, r["entity_label"], res)
             if evidence_tier(r) == 1:
                 t1[m].add(k, r["entity_label"], res)

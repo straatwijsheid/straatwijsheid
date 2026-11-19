@@ -31,6 +31,24 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
 - [ ] **Name-level candidate table** (in progress: `src/names/`, `Context` now carries wijk). Per name (core): all candidate
       interpretations with their evidence (Wikidata, knowledge rules, observed classifications); a resolver picks one per street from
       buurt/wijk context; backtest on already-identified streets; no writes to `manual_overrides.json` until reviewed.
+- [ ] **Adjacent-street themes (Kooloos)**: first version done in `src/names/adjacency.py` (context for the resolver, +2.6 pts accepted at equal
+      precision). Next: use adjacency instead of the buurt in the rules that test buurt support (`bare_surname`, `person_consensus`,
+      `theme_forced_name_fit`); detect themes as connected clusters of >=4 same-kind streets and show them on the map (they replace the
+      buurt polygons as the naming unit); redo the clustering analysis at theme level.
+- [ ] **Street-name books as tier-1 evidence** (the thesis's main source): find digital versions of the municipal street-name books
+      (e.g. Bergen op Zoom: van Ham 1995; Breda: Otten 1988; Tilburg: Peeters 1987), heemkunde portals and Wikipedia street lists, and
+      use their explanations (with the year of origin) to verify tier-2 streets.
+- [ ] **`practical` kind** for names that denote function, direction or position (Stationsstraat, Noordstraat, Schoolstraat), split from
+      `unidentified` local names; today generic words are split inconsistently between local landmark (tier 3) and local landscape (tier 5).
+- [ ] **Farmland theme**: streets on former farmland named for crops or the farmer's family (Haverland, Boekweitstraat, farmer surnames):
+      give them a former-land-use subcategory instead of plain flora/person.
+- [ ] **Taxonomy gaps** found against the thesis's national themes: governors-general of the East Indies, the West Antilles, officers of the
+      1831 Belgian campaign, nineteenth-century generals, Dukes of Brabant vs Counts of Holland, Catholic clergy/politicians; also check the
+      vocabularies against Hartsink's 1896 groups (metals, animals, plants, trees, tools, vehicles...; tools and vehicles look thin).
+- [ ] **Dating**: first-use year of each street/theme (the thesis's key variable: Boer War names 1900-02, royal family waves); find out
+      whether any open source gives naming dates before promising anything.
+- [ ] **Validate against the thesis**: compare our detected themes for Tilburg, Breda and Bergen op Zoom with its tables (groups per city 24/15/8,
+      order of first use, national/regional/local/practical shares); rough check only: it covers 1859-1939 and counts groups, we count streets.
 - [ ] **Raise tier 1**: audit accepted Wikidata *person* and *thing* matches for wrong identities; verify tier-2 streets (12.8k, general
       knowledge) against Wikidata/web search so they move to tier 1.
 - [ ] **Bring waves 1-3 up to wave-4 depth** (wave 3: 53% not identified); re-run the rule families and add the theme vocabularies

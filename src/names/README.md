@@ -46,3 +46,16 @@ resolver; labels match only ~74%.
 * Use the resolver as the engine for new gemeenten (seed with Wikidata, resolve the rest, send `ambiguous` to review).
 * Add independent evidence per candidate (web search results, OSM tags such as `wikidata=*`/`name:etymology` on the street itself).
 * Fold subcategory families (local_landmark vs local_landscape_feature) so near-synonyms do not split a name's mass.
+
+## Adjacent streets as context (Kooloos)
+
+A CBS buurt is an administrative unit, not a naming unit. Kooloos (*The story of street names in the Netherlands*, EUR 2013) defines a
+naming theme as "minimal four streets which interconnect ... and all relate to the same specific subject". Dongen's Hoge Akker buurt
+holds three themes (writers, architects, WWII Allied leaders); the streets Churchillstraat actually touches are Bradley, Montgomery and
+Roosevelt. `adjacency.py` builds which streets touch (geometries within 8 m, same gemeente; cached in `data/names/adjacency.json`) and
+`themes()` finds Kooloos-style themes (connected same-kind clusters of >=4). The resolver can take the adjacent streets as an extra,
+dominant context (weights 0.6 adjacent / 0.3 buurt / 0.1 wijk).
+
+Leave-one-out backtest, 4,000 streets: as a context on its own the adjacent streets beat the buurt (kind 77.4% vs 74.7%, answers 47% vs 33% of
+streets); combined with the name, kind 81.5% vs 81.2% and 81.0% vs 78.4% accepted at the same precision (~91%). The gain is modest because
+the name's own prior carries most streets; it should matter most for ambiguous names and for new gemeenten.

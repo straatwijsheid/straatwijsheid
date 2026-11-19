@@ -84,6 +84,15 @@ def test_label_only_when_namesakes_agree():
     b = R.resolve_street(table["beuken"], *idx.counters(ctx.rows[("A", "Beukenlaan")]))
     assert m.label == "Wolfgang Amadeus Mozart" and b.label is None        # disagreeing labels -> kind only
 
+def test_adjacency_themes_and_context():
+    from names import adjacency as A, resolve as R
+    adj = {("G", "A"): ["B", "C"], ("G", "B"): ["A", "C"], ("G", "C"): ["A", "B", "D"], ("G", "D"): ["C", "E"], ("G", "E"): ["D"]}
+    kinds = {("G", n): ("person", "musician_composer") for n in "ABCD"}
+    kinds[("G", "E")] = ("thing", "flora")
+    themes = A.themes(adj, kinds, min_size=4)
+    assert len(themes) == 1 and len(themes[0][1]) == 4                 # four connected same-kind streets form a theme; E is not part of it
+    assert A.themes(adj, kinds, min_size=5) == []
+
 
 if __name__ == "__main__":
     fails = 0

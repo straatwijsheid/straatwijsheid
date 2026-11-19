@@ -19,6 +19,7 @@ from .candidates import LOCAL, TIER_WEIGHT, Kind, NameEntry, kind_of
 PARTIAL = 0.4
 LAMBDA_MAX = 0.5    # how much weight the neighbours can take from the name's own prior (reached at ~3 weighted neighbours)
 BUURT_W, WIJK_W = 0.7, 0.3
+ADJ_W, ADJ_BUURT_W, ADJ_WIJK_W = 0.6, 0.3, 0.1   # when the street's touching neighbours are known they dominate (Kooloos: themes are connected streets)
 ACCEPT_SCORE, ACCEPT_MARGIN, ACCEPT_MASS = 0.40, 0.12, 0.8
 LABEL_SHARE = 0.6
 
@@ -37,8 +38,10 @@ def _key(t):
 class ContextIndex:
     """Weighted kind counts for every buurt and wijk."""
 
-    def __init__(self, ctx: Context, skip_gemeente: str | None = None):
+    def __init__(self, ctx: Context, skip_gemeente: str | None = None, adjacency: dict | None = None):
         self.ctx = ctx
+        self.adjacency = adjacency
+        self.known = {}                         # (gemeente, street) -> (kind, weight): what each street currently contributes
         self.buurt = collections.defaultdict(collections.Counter)
         self.wijk = collections.defaultdict(collections.Counter)
         for r in ctx.final:
@@ -53,6 +56,7 @@ class ContextIndex:
         k = kind or norm_kind(row)
         if k is None:
             return
+        self.known[(row["gemeente"], row["street"])] = (k, weight)
         b, w = self._keys(row)
         if b is not None:
             self.buurt[b][k] += weight
@@ -61,6 +65,7 @@ class ContextIndex:
 
     def sub(self, row, weight, kind):
         """Undo a contribution made with add(row, weight, kind)."""
+        self.known.pop((row["gemeente"], row["street"]), None)
         b, w = self._keys(row)
         if b is not None:
             self.buurt[b][kind] -= weight
@@ -72,11 +77,22 @@ class ContextIndex:
         if k is None:
             return
         wt = TIER_WEIGHT[evidence_tier(row)]
+        self.known.pop((row["gemeente"], row["street"]), None)
         b, w = self._keys(row)
         if b is not None:
             self.buurt[b][k] -= wt
         if w is not None:
             self.wijk[w][k] -= wt
+
+    def adjacent(self, row):
+        """Weighted kind counts of the streets that touch this one (empty without an adjacency map)."""
+        c = collections.Counter()
+        if self.adjacency:
+            for nb in self.adjacency.get((row["gemeente"], row["street"]), ()):
+                kw = self.known.get((row["gemeente"], nb))
+                if kw:
+                    c[kw[0]] += kw[1]
+        return c
 
     def counters(self, row):
         b, w = self._keys(row)
@@ -107,7 +123,7 @@ class Resolution:
     alternatives: list = field(default_factory=list)   # [(kind, score, prior, fit)]
 
 
-def score_candidates(entry: NameEntry, buurt_c, wijk_c, exclude=None, gemeente=None, use_wikidata=True, mode="full"):
+def score_candidates(entry: NameEntry, buurt_c, wijk_c, exclude=None, gemeente=None, use_wikidata=True, mode="full", adj_c=None):
     masses = {k: c.mass(exclude, gemeente, use_wikidata) for k, c in entry.candidates.items()}
     masses = {k: m for k, m in masses.items() if m > 0}
     total = sum(masses.values())
@@ -116,11 +132,13 @@ def score_candidates(entry: NameEntry, buurt_c, wijk_c, exclude=None, gemeente=N
     out = []
     for k, m in masses.items():
         prior = m / total
-        fit_b, conf_b = _fit(buurt_c, k)
-        fit_w, conf_w = _fit(wijk_c, k)
-        den = BUURT_W * conf_b + WIJK_W * conf_w
+        parts = [(BUURT_W, buurt_c), (WIJK_W, wijk_c)]
+        if adj_c:
+            parts = [(ADJ_W, adj_c), (ADJ_BUURT_W, buurt_c), (ADJ_WIJK_W, wijk_c)]
+        fits = [(w,) + _fit(c, k) for w, c in parts]
+        den = sum(w * conf for w, _, conf in fits)
         if den > 0:
-            fit = (BUURT_W * fit_b * conf_b + WIJK_W * fit_w * conf_w) / den
+            fit = sum(w * f * conf for w, f, conf in fits) / den
             lam = LAMBDA_MAX * min(1.0, den)
         else:
             fit, lam = 0.0, 0.0
@@ -135,8 +153,8 @@ def score_candidates(entry: NameEntry, buurt_c, wijk_c, exclude=None, gemeente=N
     return out
 
 
-def resolve_street(entry: NameEntry, buurt_c, wijk_c, street=None, **kw) -> Resolution:
-    scored = score_candidates(entry, buurt_c, wijk_c, **kw)
+def resolve_street(entry: NameEntry, buurt_c, wijk_c, street=None, adj_c=None, **kw) -> Resolution:
+    scored = score_candidates(entry, buurt_c, wijk_c, adj_c=adj_c, **kw)
     if not scored:
         return Resolution(street, None, None, 0.0, 0.0, "none")
     best = scored[0]
