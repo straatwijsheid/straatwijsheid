@@ -94,15 +94,21 @@ class Context:
 
     def __post_init__(self):
         self.buurt_of = {(s["gemeente"], s["name"]): s["buurt"] for s in self.streets}
+        self.wijk_of = {(s["gemeente"], s["name"]): s.get("wijk") for s in self.streets}
         self.rows = {(r["gemeente"], r["street"]): r for r in self.final}
         self.by_name = collections.defaultdict(list)
         self.by_buurt = collections.defaultdict(list)
+        self.by_wijk = collections.defaultdict(list)
         for r in self.final:
             self.by_name[r["street"]].append(r)
             self.by_buurt[(r["gemeente"], self.buurt_of.get((r["gemeente"], r["street"])))].append(r)
+            self.by_wijk[(r["gemeente"], self.wijk_of.get((r["gemeente"], r["street"])))].append(r)
 
     def buurt(self, row):
         return (row["gemeente"], self.buurt_of.get((row["gemeente"], row["street"])))
+
+    def wijk(self, row):
+        return (row["gemeente"], self.wijk_of.get((row["gemeente"], row["street"])))
 
     def neighbours(self, row, trusted_only=True):
         """Other streets in the same buurt that carry a specific namesake from a trusted source."""
@@ -113,7 +119,7 @@ class Context:
     @classmethod
     def load(cls, root: Path = ROOT):
         import geopandas as gpd
-        gdf = gpd.read_file(root / "data" / "raw" / "streets.geojson")[["gemeente", "name", "buurt"]]
+        gdf = gpd.read_file(root / "data" / "raw" / "streets.geojson")[["gemeente", "name", "buurt", "wijk"]]
         streets = gdf.to_dict("records")
         final = json.loads((root / "data" / "enriched" / "streets_final.json").read_text())
         wd = {}

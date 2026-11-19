@@ -13,7 +13,7 @@ from .base import KNOWLEDGE, core, read_lines
 # placeholders / obscure local names that must never get a species from the stem dictionary
 SKIP = set("fliere knelisroos kriezel krullevaar lieverman melkster repeltand roskam hennegras leliegras kropaar kwikzeel lichtmot "
            "stippelmot satijnvlinder wapendrager waardjes roomvlek drietand hondsklauw batspade bonkspade mignon zilverdas kuikenvlaas "
-           "kattevlaas avondrood aurelia zilveren maan".split())
+           "kattevlaas avondrood aurelia zilveren maan mol".split())   # "mol" would match Molenstraat (mill) as a mole
 SUFFIX = ["hol", "rand", "nest", "vlucht", "slag", "ekker", "graaf", "veld", "laantje", "beemden", "beemd", "haag", "hage", "donk", "laar",
           "laan", "lanen", "gang", "wissel", "spoor", "hof", "ven", "dijkje", "dijk", "boom", "bos", "akkers", "akker", "gaarde", "aar",
           "je", "tje", "s", "en", "e", "n"]
