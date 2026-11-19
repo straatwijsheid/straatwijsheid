@@ -9,6 +9,8 @@ import json
 import re
 from pathlib import Path
 
+from tiers import evidence_tier  # src/ is on sys.path when run as a script
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 CONFIDENT_THRESHOLD = 0.7
@@ -278,6 +280,8 @@ def main():
     final = reconcile(wikidata_results, context, themes_by_buurt)
     if full_run:
         final = apply_manual_overrides(final)
+    for row in final:
+        row["evidence_tier"] = evidence_tier(row)
 
     out_path.write_text(json.dumps(final, indent=2, ensure_ascii=False))
     print(f"Wrote {out_path} ({len(final)} streets)")

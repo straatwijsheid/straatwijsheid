@@ -5,15 +5,23 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from tiers import TIER_NAMES, evidence_tier  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 DATA, OUT = ROOT / "data", ROOT / "output"
 
 COLS = ["gemeente", "street", "wijk", "buurt", "category", "subcategory", "entity_label",
-        "entity_description", "confidence", "source", "source_url", "buurt_theme", "notes"]
+        "entity_description", "evidence_tier", "evidence_tier_name", "confidence", "source", "source_url",
+        "buurt_theme", "notes"]
 
 
 def main():
     final = pd.DataFrame(json.loads((DATA / "enriched" / "streets_final.json").read_text()))
+    if "evidence_tier" not in final:
+        final["evidence_tier"] = [evidence_tier(r) for r in final.to_dict("records")]
+    final["evidence_tier_name"] = final["evidence_tier"].map(TIER_NAMES)
     streets = gpd.read_file(DATA / "raw" / "streets.geojson")[["gemeente", "name", "wijk"]]
     streets = streets.rename(columns={"name": "street"}).drop_duplicates(["gemeente", "street"])
     df = final.merge(streets, on=["gemeente", "street"], how="left")

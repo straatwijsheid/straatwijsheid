@@ -4,6 +4,8 @@ import gzip
 import json
 from pathlib import Path
 
+from tiers import TIER_NAMES, evidence_tier  # src/ is on sys.path when run as a script
+
 import folium
 import geopandas as gpd
 import numpy as np
@@ -205,11 +207,15 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]; }); };
       var tpl = function (f) {
         var p = f.properties, h = "<b>" + esc(p.n) + "</b><br>";
-        if (p.e === undefined) return h + R.unresolved;
+        var tier = p.t ? "<br><span style='color:#555'>Evidence tier " + p.t + ": " + esc(R.tiers[p.t]) + "</span>" : "";
+        if (p.e === undefined) {
+          if (p.t === undefined || p.t === 5) return h + R.unresolved + (p.t === 5 && p.c && p.c !== "unresolved" ? "<br>Best guess: " + esc(p.c) + "/" + esc(p.s || "") : "") + tier;
+          return h + "No specific namesake identified<br>Kind: " + esc(p.c) + (p.s ? "/" + esc(p.s) : "") + tier;
+        }
         h += "Likely named after: <b>" + esc(p.e) + "</b>" + (p.d ? " &mdash; " + esc(p.d) : "");
         if (p.u) h += ' &nbsp;<a href="' + esc(p.u) + '" target="_blank" rel="noopener">[source]</a>';
         return h + "<br>Category: " + esc(p.c) + "/" + esc(p.s || "") + " &middot; confidence: " + p.l + " (" + p.f
-          + ")<br>Basis: " + esc(R.basis[p.b] || p.b || "unknown");
+          + ")<br>Basis: " + esc(R.basis[p.b] || p.b || "unknown") + tier;
       };
       // Visual line and hover/click zone are separate: the visible line stays thin and
       // faint (non-interactive), while an invisible, wider line on top catches the
@@ -371,10 +377,12 @@ def main():
     keys = list(zip(streets["gemeente"], streets["name"]))
     for field, default in (("category", "unresolved"), ("subcategory", None), ("confidence", None),
                            ("source", None), ("entity_label", None), ("entity_description", None),
-                           ("buurt_theme", None), ("source_url", None)):
+                           ("buurt_theme", None), ("source_url", None), ("evidence_tier", None), ("notes", None)):
         streets[field] = [final.get(k, {}).get(field, default) for k in keys]
 
     streets["analyzed"] = [k in final for k in keys]
+    streets["evidence_tier"] = [int(t) if t == t and t is not None else evidence_tier(final[k]) if k in final else 5
+                                for t, k in zip(streets["evidence_tier"], keys)]
     gemeenten = sorted(streets["gemeente"].unique())
     analyzed_gemeenten = set(streets.loc[streets["analyzed"], "gemeente"])
     # initial view is a placeholder; the panel's load handler fits to the selected gemeenten
@@ -410,7 +418,13 @@ def main():
         if entity and row["source"] not in TRUSTED_ENTITY_SOURCES:
             entity = None  # e.g. a weak Wikidata guess: don't present it as identified
         if entity is None or not row.get("analyzed", True):
-            feats[row["gemeente"]].append({"type": "Feature", "properties": {"n": row["name"]}, "geometry": geom})
+            gprops = {"n": row["name"]}
+            if row.get("analyzed", True):
+                gprops["t"] = int(row["evidence_tier"])
+                gsub = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else ""
+                gprops["c"] = row["category"] if isinstance(row["category"], str) else "unresolved"
+                gprops["s"] = gsub
+            feats[row["gemeente"]].append({"type": "Feature", "properties": gprops, "geometry": geom})
             continue
         subcat = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else None
         _, color = subgroup_color(row["category"], subcat)
@@ -418,7 +432,7 @@ def main():
         conf = None if conf is None or conf != conf else conf
         props = {"n": row["name"], "k": color_index(color), "e": entity, "c": row["category"], "s": subcat or "",
                  "f": conf, "l": "high" if (conf or 0) >= 0.75 else "medium" if (conf or 0) >= 0.5 else "low",
-                 "b": row["source"] if isinstance(row["source"], str) else ""}
+                 "b": row["source"] if isinstance(row["source"], str) else "", "t": int(row["evidence_tier"])}
         for key, field in (("d", "entity_description"), ("u", "source_url")):
             if isinstance(row[field], str) and row[field]:
                 props[key] = row[field]
@@ -448,7 +462,7 @@ def main():
     write_js(data_dir / "buurten.js",
         "window.GM_BUURTEN=" + json.dumps({"type": "FeatureCollection", "features": allb},
                                           separators=(",", ":"), ensure_ascii=False) + ";\n")
-    render = {"palette": palette, "basis": SOURCE_LABELS, "gray": gray_style, "unresolved": UNRESOLVED_TEXT}
+    render = {"palette": palette, "basis": SOURCE_LABELS, "tiers": {str(k): v for k, v in TIER_NAMES.items()}, "gray": gray_style, "unresolved": UNRESOLVED_TEXT}
     initial = [DEFAULT_GEMEENTE] if DEFAULT_GEMEENTE in gemeenten else gemeenten
     m.get_root().html.add_child(folium.Element(gemeente_panel(registry, m.get_name(), render, initial)))
 
@@ -483,6 +497,11 @@ def main():
         Color only shown when a specific namesake is confirmed (hover for details).
         A buurt-theme guess with no confirmed individual reference is shown gray,
         even though its category may still be known.
+      </div>
+      <div style="margin-top:6px; font-size:11px; color:#666; max-width:220px;">
+        <b>Evidence tier</b> (shown in each street's tooltip): 1 identified, external evidence &middot;
+        2 identified from knowledge, unverified &middot; 3 kind known from the name &middot;
+        4 kind inferred from the neighbourhood theme &middot; 5 not identified.
       </div>
       <div id="legend-detail" style="display:none; margin-top:8px; border-top:1px solid #eee; padding-top:6px;">
         <div style="color:#2563eb; font-weight:600;">Person</div>
