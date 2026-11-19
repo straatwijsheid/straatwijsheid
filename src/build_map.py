@@ -1,5 +1,6 @@
 """Build an interactive map of Eindhoven streets colored by naming category,
 with buurt polygons showing the detected theme on hover/click."""
+import gzip
 import json
 from pathlib import Path
 
@@ -256,26 +257,42 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         });
       }
       function countLabel(name) { return document.querySelector('.gm-count[data-g="' + name.replace(/"/g, '\\"') + '"]'); }
+      // Data files are shipped twice: plain .js (works when the page is opened from disk) and a
+      // pre-gzipped .js.gz (about 5x smaller; used over http(s) where fetch + DecompressionStream
+      // are available). Any failure on the gzip path falls back to the plain script.
+      function loadScript(url, ok, fail) {
+        function plain() {
+          var sc = document.createElement("script");
+          sc.src = url; sc.onload = ok; sc.onerror = function () { fail(url); };
+          document.head.appendChild(sc);
+        }
+        if (!/^https?:$/.test(location.protocol) || !window.DecompressionStream || !window.fetch) return plain();
+        fetch(url + ".gz").then(function (r) {
+          if (!r.ok) throw new Error(r.status);
+          return new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).text();
+        }).then(function (code) {
+          var sc = document.createElement("script");
+          sc.text = code;               // inline scripts run synchronously on insertion
+          document.head.appendChild(sc);
+          ok();
+        }, plain);                      // only a fetch/decompress failure falls back, not an error in ok()
+      }
       function load(g) {
         if (built[g.name]) return Promise.resolve(built[g.name]);
         if (loading[g.name]) return loading[g.name];
         var lab = countLabel(g.name), orig = lab && lab.textContent;
         if (lab) lab.textContent = "loading\u2026";
         return loading[g.name] = new Promise(function (resolve, reject) {
-          var sc = document.createElement("script");
-          sc.src = "data/" + g.slug + ".js";
-          sc.onload = function () {
+          loadScript("data/" + g.slug + ".js", function () {
             var d = window.GM_DATA[g.slug];
             built[g.name] = buildStreets(d);
             if (lab) lab.textContent = orig;
             resolve(built[g.name]);
-          };
-          sc.onerror = function () {
+          }, function (url) {
             delete loading[g.name];
             if (lab) lab.textContent = "failed to load";
-            reject(new Error("could not load " + sc.src));
-          };
-          document.head.appendChild(sc);
+            reject(new Error("could not load " + url));
+          });
         });
       }
 
@@ -284,11 +301,8 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
       var buurtLayer = null, allBounds = L.latLngBounds(G.map(function (g) { return g.bounds; })[0]);
       G.forEach(function (g) { allBounds.extend(g.bounds); });
       function loadBuurten() {
-        var sc = document.createElement("script");
-        sc.src = "data/buurten.js";
-        sc.onload = function () { buurtLayer = buildBuurten(window.GM_BUURTEN); apply(false); };
-        sc.onerror = function () { console.error("could not load " + sc.src); };
-        document.head.appendChild(sc);
+        loadScript("data/buurten.js", function () { buurtLayer = buildBuurten(window.GM_BUURTEN); apply(false); },
+                   function (url) { console.error("could not load " + url); });
       }
       // The view follows the selected gemeenten' streets (the whole region if none are selected).
       function fitSelection() {
@@ -414,19 +428,24 @@ def main():
     # still works when streets_map.html is opened straight from disk)
     data_dir = OUT_DIR / "data"
     data_dir.mkdir(exist_ok=True)
-    for old in data_dir.glob("*.js"):
+    for old in list(data_dir.glob("*.js")) + list(data_dir.glob("*.js.gz")):
         old.unlink()
+
+    def write_js(path, text):
+        path.write_text(text)
+        path.with_name(path.name + ".gz").write_bytes(gzip.compress(text.encode("utf-8"), 9, mtime=0))
+
     registry = []
     for g in gemeenten:
         payload = {"type": "FeatureCollection", "features": feats[g]}
-        (data_dir / f"{slug(g)}.js").write_text(
+        write_js(data_dir / f"{slug(g)}.js",
             f"(window.GM_DATA=window.GM_DATA||{{}})[{json.dumps(slug(g))}]="
             + json.dumps(payload, separators=(",", ":"), ensure_ascii=False) + ";\n")
         gs = streets[streets["gemeente"] == g]
         minx, miny, maxx, maxy = gs.total_bounds
         registry.append({"name": g, "slug": slug(g), "streets": len(gs), "bounds": [[miny, minx], [maxy, maxx]]})
     allb = [f for g in gemeenten for f in bfeats[g]]
-    (data_dir / "buurten.js").write_text(
+    write_js(data_dir / "buurten.js",
         "window.GM_BUURTEN=" + json.dumps({"type": "FeatureCollection", "features": allb},
                                           separators=(",", ":"), ensure_ascii=False) + ";\n")
     render = {"palette": palette, "basis": SOURCE_LABELS, "gray": gray_style, "unresolved": UNRESOLVED_TEXT}
