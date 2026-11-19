@@ -49,7 +49,7 @@ own buurt supports that kind of person; and a label resting on the buurt theme a
 
 ## Running it
 
-Requirements: Python 3 in a virtualenv (`.venv/`) with geopandas, osmnx, folium, shapely, numpy, pandas and requests. Run from the
+Requirements: Python 3 in a virtualenv (`.venv/`); install with `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`. Run from the
 repository root.
 
 ```bash
