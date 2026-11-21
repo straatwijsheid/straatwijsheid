@@ -20,7 +20,7 @@ STRONG_THEME_THRESHOLD = 0.8
 # as opposed to a rejected/weak guess or a generic theme inference
 TRUSTED_ENTITY_SOURCES = {
     "wikidata", "wikidata_surname_only",
-    "web_search", "claude_knowledge",
+    "web_search", "osm_etymology", "claude_knowledge",
 }
 
 # a title/honorific prefix is a strong, cheap signal that a street is named

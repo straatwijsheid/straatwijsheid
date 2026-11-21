@@ -5,7 +5,7 @@ notes), so it works for any data source and can be recomputed whenever the rules
 Lower numbers are stronger evidence; refinement work should only ever move streets *down*
 in number (toward 1), never silently replace a stronger label with a weaker one.
 
-  1  Identified, external evidence   a specific namesake backed by Wikidata or a web source
+  1  Identified, external evidence   a specific namesake backed by Wikidata, OpenStreetMap's etymology tags or a web source
   2  Identified, from knowledge      a specific namesake from general knowledge, not verified
   3  Kind known from the name        no individual, but the name itself shows the kind
                                      (a title/first-name pattern, a species word, a trade term,
@@ -26,7 +26,7 @@ TIER_NAMES = {
 
 WEAK_SOURCES = {"wikidata_weak_match", "wikidata_no_match", "wikidata_low_similarity", "surname_unsupported"}
 THEME_SOURCES = {"buurt_theme_override", "buurt_theme_fallback"}
-EXTERNAL_SOURCES = {"wikidata", "web_search"}
+EXTERNAL_SOURCES = {"wikidata", "web_search", "osm_etymology"}
 LOCAL_FEATURE = "local_landscape_feature"
 KIND_ONLY_MARKER = "only the kind of namesake is asserted"   # a label like "Willem (House of Orange)" names a kind, not a person
 INFERRED_MARKERS = ("inferred from", "kind of person inferred", "kind inferred from the buurt")

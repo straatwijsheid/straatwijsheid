@@ -103,12 +103,13 @@ SOURCE_LABELS = {
     "wikidata_no_match": "no match found",
     "surname_unsupported": "Wikidata surname match rejected (no corroborating evidence)",
     "web_search": "individually researched via web search",
+    "osm_etymology": "OpenStreetMap name:etymology tag, resolved via Wikidata",
     "claude_knowledge": "individually researched from general knowledge (not web-verified)",
 }
 
 
 # reconcile only keeps a plausible person for title_heuristic rows
-TRUSTED_ENTITY_SOURCES = {"wikidata", "wikidata_surname_only", "web_search", "claude_knowledge", "title_heuristic"}
+TRUSTED_ENTITY_SOURCES = {"wikidata", "wikidata_surname_only", "web_search", "osm_etymology", "claude_knowledge", "title_heuristic"}
 DEFAULT_GEMEENTE = "Eindhoven"  # the only gemeente switched on at load; the rest load when ticked
 UNRESOLVED_TEXT = "Origin not identified (no confident match found)"
 

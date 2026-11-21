@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from rules import audits, directional, place_review, species, surnames, vocabulary          # noqa: E402
+from rules import audits, directional, osm, place_review, species, surnames, vocabulary    # noqa: E402
 from rules.base import Context, Override, DATA                                               # noqa: E402
 from tiers import evidence_tier                                                               # noqa: E402
 
@@ -54,7 +54,13 @@ def rule_species(ctx):
     return out
 
 
+def rule_osm(ctx):
+    from osm_etymology import load
+    return osm.propose(ctx, load())
+
+
 RULES = {
+    "osm_etymology": (rule_osm, "OpenStreetMap name:etymology(:wikidata) -> the namesake, tier 1 (conflicts with our tier 1-2 are left alone)"),
     "directional_road": (rule_directional, "<Place>se<road> streets -> the place they lead to"),
     "vocabulary": (rule_vocabulary, "flowers, trees, birds, composers, painters, saints, science, myth, regions... by name"),
     "titles": (rule_titles, "Burgemeester/Pastoor/first-name patterns -> an unidentified person"),

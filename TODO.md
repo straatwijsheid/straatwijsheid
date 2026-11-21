@@ -20,7 +20,7 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
       `manual_overrides.json`, `data/knowledge/*`; the meaning of `source`, `confidence`, `evidence_tier`, `notes`.
 - [ ] **Rules & knowledge**: expand `src/rules/README.md` (each rule, its inputs, how to review a `--check`, how to add a rule/exclusion).
 - [ ] **Findings**: which gemeenten show significant theme clustering by wijk and how the test works (`analyze.py`, permutation test);
-      coverage by wave; the evidence-tier breakdown (only ~8% externally verified).
+      coverage by wave; the evidence-tier breakdown (only ~9% externally verified).
 - [ ] **Known limitations & audit history**: wave-depth differences (wave 3 weakest), theme-forced label noise (~25% of the
       1.1k remaining), Wikidata mismatches, the legacy scripts and why they are not re-runnable (`scripts/legacy/README.md`).
 - [ ] **Map guide**: panel, lazy per-gemeente loading, gzipped data, tooltips, tiers, legend.
@@ -28,27 +28,30 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
 
 ## Quality and durability
 
-- [ ] **Name-level candidate table** (in progress: `src/names/`, `Context` now carries wijk). Per name (core): all candidate
-      interpretations with their evidence (Wikidata, knowledge rules, observed classifications); a resolver picks one per street from
-      buurt/wijk context; backtest on already-identified streets; no writes to `manual_overrides.json` until reviewed.
-- [ ] **Adjacent-street themes (Kooloos)**: first version done in `src/names/adjacency.py` (context for the resolver, +2.6 pts accepted at equal
-      precision). Next: use adjacency instead of the buurt in the rules that test buurt support (`bare_surname`, `person_consensus`,
-      `theme_forced_name_fit`); detect themes as connected clusters of >=4 same-kind streets and show them on the map (they replace the
-      buurt polygons as the naming unit); redo the clustering analysis at theme level.
-- [ ] **Street-name books as tier-1 evidence** (the thesis's main source): find digital versions of the municipal street-name books
-      (e.g. Bergen op Zoom: van Ham 1995; Breda: Otten 1988; Tilburg: Peeters 1987), heemkunde portals and Wikipedia street lists, and
-      use their explanations (with the year of origin) to verify tier-2 streets.
-- [ ] **`practical` kind** for names that denote function, direction or position (Stationsstraat, Noordstraat, Schoolstraat), split from
-      `unidentified` local names; today generic words are split inconsistently between local landmark (tier 3) and local landscape (tier 5).
-- [ ] **Farmland theme**: streets on former farmland named for crops or the farmer's family (Haverland, Boekweitstraat, farmer surnames):
-      give them a former-land-use subcategory instead of plain flora/person.
-- [ ] **Taxonomy gaps** found against the thesis's national themes: governors-general of the East Indies, the West Antilles, officers of the
-      1831 Belgian campaign, nineteenth-century generals, Dukes of Brabant vs Counts of Holland, Catholic clergy/politicians; also check the
-      vocabularies against Hartsink's 1896 groups (metals, animals, plants, trees, tools, vehicles...; tools and vehicles look thin).
-- [ ] **Dating**: first-use year of each street/theme (the thesis's key variable: Boer War names 1900-02, royal family waves); find out
-      whether any open source gives naming dates before promising anything.
-- [ ] **Validate against the thesis**: compare our detected themes for Tilburg, Breda and Bergen op Zoom with its tables (groups per city 24/15/8,
-      order of first use, national/regional/local/practical shares); rough check only: it covers 1859-1939 and counts groups, we count streets.
+- [x] **Name-level candidate table, v1** (`src/names/`, committed): per-name candidates with evidence, a resolver using buurt/wijk,
+      backtests (LOO and new-gemeente), `--propose` dry run. Findings: the buurt improves *calibration* (accepted precision 77% -> 87% on
+      ambiguous names), not the top choice; without Wikidata evidence tier-1 streets are only 48% recoverable.
+- [ ] **Candidate table follow-ups**
+      - [ ] Merge near-synonym subcategories (local_landmark vs local_landscape_feature, thing/place landmark) so they stop splitting a name's mass.
+      - [ ] Use the resolver as the engine for new gemeenten: seed with externally verified streets (Wikidata, OSM etymology), resolve the
+            rest, queue the `ambiguous` ones for review. A new gemeente needs independent seeds; predictions as context add nothing.
+      - [ ] Review the resolver's `--propose` output (tier 3-5: ~4.7k accepted, 1.3k would change kind; many weak, e.g. Bosrand -> forest)
+            before applying anything; tune `ACCEPT_*` thresholds with the backtest.
+      - [ ] Label accuracy is ~74%: improve label selection when namesakes disagree (kind-only vs a specific person).
+- [x] **OpenStreetMap etymology evidence, v1** (applied, uncommitted until you say so): `src/osm_etymology.py`, `src/osm_report.py`,
+      rule `osm_etymology`, source `osm_etymology` = tier 1, evidence in the candidate table. 20,648 ways fetched in Noord-Brabant;
+      1,731 streets carry usable etymology (1,264 `name:etymology:wikidata`, 427 via the street's own item's "named after", 40 text only).
+      644 applied (173 new namesakes for streets at tier 3-5, 471 tier-2 -> tier-1 upgrades). Tier 1 is now 9.3% (was 7.7%).
+      Independent accuracy check: our tier-1/2 *category* agrees with OSM for 99% of 1,148 comparable streets (bias: tagged streets are well known).
+- [ ] **OSM follow-ups**
+      - [ ] Review the 9 conflicts (`python src/osm_report.py`): Oranje-Nassau/Mecklenburg (house as person vs place), Amazons/Argonauts/Muses
+            (mythological thing vs person: taxonomy), Borneo, Romeinsestraat (OSM looks wrong), Jupiterweg (OSM says juniper: wrong),
+            Sint Eustatiusstraat (OSM: the island; our label "Saint Eustatiusstraat" is a bug).
+      - [ ] 228 OSM items have no kind we can map (e.g. Holy Trinity, ranks, border): extend `classify_entity` and the subcategory taxonomy.
+      - [ ] 40 text-only `name:etymology` records and `name:etymology:wikipedia`: parse for namesakes.
+      - [ ] Wikidata entity cache (`cache/wikidata_entities.json`) hit 429 rate limits; fetch is resumable, add polite pacing/User-Agent handling.
+      - [ ] Use OSM-tagged streets as an evaluation set in the candidate-table backtest (independent of our own labels).
+      - [ ] Whole-Netherlands fetch: the same query per province; ~1 in 100 streets carries etymology, so it is a seed, not full coverage.
 - [ ] **Raise tier 1**: audit accepted Wikidata *person* and *thing* matches for wrong identities; verify tier-2 streets (12.8k, general
       knowledge) against Wikidata/web search so they move to tier 1.
 - [ ] **Bring waves 1-3 up to wave-4 depth** (wave 3: 53% not identified); re-run the rule families and add the theme vocabularies

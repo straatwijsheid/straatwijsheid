@@ -28,6 +28,7 @@ Kind = tuple[str, Optional[str]]
 LOCAL: Kind = ("place", "local_landscape_feature")
 TIER_WEIGHT = {1: 1.0, 2: 0.8, 3: 0.5, 4: 0.25, 5: 0.15}
 RULE_MASS = 1.6                    # a rule hit ~ two tier-2 occurrences
+OSM_OWN_MASS, OSM_OTHER_MASS = 6.0, 1.0   # OSM etymology for this very street dominates; for the same name elsewhere it is a modest prior
 WIKIDATA_MASS = {"strong": 1.6, "weak": 0.3, "surname": 0.5, "thing": 0.3}
 PLACE_DESC = re.compile(r"\b(commune|municipality|town|city|province|region|island|country|river|village|capital|department|county|lake|mountain|hamlet|district)\b", re.I)
 BIO_DESC = re.compile(r"\b(species|genus|bird|insect|fish|mammal|plant|flower|tree|butterfly|dragonfly|beetle|fungus|shrub|herb)\b", re.I)
@@ -52,8 +53,9 @@ class Candidate:
     occurrences: list = field(default_factory=list)     # (gemeente, street, tier, label)
     rules: dict = field(default_factory=dict)            # rule name -> label (or None)
     wikidata: list = field(default_factory=list)         # (strength class, label, description)
+    osm: list = field(default_factory=list)              # (gemeente, street, label): OpenStreetMap name:etymology evidence
 
-    def mass(self, exclude=None, gemeente=None, use_wikidata=True) -> float:
+    def mass(self, exclude=None, gemeente=None, use_wikidata=True, use_osm=True, own=None) -> float:
         m = 0.0
         for g, s, tier, _ in self.occurrences:
             if exclude is not None and (g, s) == exclude:
@@ -64,9 +66,14 @@ class Candidate:
         m += RULE_MASS * len(self.rules)
         if use_wikidata:
             m += sum(WIKIDATA_MASS[k] for k, _, _ in self.wikidata)
+        if use_osm:
+            for g, s, _ in self.osm:
+                if gemeente is not None and g == gemeente and (g, s) != own:
+                    continue
+                m += OSM_OWN_MASS if (g, s) == own else OSM_OTHER_MASS
         return m
 
-    def labels(self, exclude=None, gemeente=None) -> collections.Counter:
+    def labels(self, exclude=None, gemeente=None, own=None) -> collections.Counter:
         c = collections.Counter()
         for g, s, tier, label in self.occurrences:
             if label and tier <= 3 and (exclude is None or (g, s) != exclude) and (gemeente is None or g != gemeente):
@@ -74,6 +81,9 @@ class Candidate:
         for label in self.rules.values():
             if label:
                 c[label] += RULE_MASS
+        for g, s, label in self.osm:
+            if label and not (gemeente is not None and g == gemeente and (g, s) != own):
+                c[label] += OSM_OWN_MASS if (g, s) == own else OSM_OTHER_MASS
         return c
 
 
@@ -119,7 +129,7 @@ def _wikidata_candidate(rec):
     return None
 
 
-def build_table(ctx: Context, wikidata: dict | None = None, rules: bool = True) -> dict[str, NameEntry]:
+def build_table(ctx: Context, wikidata: dict | None = None, rules: bool = True, osm: list | None = None) -> dict[str, NameEntry]:
     famous = surnames.famous()
     table: dict[str, NameEntry] = {}
     for row in ctx.final:
@@ -165,6 +175,13 @@ def build_table(ctx: Context, wikidata: dict | None = None, rules: bool = True) 
                 e.cand(("place", "dutch_town")).rules["place_name"] = key.title()
             if all(is_compound(s) for s in names):
                 e.cand(LOCAL).rules["ordinary_compound"] = None
+    for rec in osm or []:
+        items = [i for i in rec.get("items", []) if i.get("category")]
+        if not items or len({i["category"] for i in items}) > 1:
+            continue
+        e = table.get(name_key(rec["street"]))
+        if e is not None:
+            e.cand((items[0]["category"], items[0]["subcategory"])).osm.append((rec["gemeente"], rec["street"], items[0].get("label")))
     return table
 
 

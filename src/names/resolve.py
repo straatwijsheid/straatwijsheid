@@ -159,7 +159,7 @@ def resolve_street(entry: NameEntry, buurt_c, wijk_c, street=None, adj_c=None, *
         return Resolution(street, None, None, 0.0, 0.0, "none")
     best = scored[0]
     margin = best[1] - (scored[1][1] if len(scored) > 1 else 0.0)
-    labels = entry.candidates[best[0]].labels(kw.get("exclude"), kw.get("gemeente"))
+    labels = entry.candidates[best[0]].labels(kw.get("exclude"), kw.get("gemeente"), kw.get("own"))
     label = None
     if labels:
         top, w = labels.most_common(1)[0]

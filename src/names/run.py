@@ -26,7 +26,9 @@ OUT = DATA / "names" / "candidates.jsonl"
 
 def load():
     ctx = Context.load()
-    return ctx, C.build_table(ctx, C.load_wikidata_records())
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from osm_etymology import load as load_osm
+    return ctx, C.build_table(ctx, C.load_wikidata_records(), osm=load_osm())
 
 
 def write_table(table):
