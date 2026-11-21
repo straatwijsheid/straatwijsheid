@@ -6,6 +6,8 @@ occupation, citizenship, description) to classify the street with a confidence
 score. Streets with no confident match are left for the LLM fallback pass.
 """
 import difflib
+import json
+from pathlib import Path
 import os
 import re
 import time
@@ -344,20 +346,39 @@ def lookup_all_resumable(
         list(pool.map(worker, todo))
 
 
+def missing_street_names(cache_path, gemeenten=None) -> list[str]:
+    """Distinct street names in data/raw/streets.geojson that the cache has not looked up yet (the same name in several gemeenten is one lookup)."""
+    import geopandas as gpd
+    root = Path(__file__).resolve().parent.parent
+    g = gpd.read_file(root / "data" / "raw" / "streets.geojson")
+    if gemeenten:
+        g = g[g["gemeente"].isin(gemeenten)]
+    done = set()
+    if cache_path.exists():
+        with cache_path.open() as f:
+            done = {json.loads(line)["street"] for line in f if line.strip()}
+    return sorted({n for n in g["name"].dropna() if n not in done})
+
+
 if __name__ == "__main__":
-    import json
-    import sys
-    from pathlib import Path
+    import argparse
 
-    sample_file = Path(sys.argv[1]) if len(sys.argv) > 1 else None
-    out_name = sys.argv[2] if len(sys.argv) > 2 else "pilot_wikidata.jsonl"
-    if sample_file:
-        names = [l.strip() for l in sample_file.read_text().splitlines() if l.strip()]
-    else:
-        names = ["Vesaliuslaan", "Jonathan Swiftlaan", "Philipslaan"]
-
-    out_path = Path(__file__).resolve().parent.parent / "data" / "enriched" / out_name
+    ap = argparse.ArgumentParser(description="Look streets up on Wikidata (resumable). Set WIKIDATA_CONTACT for polite, faster access.")
+    ap.add_argument("--missing", action="store_true", help="look up every street in streets.geojson that is not cached yet (the normal mode)")
+    ap.add_argument("--gemeente", action="append", help="with --missing: only these gemeenten")
+    ap.add_argument("--names", help="a text file with one street name per line, instead of --missing")
+    ap.add_argument("--cache", default="all_streets_wikidata.jsonl", help="cache file name in data/enriched/")
+    ap.add_argument("--dry-run", action="store_true", help="only report how many names would be looked up")
+    a = ap.parse_args()
+    out_path = Path(__file__).resolve().parent.parent / "data" / "enriched" / a.cache
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    print(f"Looking up {len(names)} streets on Wikidata -> {out_path}")
-    lookup_all_resumable(names, out_path)
-    print("Done")
+    if a.names:
+        names = [l.strip() for l in Path(a.names).read_text().splitlines() if l.strip()]
+    elif a.missing:
+        names = missing_street_names(out_path, a.gemeente)
+    else:
+        ap.error("give --missing or --names FILE")
+    print(f"{len(names)} streets to look up on Wikidata -> {out_path}")
+    if not a.dry_run:
+        lookup_all_resumable(names, out_path)
+        print("Done")

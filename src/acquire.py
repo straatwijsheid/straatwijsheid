@@ -1,15 +1,22 @@
-"""Fetch a gemeente's street network (OSM) and buurt boundaries (PDOK/CBS).
+"""Fetch gemeenten's street networks (OSM) and buurt boundaries (PDOK/CBS), for any gemeente in the Netherlands.
 
-Usage: python src/acquire.py [Gemeente]   (default: Eindhoven)
+  python src/acquire.py Tilburg Breda        fetch one or more gemeenten (skips those already fetched; --force refetches)
+  python src/acquire.py --list               gemeenten already in data/raw
+
+Default for a gemeente: the street network is taken from the outline of its own CBS buurten (robust: no geocoding, no stale OSM polygon),
+and the buurten are fetched under the same name. Exceptions (merged gemeenten, long official names) live in data/knowledge/gemeenten.json.
 
 Outputs, per gemeente:
-  data/raw/streets_<slug>.geojson   one row per unique street name, merged geometry
+  data/raw/streets_<slug>.geojson   one row per unique street name, merged geometry, with its buurt and wijk
   data/raw/buurten_<slug>.geojson   neighborhood polygons
 and then the combined files every downstream script reads:
   data/raw/streets.geojson, data/raw/buurten.geojson   (all gemeenten, with a `gemeente` column)
 """
+import argparse
+import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import geopandas as gpd
@@ -30,49 +37,18 @@ if os.environ.get("OVERPASS_URL"):
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 
-# short name used in the data and on the map -> (official CBS/PDOK name, OSM place query)
-# for gemeenten whose official name is unwieldy or that Nominatim cannot geocode
-ALIASES = {
-    "Nuenen": ("Nuenen, Gerwen en Nederwetten", "Nuenen, North Brabant, Netherlands"),
-}
-# Gemeenten fetched from the outline of their CBS buurten instead of an OSM place polygon:
-# either merged away after the CBS boundaries were drawn (the area is the buurten of the
-# absorbing gemeente whose code starts with the prefix), or gemeenten whose OSM place
-# polygon is only the old core ("'s-Hertogenbosch" misses Rosmalen, Nuland, Vinkel...).
-# short name -> (gemeente in PDOK, buurtcode prefix(es), comma-separated; "BU" = all its buurten)
-MERGED = {
-    "'s-Hertogenbosch": ("'s-Hertogenbosch", "BU"),
-    "Weesp": ("Amsterdam", "BU0363S"),  # merged into Amsterdam in 2022
-    "Sint-Oedenrode": ("Meierijstad", "BU194803"),  # merged into Meierijstad in 2017
-    "Uden": ("Maashorst", "BU199101,BU199102"),  # Uden + Volkel; merged with Landerd into Maashorst in 2022
-    "Schijndel": ("Meierijstad", "BU194802"),  # ditto
-    "Veghel": ("Meierijstad", "BU194801,BU194804"),  # ditto: Erp/Boerdonk/Keldonk + Veghel (comma = several prefixes)
-    "Landerd": ("Maashorst", "BU199103,BU199104,BU199105,BU199106"),  # Odiliapeel, Schaijk, Reek, Zeeland; the rest of Maashorst
-}
-# Gemeenten fetched from the outline of their own CBS buurten (the OSM place polygon may be stale or
-# fail to geocode): short name -> (PDOK name, all buurten)
-for _g in ("Waalre", "Sint-Michielsgestel", "Bernheze", "Heeze-Leende", "Someren", "Asten", "Deurne", "Heusden", "Oss",
-           "Eersel", "Bladel", "Reusel-De Mierden", "Bergeijk", "Cranendonck", "Hilvarenbeek", "Goirle",
-           "Tilburg", "Waalwijk", "Loon op Zand", "Dongen", "Alphen-Chaam", "Baarle-Nassau", "Land van Cuijk", "Altena",
-           "Gilze en Rijen", "Oosterhout", "Geertruidenberg", "Drimmelen", "Zundert", "Breda",
-           "Etten-Leur", "Rucphen", "Halderberge", "Moerdijk", "Steenbergen", "Roosendaal", "Bergen op Zoom", "Woensdrecht"):
-    MERGED[_g] = (_g, "BU")
-BUURT_PREFIX = None
-AREA = None  # polygon to fetch streets from, when set
-
-GEMEENTE = "Eindhoven"
-PDOK_NAME = GEMEENTE
-PLACE = f"{GEMEENTE}, North Brabant, Netherlands"
+CONFIG = json.loads((RAW_DIR.parent / "knowledge" / "gemeenten.json").read_text())
 PDOK_WFS_URL = "https://service.pdok.nl/cbs/wijkenbuurten/2024/wfs/v1_0"
 
 
-def fetch_streets() -> gpd.GeoDataFrame:
-    if AREA is not None:
-        print(f"Fetching street network for the {GEMEENTE} outline")
-        graph = ox.graph_from_polygon(AREA, network_type="drive", retain_all=False)
+def fetch_streets(gemeente: str, area=None, place=None) -> gpd.GeoDataFrame:
+    """Street network inside `area` (a polygon) or, failing that, the OSM place `place`."""
+    if area is not None:
+        print(f"Fetching street network for the {gemeente} outline")
+        graph = ox.graph_from_polygon(area, network_type="drive", retain_all=False)
     else:
-        print(f"Fetching street network for: {PLACE}")
-        graph = ox.graph_from_place(PLACE, network_type="drive", retain_all=False)
+        print(f"Fetching street network for: {place}")
+        graph = ox.graph_from_place(place, network_type="drive", retain_all=False)
     edges = ox.graph_to_gdfs(graph, nodes=False, edges=True)
 
     edges = edges[edges["name"].notna()].copy()
@@ -98,7 +74,7 @@ def _gemeente_filter(gemeente: str) -> str:
     )
 
 
-def fetch_buurten() -> gpd.GeoDataFrame:
+def fetch_buurten(gemeente: str, pdok_name: str, prefix: str | None = None) -> gpd.GeoDataFrame:
     print("Fetching buurt (neighborhood) boundaries from PDOK/CBS")
     resp = requests.get(
         PDOK_WFS_URL,
@@ -109,14 +85,14 @@ def fetch_buurten() -> gpd.GeoDataFrame:
             "typeNames": "wijkenbuurten:buurten",
             "outputFormat": "json",
             "srsName": "EPSG:4326",
-            "filter": _gemeente_filter(PDOK_NAME),
+            "filter": _gemeente_filter(pdok_name),
         },
         timeout=60,
     )
     resp.raise_for_status()
     buurten = gpd.GeoDataFrame.from_features(resp.json()["features"], crs="EPSG:4326")
-    if BUURT_PREFIX:
-        prefixes = tuple(BUURT_PREFIX.split(","))
+    if prefix and prefix != "BU":
+        prefixes = tuple(prefix.split(","))
         buurten = buurten[buurten["buurtcode"].str.startswith(prefixes)]
 
     wijk_resp = requests.get(
@@ -128,19 +104,19 @@ def fetch_buurten() -> gpd.GeoDataFrame:
             "typeNames": "wijkenbuurten:wijken",
             "outputFormat": "json",
             "srsName": "EPSG:4326",
-            "filter": _gemeente_filter(PDOK_NAME),
+            "filter": _gemeente_filter(pdok_name),
         },
         timeout=60,
     )
     wijk_resp.raise_for_status()
     wijk_props = [f["properties"] for f in wijk_resp.json()["features"]
-                  if not BUURT_PREFIX or f["properties"]["wijkcode"].replace("WK", "BU").startswith(tuple(BUURT_PREFIX.split(",")))]
+                  if not prefix or prefix == "BU" or f["properties"]["wijkcode"].replace("WK", "BU").startswith(tuple(prefix.split(",")))]
     wijk_lookup = {w["wijkcode"]: w["wijknaam"] for w in wijk_props}
 
     buurten = buurten.rename(columns={"buurtnaam": "name"})
     buurten["wijk"] = buurten["wijkcode"].map(wijk_lookup)
     buurten = buurten[["name", "wijk", "geometry"]].reset_index(drop=True)
-    buurten["gemeente"] = GEMEENTE
+    buurten["gemeente"] = gemeente
     print(f"Found {len(buurten)} buurt polygons across {buurten['wijk'].nunique()} wijken")
     return buurten
 
@@ -179,41 +155,52 @@ def combine() -> None:
         print(f"Wrote {kind}.geojson: {len(combined)} rows from {combined['gemeente'].nunique()} gemeente(n)")
 
 
-def main():
-    global GEMEENTE, PDOK_NAME, PLACE, BUURT_PREFIX, AREA
-    if len(sys.argv) > 1:
-        GEMEENTE = sys.argv[1]
-        if GEMEENTE in MERGED:
-            PDOK_NAME, BUURT_PREFIX = MERGED[GEMEENTE]
-            buurten = fetch_buurten()
-            AREA = buurten.geometry.union_all()
-            streets = fetch_streets()
-            streets["gemeente"] = GEMEENTE
-            streets = join_streets_to_buurten(streets, buurten)
-            buurten.to_file(RAW_DIR / f"buurten_{slug(GEMEENTE)}.geojson", driver="GeoJSON")
-            streets.to_file(RAW_DIR / f"streets_{slug(GEMEENTE)}.geojson", driver="GeoJSON")
-            combine()
-            return
-        PDOK_NAME, PLACE = ALIASES.get(
-            GEMEENTE, (GEMEENTE, f"{GEMEENTE}, North Brabant, Netherlands")
-        )
+def acquire(gemeente: str) -> None:
+    """Fetch one gemeente: buurten from PDOK, streets from the buurten outline, joined and written; then rebuild the combined files."""
+    cfg = CONFIG.get("merged", {}).get(gemeente) or CONFIG.get("aliases", {}).get(gemeente) or {}
+    pdok = cfg.get("pdok", gemeente)
+    buurten = fetch_buurten(gemeente, pdok, cfg.get("buurt_prefix"))
+    if not len(buurten):
+        raise RuntimeError(f"PDOK has no buurten for '{pdok}': add an entry to data/knowledge/gemeenten.json")
+    streets = fetch_streets(gemeente, area=buurten.geometry.union_all())
+    streets["gemeente"] = gemeente
+    streets = join_streets_to_buurten(streets, buurten)
+    buurten.to_file(RAW_DIR / f"buurten_{slug(gemeente)}.geojson", driver="GeoJSON")
+    streets.to_file(RAW_DIR / f"streets_{slug(gemeente)}.geojson", driver="GeoJSON")
 
-    streets = fetch_streets()
-    streets["gemeente"] = GEMEENTE
-    try:
-        buurten = fetch_buurten()
-    except Exception as e:
-        print(f"Buurt fetch failed ({e}); continuing without neighborhood join")
-        buurten = gpd.GeoDataFrame(columns=["name", "geometry", "gemeente"])
 
-    if len(buurten):
-        streets = join_streets_to_buurten(streets, buurten)
-        buurten.to_file(RAW_DIR / f"buurten_{slug(GEMEENTE)}.geojson", driver="GeoJSON")
-    else:
-        streets["buurt"] = None
+def have(gemeente: str) -> bool:
+    return (RAW_DIR / f"streets_{slug(gemeente)}.geojson").exists()
 
-    streets.to_file(RAW_DIR / f"streets_{slug(GEMEENTE)}.geojson", driver="GeoJSON")
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("gemeenten", nargs="*")
+    ap.add_argument("--list", action="store_true")
+    ap.add_argument("--force", action="store_true", help="refetch gemeenten that are already in data/raw")
+    ap.add_argument("--retries", type=int, default=4, help="Overpass is often busy: attempts per gemeente")
+    a = ap.parse_args(argv)
+    if a.list or not a.gemeenten:
+        done = sorted(p.stem[len("streets_"):] for p in RAW_DIR.glob("streets_*.geojson"))
+        print(f"{len(done)} gemeenten in data/raw: {', '.join(done)}")
+        return
+    failed = []
+    for g in a.gemeenten:
+        if have(g) and not a.force:
+            print(f"{g}: already fetched (use --force to refetch)")
+            continue
+        for attempt in range(1, a.retries + 1):
+            try:
+                acquire(g)
+                break
+            except Exception as e:                                     # noqa: BLE001  (network errors vary: Overpass 429/502/timeouts)
+                print(f"{g}: attempt {attempt}/{a.retries} failed: {str(e)[:120]}")
+                time.sleep(10 * attempt)
+        else:
+            failed.append(g)
     combine()
+    if failed:
+        sys.exit(f"failed: {failed}")
 
 
 if __name__ == "__main__":

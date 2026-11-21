@@ -1,4 +1,4 @@
-"""Build an interactive map of Eindhoven streets colored by naming category,
+"""Build an interactive map of Dutch streets colored by naming category,
 with buurt polygons showing the detected theme on hover/click."""
 import gzip
 import json
@@ -369,7 +369,7 @@ def main():
     # a street name can exist in several gemeenten, so everything is keyed by (gemeente, name)
     final = {(r["gemeente"], r["street"]): r
              for r in json.loads((DATA_DIR / "enriched" / "streets_final.json").read_text())}
-    themes = {(t.get("gemeente", "Eindhoven"), t["buurt"]): t
+    themes = {(t["gemeente"], t["buurt"]): t
               for t in json.loads((DATA_DIR / "enriched" / "buurt_themes_full.json").read_text())["buurten"]}
     buurten = gpd.read_file(DATA_DIR / "raw" / "buurten.geojson")
     streets["geometry"] = streets.geometry.apply(round_geom)

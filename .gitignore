@@ -5,3 +5,4 @@ cache/
 .DS_Store
 data/names/candidates.jsonl
 data/names/adjacency.json
+*.log

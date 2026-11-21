@@ -234,7 +234,7 @@ def apply_manual_overrides(final: list[dict]) -> list[dict]:
     overrides_path = DATA_DIR / "enriched" / "manual_overrides.json"
     if not overrides_path.exists():
         return final
-    overrides = {(o.get("gemeente", "Eindhoven"), o["street"]): o
+    overrides = {(o["gemeente"], o["street"]): o
                  for o in load_json(overrides_path)["overrides"]}
     for row in final:
         o = overrides.get((row["gemeente"], row["street"]))
@@ -251,52 +251,29 @@ def apply_manual_overrides(final: list[dict]) -> list[dict]:
 
 
 def main():
-    import sys
+    """Classify every street in data/raw/streets.geojson from the Wikidata cache, the buurt themes and the override layers -> streets_final.json."""
+    import geopandas as gpd
 
-    full_run = "--full" in sys.argv
+    wikidata_results = load_jsonl(DATA_DIR / "enriched" / "all_streets_wikidata.jsonl")
+    gdf = gpd.read_file(DATA_DIR / "raw" / "streets.geojson")
+    context = {}
+    for _, row in gdf.iterrows():
+        context.setdefault(row["name"], []).append({"gemeente": row["gemeente"], "buurt": row["buurt"]})
+    # the cache keeps lookups for gemeenten that were dropped from the map: don't emit unplaced rows for them
+    wikidata_results = [r for r in wikidata_results if r["street"] in context]
+    themes = load_json(DATA_DIR / "enriched" / "buurt_themes_full.json")["buurten"]
+    themes_by_buurt = {(t["gemeente"], t["buurt"]): t for t in themes}
 
-    if full_run:
-        import geopandas as gpd
-
-        wikidata_results = load_jsonl(DATA_DIR / "enriched" / "all_streets_wikidata.jsonl")
-        gdf = gpd.read_file(DATA_DIR / "raw" / "streets.geojson")
-        context = {}
-        for _, row in gdf.iterrows():
-            context.setdefault(row["name"], []).append({"gemeente": row["gemeente"], "buurt": row["buurt"]})
-        # the cache keeps lookups for gemeenten that were dropped from the map: don't emit unplaced rows for them
-        wikidata_results = [r for r in wikidata_results if r["street"] in context]
-        themes = load_json(DATA_DIR / "enriched" / "buurt_themes_full.json")["buurten"]
-        out_path = DATA_DIR / "enriched" / "streets_final.json"
-    else:
-        wikidata_results = load_json(DATA_DIR / "enriched" / "pilot_wikidata.json")
-        context = {
-            street: [{"gemeente": "Eindhoven", "buurt": c["buurt"]}]
-            for street, c in load_json(DATA_DIR / "enriched" / "pilot_context.json").items()
-        }
-        themes = load_json(DATA_DIR / "enriched" / "buurt_themes_pilot.json")["buurten"]
-        out_path = DATA_DIR / "enriched" / "pilot_final.json"
-
-    themes_by_buurt = {(t.get("gemeente", "Eindhoven"), t["buurt"]): t for t in themes}
-    final = reconcile(wikidata_results, context, themes_by_buurt)
-    if full_run:
-        final = apply_manual_overrides(final)
+    final = apply_manual_overrides(reconcile(wikidata_results, context, themes_by_buurt))
     for row in final:
         row["evidence_tier"] = evidence_tier(row)
 
+    out_path = DATA_DIR / "enriched" / "streets_final.json"
     out_path.write_text(json.dumps(final, indent=2, ensure_ascii=False))
+    from collections import Counter
+
     print(f"Wrote {out_path} ({len(final)} streets)")
-
-    if not full_run:
-        for row in final:
-            print(
-                f"{row['street']:30s} {row['category'] or '?':10s} "
-                f"{row['subcategory'] or '':22s} conf={row['confidence']:.2f}  [{row['source']}]"
-            )
-    else:
-        from collections import Counter
-
-        counts = Counter(row["category"] for row in final)
-        print("Category breakdown:", dict(counts))
+    print("Category breakdown:", dict(Counter(row["category"] for row in final)))
 
 
 if __name__ == "__main__":

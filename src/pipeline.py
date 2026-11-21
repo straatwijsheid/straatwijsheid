@@ -1,0 +1,123 @@
+"""The whole pipeline in one place, for any gemeenten.
+
+  python src/pipeline.py add Tilburg Breda       new gemeenten, end to end
+  python src/pipeline.py rebuild                 everything downstream of the data (after rules/overrides/knowledge changed)
+  python src/pipeline.py status                  what is missing at each stage
+
+`add` runs, in order (each stage is also a script you can run alone):
+  1 acquire    src/acquire.py            streets + buurten for the gemeenten (skips ones already fetched)
+  2 wikidata   src/enrich_wikidata.py    look up every street name not cached yet (needs WIKIDATA_CONTACT; run it in your own shell if it is long)
+  3 reconcile  src/reconcile.py          Wikidata guesses + buurt themes + overrides -> streets_final.json
+  4 themes     src/themes.py             derive buurt themes for buurten that have none, then reconcile again so the themes act
+  5 osm        src/osm_etymology.py      refresh OpenStreetMap etymology tags (--refresh-osm)
+  6 rules      src/rules/run.py          check (print what each rule proposes) or --apply-rules to write them
+  7 outputs    analyze, build_map, export_csv, tier statistics
+
+Rules that need review (corrections, vocabulary exclusions) stay a human step: by default stage 6 only *checks*.
+"""
+from __future__ import annotations
+
+import argparse
+import collections
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+PY = sys.executable
+SRC = ROOT / "src"
+
+
+def run(*args):
+    print("\n$", " ".join(str(a) for a in args), flush=True)
+    subprocess.run([PY, *map(str, args)], cwd=ROOT, check=True)
+
+
+def stage_acquire(gems):
+    run(SRC / "acquire.py", *gems)
+
+
+def stage_wikidata(gems):
+    if not os.environ.get("WIKIDATA_CONTACT"):
+        sys.exit("Stage wikidata needs WIKIDATA_CONTACT in your shell (a contact address, never stored). Either export it and re-run, or run\n"
+                 f"  {PY} src/enrich_wikidata.py --missing\nyourself, then continue with: python src/pipeline.py rebuild --themes")
+    run(SRC / "enrich_wikidata.py", "--missing", *[x for g in gems for x in ("--gemeente", g)])
+
+
+def stage_themes(gems):
+    run(SRC / "reconcile.py")
+    run(SRC / "themes.py", *[x for g in gems for x in ("--gemeente", g)])
+    run(SRC / "reconcile.py")
+
+
+def stage_osm():
+    run(SRC / "osm_etymology.py", "--fetch")
+    run(SRC / "osm_etymology.py", "--build")
+
+
+def stage_rules(apply=False):
+    run(SRC / "rules" / "run.py", "--apply" if apply else "--check")
+    if apply:
+        run(SRC / "reconcile.py")
+
+
+def stage_outputs():
+    run(SRC / "reconcile.py")
+    run(SRC / "analyze.py")
+    run(SRC / "build_map.py")
+    run(SRC / "export_csv.py")
+    tiers()
+
+
+def tiers():
+    rows = json.loads((ROOT / "data" / "enriched" / "streets_final.json").read_text())
+    c = collections.Counter(r["evidence_tier"] for r in rows)
+    n = len(rows)
+    print(f"\n{n} streets in {len({r['gemeente'] for r in rows})} gemeenten; evidence tiers: " + ", ".join(f"{t}: {c[t]} ({c[t] / n:.1%})" for t in sorted(c)))
+
+
+def status():
+    import geopandas as gpd
+    gems = sorted(set(gpd.read_file(ROOT / "data" / "raw" / "streets.geojson")["gemeente"]))
+    final = json.loads((ROOT / "data" / "enriched" / "streets_final.json").read_text())
+    themes = json.loads((ROOT / "data" / "enriched" / "buurt_themes_full.json").read_text())["buurten"]
+    have_final = {r["gemeente"] for r in final}
+    have_theme = {t["gemeente"] for t in themes}
+    sys.path.insert(0, str(SRC))
+    from enrich_wikidata import missing_street_names
+    miss = missing_street_names(ROOT / "data" / "enriched" / "all_streets_wikidata.jsonl")
+    print(f"acquired: {len(gems)} gemeenten; classified: {len(have_final)}; with themes: {len(have_theme)}")
+    print(f"not classified: {sorted(set(gems) - have_final) or 'none'}; without themes: {sorted(set(gems) - have_theme) or 'none'}")
+    print(f"street names not yet looked up on Wikidata: {len(miss)}")
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("command", choices=["add", "rebuild", "status"])
+    ap.add_argument("gemeenten", nargs="*")
+    ap.add_argument("--skip-wikidata", action="store_true", help="add: do not look names up (e.g. already done in your own shell)")
+    ap.add_argument("--refresh-osm", action="store_true", help="re-fetch the OSM etymology tags (Noord-Brabant-wide)")
+    ap.add_argument("--apply-rules", action="store_true", help="write the rule proposals instead of only checking them")
+    ap.add_argument("--themes", action="store_true", help="rebuild: also derive missing buurt themes")
+    a = ap.parse_args(argv)
+    if a.command == "status":
+        return status()
+    if a.command == "add":
+        if not a.gemeenten:
+            ap.error("add needs at least one gemeente")
+        stage_acquire(a.gemeenten)
+        if not a.skip_wikidata:
+            stage_wikidata(a.gemeenten)
+    if a.command == "add" or a.themes:
+        stage_themes(a.gemeenten)
+    if a.refresh_osm:
+        stage_osm()
+    if a.command == "add" or a.apply_rules:
+        stage_rules(apply=a.apply_rules)
+    stage_outputs()
+
+
+if __name__ == "__main__":
+    main()

@@ -75,7 +75,7 @@ def main():
 
     by_gemeente = defaultdict(lambda: defaultdict(list))
     for t in themes:
-        by_gemeente[t.get("gemeente", "Eindhoven")][t["wijk"]].append(t)
+        by_gemeente[t["gemeente"]][t["wijk"]].append(t)
 
     wijk_rows, tests = [], []
     for gemeente, wijken in sorted(by_gemeente.items()):

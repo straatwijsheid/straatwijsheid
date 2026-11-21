@@ -151,7 +151,7 @@ def main(argv=None):
             pending[o.key] = o
     if a.apply:
         data = json.loads(OVERRIDES.read_text())
-        existing = {(o.get("gemeente", "Eindhoven"), o["street"]): o for o in data["overrides"]}
+        existing = {(o["gemeente"], o["street"]): o for o in data["overrides"]}
         for k, o in pending.items():
             rec = o.record()
             rec["rule"] = o.rule

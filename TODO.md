@@ -117,6 +117,27 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
 - [ ] Hand work does not scale: lean on the candidate table, the rules and the evidence tiers; hand-classify only the residue.
 - [ ] Country-level analysis: themes by province/region, historical layers (merged gemeenten, post-war estates).
 
+## Tech debt: generalise the pipeline (2026-11-21)
+
+**Done** (outputs verified byte-identical: `streets_final.json` unchanged before/after):
+- [x] One orchestrator, `src/pipeline.py add <gemeenten> | rebuild | status`, replacing the hand-run wave wrappers (`acq.sh`, `run4.sh`, `run6.sh`).
+- [x] `enrich_wikidata.py --missing` finds uncached names itself; the 13 per-wave `*_new_streets.txt` lists, `all_streets.txt`, `pilot_sample.txt` are gone.
+- [x] `src/themes.py` (any gemeente, labels in `data/knowledge/theme_labels.json`) replaces the legacy `themes_new.py` with its hard-coded gemeente list; it also filled 3 buurten the legacy run had missed.
+- [x] `acquire.py`: no module globals or hand-grown per-wave lists; any number of gemeenten per call, skips fetched ones, retries; exceptions in `data/knowledge/gemeenten.json`; default is the CBS buurten outline.
+- [x] Pilot (Eindhoven-only) pipeline removed: `reconcile.py` has a single mode; pilot data, logs, `speed_test` deleted; no `"Eindhoven"` defaults left in src.
+- [x] The 29,115 hand-written legacy overrides in `manual_overrides.json` are tagged `rule: legacy_hand` so rule-generated and frozen entries are distinguishable.
+- [x] `tests/test_pipeline.py`; README run instructions and layout updated.
+
+**Remaining debt**
+- [ ] `manual_overrides.json` is still one 31k-entry file. Split into layers (`legacy_hand` frozen, one file per rule, `corrections`), loaded in a fixed order by `reconcile`, so a rule can regenerate its own layer without the remove-then-reapply trick (shared with OSM project, Phase 2).
+- [ ] Buurt themes: 394 hand-written (`claude_reasoning`) + 1,670 derived from street classifications that were themselves shaped by those themes (circular). Decide whether derived themes should be recomputed after rules change (`themes.py --rebuild`) and whether the reconcile feedback loop needs damping.
+- [ ] Early gemeenten (Eindhoven, Helmond, ...) were fetched from the OSM place polygon, the rest from the CBS outline; a re-fetch uses the CBS outline for all and OSM drifts (a Waalre re-fetch showed a few changed street names). Version the raw snapshots (date + checksum) so a refresh shows what changed (see the OSM project).
+- [ ] `osm_etymology.py` and `osm_places.py` query the `NL-NB` area only: parametrise by province or gemeente list so `pipeline.py add` works anywhere in NL.
+- [ ] `build_map.py` is a 525-line script with the HTML in strings and `DEFAULT_GEMEENTE = "Eindhoven"`; split template/data, make the default configurable (and see Scaling: PMTiles).
+- [ ] An end-to-end smoke test on a tiny fixture gemeente (acquire is network-bound: fixture geojson + a canned Wikidata cache), run in CI-style on every change.
+- [ ] The Wikidata cache is a flat JSONL keyed by street name: add `fetched_at` and re-check policy (also in the OSM project, Phase 5).
+- [ ] `scripts/legacy/` (60 scripts) stays as provenance; consider moving it to a git tag/branch once nothing references it.
+
 ## Project: OSM as a connected, refreshable evidence source (raised 2026-11-21)
 
 **Goal.** OSM etymology tags are the strongest evidence we have (human-curated, per street). Today they are a manual one-shot snapshot bolted on after waves 1-6.

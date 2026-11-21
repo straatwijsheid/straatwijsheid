@@ -53,23 +53,22 @@ Requirements: Python 3 in a virtualenv (`.venv/`); install with `python3 -m venv
 repository root.
 
 ```bash
-# add a gemeente (writes data/raw/streets_<slug>.geojson, buurten_<slug>.geojson and rebuilds the combined files)
-.venv/bin/python src/acquire.py "Tilburg"        # names listed in src/acquire.py's MERGED table are fetched from their CBS outline
+# any gemeente(s), end to end (acquire -> Wikidata -> reconcile -> themes -> rules check -> outputs)
+export WIKIDATA_CONTACT="you@example.org"          # a contact for polite, fast Wikidata access; never stored in the repo
+.venv/bin/python src/pipeline.py add Tilburg Breda
+.venv/bin/python src/pipeline.py status             # what is missing at each stage
+.venv/bin/python src/pipeline.py rebuild            # after rules/overrides/knowledge changed: reconcile, analyze, map, CSVs, tier statistics
 
-# look up the new names on Wikidata (resumable; set a contact for polite, fast access, never stored in the repo)
-export WIKIDATA_CONTACT="you@example.org"
-.venv/bin/python src/enrich_wikidata.py data/raw/new_streets.txt all_streets_wikidata.jsonl
-
-# classify: reconcile -> (buurt themes for new gemeenten) -> reconcile again, then rules, analysis, map, CSVs
-.venv/bin/python src/reconcile.py --full
-.venv/bin/python src/rules/run.py --check          # review what each rule proposes; --apply RULE to write it
-.venv/bin/python src/analyze.py
-.venv/bin/python src/build_map.py
-.venv/bin/python src/export_csv.py
+# or stage by stage (each is also what pipeline.py runs)
+.venv/bin/python src/acquire.py "Tilburg"           # street network from the CBS buurten outline + buurten; exceptions in data/knowledge/gemeenten.json
+.venv/bin/python src/enrich_wikidata.py --missing   # every street name in streets.geojson not cached yet (resumable)
+.venv/bin/python src/reconcile.py                   # Wikidata + themes + overrides -> data/enriched/streets_final.json
+.venv/bin/python src/themes.py                      # buurt themes for buurten without one; then reconcile again
+.venv/bin/python src/rules/run.py --check           # review what each rule proposes; --apply RULE to write it
+.venv/bin/python src/analyze.py && .venv/bin/python src/build_map.py && .venv/bin/python src/export_csv.py
 
 # tests
-.venv/bin/python tests/test_tiers.py
-.venv/bin/python tests/test_rules.py
+for t in tests/test_*.py; do .venv/bin/python $t | tail -1; done
 ```
 
 Network notes: Overpass can refuse connections from busy IPs (a VPN endpoint change has fixed it), and Wikidata lookups run at
@@ -78,7 +77,8 @@ roughly 100 names a minute only when `WIKIDATA_CONTACT` is set.
 ## Repository layout
 
 ```
-src/                 acquire.py, enrich_wikidata.py, reconcile.py, analyze.py, build_map.py, export_csv.py, tiers.py
+src/                 pipeline.py (orchestrator), acquire.py, enrich_wikidata.py, reconcile.py, themes.py, analyze.py, build_map.py, export_csv.py, tiers.py,
+                     osm_etymology.py / osm_places.py (OpenStreetMap evidence), names/ (candidate table + resolver)
 src/rules/           tested classification rules (see src/rules/README.md); run.py is the CLI
 data/raw/            street networks and buurt boundaries per gemeente, plus the combined files
 data/enriched/       Wikidata cache, buurt themes, manual_overrides.json, streets_final.json (the result)
@@ -90,7 +90,7 @@ tests/               unit tests for the tiers and the rules
 
 ## Known limits
 
-* Classification depth varies by build wave: wave 3 (the Kempen gemeenten) is the weakest, with about half its streets unidentified.
+* Classification depth varies by gemeente (they were built in waves): the Kempen gemeenten are the weakest, with about half their streets unidentified.
 * About a quarter of the labels that rest on a buurt's theme in the oldest gemeenten (~1.1k streets) look wrong on sampling.
 * Many matches were made from general knowledge and have not been verified against Wikidata or the web (tier 2).
 * The first classification passes were hand-written per gemeente; their results live in `manual_overrides.json`, and the scripts
