@@ -103,6 +103,26 @@ def test_place_review():
     assert "Venlostraat" not in out
 
 
+def test_saint_labels_drop_the_road_word():
+    from rules import labels
+    assert labels.saint_label("Saint Janstraat") == "Saint John"
+    assert labels.saint_label("Saint Catharinaplein") == "Saint Catherine"
+    assert labels.saint_label("Saint Pieterspark") == "Saint Peter"
+    rows = [row("A", "Sint Janstraat", "person", "religious", "Saint Janstraat")]
+    out = labels.repair_saint_labels(ctx(rows))
+    assert len(out) == 1 and out[0].entity_label == "Saint John"
+    assert labels.repair_saint_labels(ctx([row("A", "Sint Janstraat", "person", "religious", "Saint John")])) == []
+
+
+def test_corrections_apply_to_existing_streets_only():
+    from rules import corrections
+    entries = corrections.entries()
+    assert entries and all(e.get("reason") for e in entries)               # every correction says why
+    streets = {(e["gemeente"], e["street"]) for e in entries}
+    rows = [row(g, s, "place", "local_landscape_feature") for g, s in list(streets)[:3]]
+    assert len(corrections.apply(ctx(rows))) == len(rows)                   # ones not present in the data are skipped
+
+
 if __name__ == "__main__":
     fails = 0
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]

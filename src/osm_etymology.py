@@ -172,6 +172,11 @@ def build():
             continue
         rec = per[(g, t["name"])]
         rec["ways"].append(w["id"])
+        rec.setdefault("raw_tags", {})
+        for k in ("name:etymology:wikidata", "name:etymology", "name:etymology:wikipedia", "wikidata"):
+            if t.get(k):
+                rec["raw_tags"].setdefault(k, set()).add(t[k])
+        rec.setdefault("centers", []).append((round(w["center"]["lat"], 5), round(w["center"]["lon"], 5)))
         for q in re.split(r"[;,]\s*", t.get("name:etymology:wikidata", "")):
             if re.fullmatch(r"Q\d+", q.strip()):
                 rec["etymology_qids"].append(q.strip())
@@ -204,7 +209,8 @@ def build():
             cat, sub = classify_entity(e)
             items.append({"qid": q, "label": _label(e), "description": _desc(e), "category": cat, "subcategory": sub})
         out.append({"gemeente": g, "street": s, "via": "name:etymology:wikidata" if named else "wikidata P138" if via_p138 else "text only",
-                    "ways": len(r["ways"]), "items": items, "text": r["text"][:2]})
+                    "ways": len(r["ways"]), "way_ids": r["ways"][:12], "tags": {k: sorted(v) for k, v in r.get("raw_tags", {}).items()},
+                    "center": r["centers"][0] if r.get("centers") else None, "items": items, "text": r["text"][:2]})
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=1))
     c = collections.Counter(o["via"] for o in out)
     print(f"{len(out)} streets with OSM etymology evidence ({dict(c)}) -> {OUT.relative_to(ROOT)}")

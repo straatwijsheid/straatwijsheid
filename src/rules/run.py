@@ -17,13 +17,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from rules import audits, directional, osm, place_review, species, surnames, vocabulary    # noqa: E402
+from rules import audits, corrections, directional, labels, osm, place_review, species, surnames, vocabulary    # noqa: E402
 from rules.base import Context, Override, DATA                                               # noqa: E402
 from tiers import evidence_tier                                                               # noqa: E402
 
 OVERRIDES = DATA / "enriched" / "manual_overrides.json"
 EXCLUSIONS = DATA / "knowledge" / "rule_exclusions.json"
 STRONG = {1, 2}   # tiers that name a specific namesake
+# when several rules are applied together, a later one wins on the same street: reviewed corrections and external evidence last
+PRECEDENCE = ["label_cleanup", "species", "vocabulary", "titles", "directional_road", "bare_surname", "same_name_harmonise", "person_consensus",
+              "theme_forced_name_fit", "wikidata_place_review", "osm_etymology", "corrections"]
 
 
 def rule_directional(ctx):
@@ -54,12 +57,19 @@ def rule_species(ctx):
     return out
 
 
+def rule_corrections(ctx):
+    from osm_etymology import load
+    return corrections.apply(ctx, load())
+
+
 def rule_osm(ctx):
     from osm_etymology import load
     return osm.propose(ctx, load())
 
 
 RULES = {
+    "corrections": (rule_corrections, "reviewed street-level corrections from data/knowledge/corrections.json"),
+    "label_cleanup": (labels.repair_saint_labels, "saint labels that repeat the road word (Saint Janstraat -> Saint John)"),
     "osm_etymology": (rule_osm, "OpenStreetMap name:etymology(:wikidata) -> the namesake, tier 1 (conflicts with our tier 1-2 are left alone)"),
     "directional_road": (rule_directional, "<Place>se<road> streets -> the place they lead to"),
     "vocabulary": (rule_vocabulary, "flowers, trees, birds, composers, painters, saints, science, myth, regions... by name"),
@@ -101,7 +111,7 @@ def main(argv=None):
         for k, (_, d) in RULES.items():
             print(f"{k:24} {d}")
         return 0
-    names = a.rules or list(RULES)
+    names = sorted(a.rules or list(RULES), key=lambda n: PRECEDENCE.index(n) if n in PRECEDENCE else -1)
     unknown = [n for n in names if n not in RULES]
     if unknown:
         sys.exit(f"unknown rule(s): {unknown}; see --list")
