@@ -116,3 +116,10 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
 - [ ] Map delivery: vector tiles (PMTiles) instead of per-gemeente scripts (today 40 MB gzipped, ~1.2 MB initial load).
 - [ ] Hand work does not scale: lean on the candidate table, the rules and the evidence tiers; hand-classify only the residue.
 - [ ] Country-level analysis: themes by province/region, historical layers (merged gemeenten, post-war estates).
+
+## OSM etymology as a first-class, refreshable source (raised 2026-11-21)
+- [ ] Make the OSM etymology fetch part of the standard wave procedure (acquire -> `osm_etymology.py --fetch --build` -> rules --apply osm_etymology), not a manual step. It was added after waves 1-6, so it has only been applied retroactively (one Noord-Brabant-wide query).
+- [ ] Widen the tag net: also read `subject:wikidata`, `name:etymology:wikipedia` (partly done), non-`highway` named ways (squares, pedestrian areas as relations), and streets whose ways are only named on relations.
+- [ ] Change detection: store `fetched_at` plus, per way, id + version + hash of the etymology tags; on re-fetch write a changelog (tagged, changed, removed) to `OSM_CHANGES.md`. Cheap incremental option: Overpass `(newer:"<last fetch>")` on the tag-filtered query, merged into the snapshot, plus a full monthly re-fetch to catch removals. Heavier option: Geofabrik/replication diffs.
+- [ ] Wikidata side: cache items with `lastrevid`; re-check changed items (the entity cache never expires today).
+- [ ] After each refresh re-run the OSM rules, rebuild and report tier changes (like today's Philipsweg/Frederiklaan).
