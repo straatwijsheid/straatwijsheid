@@ -10,9 +10,9 @@ from names import candidates as C, resolve as R      # noqa: E402
 from rules.base import Context                          # noqa: E402
 
 
-def row(g, s, cat, sub=None, label=None, source="claude_knowledge"):
+def row(g, s, cat, sub=None, label=None, source="claude_knowledge", notes=None):
     return {"gemeente": g, "street": s, "category": cat, "subcategory": sub, "entity_label": label, "entity_description": None,
-            "confidence": 0.5, "source": source, "notes": None}
+            "confidence": 0.5, "source": source, "notes": notes}
 
 
 def ctx_of(rows, buurt_of, wijk_of=None):
@@ -92,6 +92,42 @@ def test_adjacency_themes_and_context():
     themes = A.themes(adj, kinds, min_size=4)
     assert len(themes) == 1 and len(themes[0][1]) == 4                 # four connected same-kind streets form a theme; E is not part of it
     assert A.themes(adj, kinds, min_size=5) == []
+
+
+def _world(extra):
+    rows, buurt = [], {}
+    def add(r):
+        rows.append(r); buurt[(r["gemeente"], r["street"])] = "b" + r["gemeente"]
+    for g in "ABCD":
+        add(row(g, "Hendrikstraat", "person", "monarch_statesman", "Prince Hendrik"))
+        add(row(g, "Brouwersstraat", "thing", "occupation_guild", "Brewer"))
+        add(row(g, "Bakkerslaan", "thing", "occupation_guild", "Baker"))
+    for r in extra:
+        add(r)
+    return ctx_of(rows, buurt)
+
+
+def test_propose_person_kind_only_and_skips_reviewed():
+    from names import propose
+    rows = [row("N", "Hendrikstraat", "place", "local_landscape_feature"),
+            row("N", "Brouwersstraat", "place", "local_landscape_feature", notes="Ordinary Dutch word, not a surname"),   # reviewed: leave alone
+            row("N", "Bakkerslaan", "place", "local_landscape_feature")]
+    ctx = _world(rows)
+    table = C.build_table(ctx, rules=False)
+    got = {o.street: o for o, _ in propose.evaluate(ctx, table, min_score=0.3, min_margin=0.1) if o.gemeente == "N"}
+    assert "Brouwersstraat" not in got                                   # a deliberately reviewed street is never overridden
+    assert got["Hendrikstraat"].category == "person" and got["Hendrikstraat"].entity_label is None   # a shared first name: kind only
+    assert got["Bakkerslaan"].subcategory == "occupation_guild"
+
+
+def test_propose_refuses_wikidata_only_place_guesses():
+    from names import propose
+    rows = [row("N", "Zandveld", "place", "local_landscape_feature")]
+    ctx = _world(rows)
+    table = C.build_table(ctx, rules=False)
+    table[C.name_key("Zandveld")].cand(("place", "village")).wikidata.append(("strong", "Zandveld", "village in Gelderland"))   # Wikidata alone
+    got = [o for o, _ in propose.evaluate(ctx, table, min_score=0.1, min_margin=0.0) if o.street == "Zandveld"]
+    assert got == []
 
 
 if __name__ == "__main__":

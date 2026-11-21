@@ -63,7 +63,14 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
       streets are overwhelmingly generic field/farm/hamlet names (a 90-street sample: ~7% identifiable), and the share of tier-3-5
       streets the resolver would now name or re-kind is ~10% in *every* wave (wave 3: 227 of 1.3k; wave 6: 341 of 2.0k). Same-name
       propagation, rules and OSM already carried most of the wave 4-6 vocabulary back. Plan instead:
-      - [ ] Review and apply the resolver's `--propose` output for all waves (~1.9k streets tier 3-5 would change; tune `ACCEPT_*` first).
+      - [x] Resolver proposals reviewed and applied (`src/names/propose.py`, rule `name_resolver`): raw 2,725 accepted changes -> 1,183 after
+            dropping reviewed streets, vague kinds, synonym shuffles and downgrades -> 355 after the evidence rules (no Wikidata-only
+            places, no buurt-name "towns", persons as kind only unless OSM/famous-people/vocabulary backs a name) at score >= 0.45, margin >= 0.20;
+            353 applied (2 excluded). A 100-street sample of the 1,183 was ~85% right; the 70-street sample of the final 355 ~90%.
+      - [ ] **Declined resolver proposals (~830 streets)**, mostly place readings of ordinary words resting on Wikidata alone ('village',
+            'mountain', 'human settlement' for Zwartven, Windberg, Burenstraat...) and buurt/wijk names matched as 'towns'. Revisit with independent
+            evidence (OSM `place=*` nodes/areas by name and location; coordinates from Wikidata) rather than lowering thresholds.
+      - [ ] Person streets (about 400 of the declined) get a kind but no name unless backed; a name-level review of shared first names (Hendrik, Willem, Maurits...) could add namesakes via the buurt.
       - [ ] Spot-check 60 streets per wave 1-3 against Wikidata/web search to confirm the residue really is unidentifiable.
       - [ ] Only if that finds a systematic gap in a buurt theme: a targeted vocabulary pass for that theme, not a full redo.
       - [ ] Note: OSM etymology tags are concentrated in the early gemeenten (1,305 of 1,731 streets), so OSM cannot yet audit waves 3-6

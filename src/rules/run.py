@@ -26,7 +26,7 @@ EXCLUSIONS = DATA / "knowledge" / "rule_exclusions.json"
 STRONG = {1, 2}   # tiers that name a specific namesake
 # when several rules are applied together, a later one wins on the same street: reviewed corrections and external evidence last
 PRECEDENCE = ["label_cleanup", "species", "vocabulary", "titles", "directional_road", "bare_surname", "same_name_harmonise", "person_consensus",
-              "theme_forced_name_fit", "wikidata_place_review", "osm_etymology", "corrections"]
+              "theme_forced_name_fit", "wikidata_place_review", "name_resolver", "osm_etymology", "corrections"]
 
 
 def rule_directional(ctx):
@@ -57,6 +57,13 @@ def rule_species(ctx):
     return out
 
 
+def rule_name_resolver(ctx):
+    from names import candidates as C, propose
+    from osm_etymology import load as load_osm
+    table = C.build_table(ctx, C.load_wikidata_records(), osm=load_osm())
+    return [o for o, _ in propose.evaluate(ctx, table)]
+
+
 def rule_corrections(ctx):
     from osm_etymology import load
     return corrections.apply(ctx, load())
@@ -68,6 +75,7 @@ def rule_osm(ctx):
 
 
 RULES = {
+    "name_resolver": (rule_name_resolver, "name-level resolver: kinds (and backed names) for streets at tiers 3-5, reviewed-safe changes only"),
     "corrections": (rule_corrections, "reviewed street-level corrections from data/knowledge/corrections.json"),
     "label_cleanup": (labels.repair_saint_labels, "saint labels that repeat the road word (Saint Janstraat -> Saint John)"),
     "osm_etymology": (rule_osm, "OpenStreetMap name:etymology(:wikidata) -> the namesake, tier 1 (conflicts with our tier 1-2 are left alone)"),
