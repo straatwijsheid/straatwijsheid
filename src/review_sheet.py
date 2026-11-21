@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main(gemeenten):
+    notes = json.loads((ROOT / "data" / "knowledge" / "review_notes.json").read_text())
     rows = json.loads((ROOT / "data" / "enriched" / "streets_final.json").read_text())
     by = collections.defaultdict(list)
     for r in rows:
@@ -27,9 +28,15 @@ def main(gemeenten):
     for (g, b), items in sorted(by.items(), key=lambda kv: (-len(kv[1]), kv[0])):
         theme = items[0].get("buurt_theme") or "(none)"
         print(f"## {b} ({g}): {len(items)} streets\n*Buurt theme detected:* {theme}\n")
-        print("| Street | We read it as | Tier | Your answer |\n|---|---|---|---|")
+        print("| Street | We read it as | Tier | Our note | Your answer |\n|---|---|---|---|---|")
         for r in sorted(items, key=lambda r: r["street"]):
-            print(f"| {r['street']} | {(r.get('subcategory') or 'person').replace('_', ' ')} | {r['evidence_tier']} | |")
+            print(f"| {r['street']} | {(r.get('subcategory') or 'person').replace('_', ' ')} | {r['evidence_tier']} | {notes['notes'].get(g + '|' + r['street'], '')} | |")
+        print()
+    extra = [x for x in notes.get("extra", []) if x["gemeente"] in gemeenten]
+    if extra:
+        print("## Further checks: already labelled, but they look wrong\n\n| Street | Buurt | Question | Your answer |\n|---|---|---|---|")
+        for x in extra:
+            print(f"| {x['street']} | {x['buurt']} | {x['question']} | |")
         print()
 
 

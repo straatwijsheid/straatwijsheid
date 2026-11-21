@@ -25,7 +25,7 @@ def apply(ctx: Context, osm_records: list | None = None) -> list[Override]:
         key = (e["gemeente"], e["street"])
         if key not in ctx.rows:
             continue
-        label, desc, source, url = e.get("entity_label"), e.get("entity_description"), "claude_knowledge", None
+        label, desc, source, url = e.get("entity_label"), e.get("entity_description"), "claude_knowledge", e.get("source_url")
         if e.get("from_osm") and key in osm:
             item = next((i for i in osm[key]["items"] if i.get("label")), None)
             if item:

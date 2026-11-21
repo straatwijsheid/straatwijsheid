@@ -146,7 +146,7 @@ def main(argv=None):
             print("   ", e)
         for o in proposals:
             cur = ctx.rows.get(o.key)
-            if cur is not None and not a.force and evidence_tier(cur) == 1 and n != "wikidata_place_review":
+            if cur is not None and not a.force and evidence_tier(cur) == 1 and n not in ("wikidata_place_review", "corrections", "osm_etymology"):
                 continue
             pending[o.key] = o
     if a.apply:

@@ -43,16 +43,18 @@ def rec(g, s, cat, sub, label, qid="Q1"):
 def test_pairing_and_rule():
     rows = [row("A", "Zzstraat", "place", "local_landscape_feature"),                          # tier 5 -> new information
             row("A", "Vermeerstraat", "person", "artist_visual", None),                         # tier 3, agrees -> named
-            row("A", "Rembrandtlaan", "person", "artist_visual", "Rembrandt", source="wikidata"),  # tier 1 agrees -> nothing to do
+            row("A", "Rembrandtlaan", "person", "artist_visual", "Rembrandt van Rijn", source="wikidata"),  # tier 1 agrees -> nothing to do
+            row("A", "Frederiklaan", "person", "musician_composer", "Frederik", source="wikidata"),     # tier 1 but a bare first name vs the OSM item -> OSM wins
             row("A", "Clashlaan", "person", "artist_visual", "Someone")]                        # tier 2 vs a place -> conflict
     recs = [rec("A", "Zzstraat", "person", "writer_poet", "Some Writer"), rec("A", "Vermeerstraat", "person", "artist_visual", "Johannes Vermeer"),
-            rec("A", "Rembrandtlaan", "person", "artist_visual", "Rembrandt van Rijn"), rec("A", "Clashlaan", "place", "dutch_town", "Clash")]
+            rec("A", "Rembrandtlaan", "person", "artist_visual", "Rembrandt van Rijn"), rec("A", "Clashlaan", "place", "dutch_town", "Clash"), rec("A", "Frederiklaan", "person", "industrialist", "Frederik Philips", "Q1453131")]
     ctx = _ctx(rows)
     assert classify_pair(ctx.rows[("A", "Clashlaan")], recs[3])[0] == "conflict"
     out = {o.street: o for o in osm.propose(ctx, recs)}
-    assert set(out) == {"Zzstraat", "Vermeerstraat"}                      # tier-1 agreement and the conflict are left alone
+    assert set(out) == {"Zzstraat", "Vermeerstraat", "Frederiklaan"}                      # tier-1 agreement and the conflict are left alone
     assert out["Vermeerstraat"].source == "osm_etymology" and out["Vermeerstraat"].entity_label == "Johannes Vermeer"
     assert out["Zzstraat"].category == "person"
+    assert out["Frederiklaan"].entity_label == "Frederik Philips" and out["Frederiklaan"].subcategory == "industrialist"
 
 
 def test_label_agreement():

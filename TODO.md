@@ -77,6 +77,7 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
             own hamlet", not "town"/"village": so the declined town/village guesses stay declined.
       - [x] **Policy decided (user)**: streets named after their own neighbourhood/hamlet are `place / local name` (no separate subcategory).
       - [ ] Remaining declined place readings (~270 with no nearby OSM feature): Wikidata-only settlements; leave as they are unless the local review sheet says otherwise.
+      - [x] Eindhoven review round 1 (user answered 12): applied 10 (Anthing, Boreel, Kolfschoten, Smits van Oyen, Ouborg, Annastraat as tier 2 with sources; Glaslaan, Luchthavenweg, Kaneelstraat, Tilburgseweg-West as kinds); Bentinck and Boosten kept open with notes. New checks added: Philipsdorp Frederiklaan/Henriëttestraat (Wikidata matches look wrong) and Hubertastraat. Notes live in `data/knowledge/review_notes.json`.
       - [ ] **Local-knowledge review**: `REVIEW_EINDHOVEN.md` (`python src/review_sheet.py <gemeente>...`): 168 Eindhoven person streets with no namesake, by buurt.
             Answers go into `corrections.json` / buurt themes. Extend to Helmond, Veldhoven, Geldrop-Mierlo, Nuenen, Son en Breugel on request.
             Check: the Generalenbuurt theme is labelled "Allied/Dutch WWII generals"; the streets look like 18th-19th c. Dutch generals instead.
