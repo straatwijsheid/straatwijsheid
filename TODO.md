@@ -117,9 +117,48 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
 - [ ] Hand work does not scale: lean on the candidate table, the rules and the evidence tiers; hand-classify only the residue.
 - [ ] Country-level analysis: themes by province/region, historical layers (merged gemeenten, post-war estates).
 
-## OSM etymology as a first-class, refreshable source (raised 2026-11-21)
-- [ ] Make the OSM etymology fetch part of the standard wave procedure (acquire -> `osm_etymology.py --fetch --build` -> rules --apply osm_etymology), not a manual step. It was added after waves 1-6, so it has only been applied retroactively (one Noord-Brabant-wide query).
-- [ ] Widen the tag net: also read `subject:wikidata`, `name:etymology:wikipedia` (partly done), non-`highway` named ways (squares, pedestrian areas as relations), and streets whose ways are only named on relations.
-- [ ] Change detection: store `fetched_at` plus, per way, id + version + hash of the etymology tags; on re-fetch write a changelog (tagged, changed, removed) to `OSM_CHANGES.md`. Cheap incremental option: Overpass `(newer:"<last fetch>")` on the tag-filtered query, merged into the snapshot, plus a full monthly re-fetch to catch removals. Heavier option: Geofabrik/replication diffs.
-- [ ] Wikidata side: cache items with `lastrevid`; re-check changed items (the entity cache never expires today).
-- [ ] After each refresh re-run the OSM rules, rebuild and report tier changes (like today's Philipsweg/Frederiklaan).
+## Project: OSM as a connected, refreshable evidence source (raised 2026-11-21)
+
+**Goal.** OSM etymology tags are the strongest evidence we have (human-curated, per street). Today they are a manual one-shot snapshot bolted on after waves 1-6.
+Make them a first-class, versioned part of the pipeline, so we always know what OSM says, when it changed, and what that did to our tiers, and so the same
+machinery serves the NL-wide scale-up and the user's edits flowing back to OSM. **Do these as one connected effort, in this order; each phase builds on the previous.**
+Related open items elsewhere: OSM follow-ups and OSM fix list (Quality section), OSM upload tooling, Coverage check, Scaling to the Netherlands, Pipeline guide.
+
+**Why now (findings)**
+- Etymology was added after the waves, so it was applied retroactively with one Noord-Brabant query; `acquire.py` and the Wikidata enrichment never touch it.
+- Only 1,733 of 38,090 streets (4.5%) carry any etymology tag, concentrated in early gemeenten; waves 3-6 have 14-85 tagged streets each.
+- The rule ignored OSM on tier-1 streets until today; 27 wrong tier-1 Wikidata matches (Hugo de Groot, Mendelssohnlaan, Paul Kruger...) surfaced only through an accident (Frederiklaan).
+- No record of *when* a tag appeared or changed (the user's Philipsweg / Anton Philipsweg edits were discovered by manual re-fetch).
+
+**Phase 1: snapshot with history (foundation; everything else depends on it)**
+- [ ] Snapshot format: `data/raw/osm_etymology_ways.json` gains `fetched_at`; per way store id, version, timestamp, and a hash of its etymology-relevant tags.
+- [ ] On each fetch, diff against the previous snapshot and write `OSM_CHANGES.md` (tagged / changed / removed ways, grouped by street and gemeente) and a machine-readable `data/enriched/osm_changes.jsonl`.
+- [ ] `osm_etymology.py --refresh` = fetch + diff + build + changelog in one command; keep the previous snapshot (dated) so diffs are repeatable.
+- [ ] Verify against known edits: Philipsweg (Q170416, 4 of 16 ways), Doctor Anton Philipsweg (7210536, 268417255), Frederiklaan should all show up as changes.
+
+**Phase 2: connect it to the rules and the build**
+- [ ] After a refresh, one command re-applies the OSM-dependent rules (`osm_etymology`, `corrections` from_osm, `osm_places`), rebuilds (reconcile --full, analyze, map, CSV) and prints a tier-change report (streets that gained/lost tier 1, label changes).
+- [ ] Make overrides from rule-generated sources idempotent/regenerable: re-running a rule must not leave stale entries (today removing `rule: osm_etymology` entries and re-applying is a manual trick; see the 2026-11-21 near-loss of ~680 overrides).
+- [ ] Keep OSM-wins-on-conflict logic (rules/osm.py) covered by tests; extend to relation/area cases once Phase 3 lands.
+
+**Phase 3: widen what we read**
+- [ ] Also read `subject:wikidata`, `name:etymology:wikipedia` fully, `name:etymology` free text (40 text-only streets: surface as hints), and named non-`highway` features (pedestrian areas, squares as areas/relations, `place=square`).
+- [ ] Map more OSM/Wikidata items to kinds (228 unmapped items: Holy Trinity, ranks, border...); keep `data/knowledge/osm_entity_kinds.json` as the reviewed override table.
+- [ ] Coverage check (Cranendonck 59 of 477 named OSM highways not in our street list): decide whether OSM is the street list source or only evidence.
+
+**Phase 4: make it part of every wave and of the NL scale-up**
+- [ ] Wave procedure: acquire -> OSM etymology fetch/refresh -> Wikidata lookup -> reconcile -> rules (OSM first) -> report. New gemeenten are seeded with OSM-tagged streets before the resolver runs, and OSM-tagged streets in each wave become its evaluation set.
+- [ ] Per-province/gemeente fetch (Overpass is fine for Noord-Brabant; for all of NL use Geofabrik extracts or replication diffs instead of area queries).
+
+**Phase 5: keep it current**
+- [ ] Scheduled refresh (e.g. weekly): incremental Overpass `(newer:"<last fetch>")` on the tag-filtered query merged into the snapshot, plus a monthly full re-fetch to catch removals; Phase 1 diff then reports what changed.
+- [ ] Wikidata side: store each cached item's `lastrevid`; re-check items that changed (label, "named after", instance of), since OSM tags only point at items and the cache never expires today.
+- [ ] Notify: a short summary after each refresh (new tier-1 streets, changed namesakes, ways that now conflict with our readings).
+
+**Phase 6: the return flow to OSM (user's edits)**
+- [ ] Phase 1's changelog confirms which suggested edits landed (`OSM_FIXES.md` sections A-C shrink automatically).
+- [ ] Upload tooling per OSM's automated-edit rules (see the OSM upload tooling item): JOSM/MapRoulette task export of confident additions and fixes, small reviewed batches per gemeente, per-batch changeset comments; builds on the suggestion lists (`osm_suggestions.json`, `OSM_FIXES.md`).
+
+**Open decisions (user)**
+- Weekly vs monthly refresh cadence, and whether to automate it (scheduled task) or run by hand.
+- Whether OSM may be our street list for new gemeenten, or only evidence on top of the CBS/PDOK-based list.
