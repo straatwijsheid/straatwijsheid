@@ -26,7 +26,7 @@ EXCLUSIONS = DATA / "knowledge" / "rule_exclusions.json"
 STRONG = {1, 2}   # tiers that name a specific namesake
 # when several rules are applied together, a later one wins on the same street: reviewed corrections and external evidence last
 PRECEDENCE = ["label_cleanup", "species", "vocabulary", "titles", "directional_road", "bare_surname", "same_name_harmonise", "person_consensus",
-              "theme_forced_name_fit", "wikidata_place_review", "name_resolver", "osm_etymology", "corrections"]
+              "theme_forced_name_fit", "wikidata_place_review", "name_resolver", "osm_places", "osm_etymology", "corrections"]
 
 
 def rule_directional(ctx):
@@ -74,7 +74,13 @@ def rule_osm(ctx):
     return osm.propose(ctx, load())
 
 
+def rule_osm_places(ctx):
+    from rules import osm_places
+    return osm_places.propose(ctx)
+
+
 RULES = {
+    "osm_places": (rule_osm_places, "street named like a hamlet/neighbourhood/stream/lake/park within 1 km (OSM) -> place / local name, tier 2"),
     "name_resolver": (rule_name_resolver, "name-level resolver: kinds (and backed names) for streets at tiers 3-5, reviewed-safe changes only"),
     "corrections": (rule_corrections, "reviewed street-level corrections from data/knowledge/corrections.json"),
     "label_cleanup": (labels.repair_saint_labels, "saint labels that repeat the road word (Saint Janstraat -> Saint John)"),

@@ -36,9 +36,15 @@ def _spec(sub):
     return 0 if sub is None else 1 if sub in VAGUE else 2
 
 
-def evaluate(ctx: Context, table: dict, idx: R.ContextIndex | None = None, min_score=MIN_SCORE, min_margin=MIN_MARGIN) -> list[tuple[Override, dict]]:
+def evaluate(ctx: Context, table: dict, idx: R.ContextIndex | None = None, min_score=MIN_SCORE, min_margin=MIN_MARGIN,
+             declined: list | None = None) -> list[tuple[Override, dict]]:
+    """`declined`, if given, collects (row, reason, resolver result) for accepted resolver changes this filter drops."""
     idx = idx or R.ContextIndex(ctx)
     out = []
+
+    def no(row, reason, res, cur=None, new=None):
+        if declined is not None:
+            declined.append({"row": row, "reason": reason, "res": res, "cur": cur, "new": new})
     for row in ctx.final:
         tier = evidence_tier(row)
         if tier < 3 or any(k in (row.get("notes") or "") for k in REVIEWED):
@@ -58,25 +64,25 @@ def evaluate(ctx: Context, table: dict, idx: R.ContextIndex | None = None, min_s
         observed = sum(1 for g, s, t, _ in cand.occurrences if (g, s) != own and t <= 3)
         # --- vague / synonym / downgrade ---
         if new[1] in VAGUE and not (cur[1] in VAGUE and res.label):
-            continue
+            no(row, "vague kind", res, cur, new); continue
         if cur[0] == "place" and new[0] == "place" and cur[1] in LOCAL and new[1] in LOCAL:
-            continue
+            no(row, "local shuffle", res, cur, new); continue
         if _spec(new[1]) < _spec(cur[1]) or (cur[0] == "thing" and cur[1] in ("technology_term", "architecture_term") and new[0] == "place"):
-            continue
+            no(row, "downgrade", res, cur, new); continue
         # --- evidence must not be Wikidata alone ---
         if not (osm_any or rules - {"place_name"} or observed >= 2):
-            continue
+            no(row, "wikidata only", res, cur, new); continue
         # --- places ---
         label = res.label
         if new[0] == "place" and new[1] != LOCAL[0]:
             directional = bool(DIRECTIONAL.search(row["street"])) or "directional_road" in rules
             already = cur == new                                   # a river that is a river: adds the name
             if new[1] in PLACE_GUESSES and not (directional or osm_own or already):
-                continue
+                no(row, "place guess", res, cur, new); continue
             if new[1] == "river" and not (already or osm_own or directional):
-                continue
+                no(row, "river guess", res, cur, new); continue
             if rules == {"place_name"}:
-                continue
+                no(row, "place name only", res, cur, new); continue
         # --- persons: kind only unless a name is backed ---
         if new[0] == "person" and not (osm_own or (rules & LABEL_RULES)):
             label = None

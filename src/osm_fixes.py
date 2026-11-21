@@ -65,6 +65,47 @@ def search_candidates(name: str, town: str, cache: dict) -> list:
     return out if ok else None            # None = lookup failed (rate limit), distinct from [] = searched, nothing found
 
 
+def missing_etymology(area) -> list:
+    """Section C: ways of streets with a confidently known namesake that still lack name:etymology:wikidata (re-read from OSM now)."""
+    import geopandas as gpd
+    from shapely.geometry import Point
+    sug = json.loads((ROOT / "data" / "knowledge" / "osm_suggestions.json").read_text())["suggestions"]
+    names = "|".join(re.escape(x["street"]) for x in sug)
+    q = f'[out:json][timeout:90];area["ISO3166-2"="NL-NB"]->.a;way(area.a)["name"~"^({names})$"]["highway"];out tags center meta;'
+    els = None
+    for attempt in range(6):
+        try:
+            r = requests.post("https://overpass-api.de/api/interpreter", data={"data": q}, headers=UA, timeout=120)
+            r.raise_for_status()
+            els = r.json()["elements"]
+            break
+        except Exception as e:                                       # noqa: BLE001
+            print("overpass retry", str(e)[:50])
+            time.sleep(8)
+    lines = ["", "## C. Missing `name:etymology:wikidata` (suggested additions)", "",
+             "Streets where we are confident of the namesake but the ways carry no etymology tag (read from OSM when this file was generated).", ""]
+    if els is None:
+        return lines + ["(Overpass unreachable when generated; re-run `python src/osm_fixes.py`.)", ""]
+    pts = gpd.GeoDataFrame({"i": range(len(els))}, geometry=[Point(e["center"]["lon"], e["center"]["lat"]) for e in els], crs="EPSG:4326")
+    gem_of = dict(zip(*[gpd.sjoin(pts, area, how="left", predicate="within")[c] for c in ("i", "gemeente")]))
+    for x in sug:
+        mine = [(i, e) for i, e in enumerate(els) if e["tags"]["name"] == x["street"] and gem_of.get(i) == x["gemeente"]]
+        todo = [e for _, e in mine if x["qid"] not in e["tags"].get("name:etymology:wikidata", "")]
+        done = [e for _, e in mine if x["qid"] in e["tags"].get("name:etymology:wikidata", "")]
+        lines.append(f"### {x['street']}, gemeente {x['gemeente']}")
+        lines.append(f"- **What is missing:** `name:etymology:wikidata`. **More correct:** `name:etymology:wikidata=[{x['qid']}](https://www.wikidata.org/wiki/{x['qid']})` ({x['label']}). Why: {x['reason']}")
+        lines.append(f"- **Already tagged ({len(done)}):** " + (", ".join(f"[{e['id']}](https://www.openstreetmap.org/way/{e['id']})" for e in done) or "none"))
+        lines.append(f"- **Still to tag ({len(todo)}):** " + (", ".join(f"[{e['id']}](https://www.openstreetmap.org/way/{e['id']}) ({e['tags'].get('highway')}, ~{round(e['center']['lat'], 4)}, {round(e['center']['lon'], 4)})" for e in sorted(todo, key=lambda e: e['id'])) or "none"))
+        lines.append("")
+    for x in json.loads((ROOT / "data" / "knowledge" / "osm_suggestions.json").read_text()).get("other_ways", []):
+        lines.append(f"### {x['street']}, {x['where']}")
+        lines.append(f"- **More correct:** `name:etymology:wikidata=[{x['qid']}](https://www.wikidata.org/wiki/{x['qid']})` ({x['label']}). Why: {x['reason']}")
+        lines.append("- **Already tagged:** " + ", ".join(f"[{w}](https://www.openstreetmap.org/way/{w})" for w in x["tagged"]))
+        lines.append("- **Still to tag:** " + ", ".join(f"[{w}](https://www.openstreetmap.org/way/{w})" for w in x["todo"]))
+        lines.append("")
+    return lines
+
+
 def main():
     ways = json.loads(WAYS.read_text())
     ents = json.loads(ENTS.read_text())
@@ -129,6 +170,7 @@ def main():
                 fix = "no street item found by name; if none exists, remove the `wikidata` tag (or create the Wikidata item)"
             lines.append(f"- **{name}**, gemeente {gname} (~{L[0]['lat']}, {L[0]['lon']}); way(s) {ways_txt}.\n  - *Wrong:* tagged `wikidata={q}`, the item for \"{lab}\" ({L[0]['item_desc'][:55]}), a different street.\n  - *More correct:* {fix}.")
         lines.append("")
+    lines += missing_etymology(area)
     OUT.write_text("\n".join(lines) + "\n")
     print(f"wrote {OUT.relative_to(ROOT)}: {len(A)} ways with a mismatching wikidata tag ({len({a['name'] for a in A})} names)")
 

@@ -59,3 +59,7 @@ dominant context (weights 0.6 adjacent / 0.3 buurt / 0.1 wijk).
 Leave-one-out backtest, 4,000 streets: as a context on its own the adjacent streets beat the buurt (kind 77.4% vs 74.7%, answers 47% vs 33% of
 streets); combined with the name, kind 81.5% vs 81.2% and 81.0% vs 78.4% accepted at the same precision (~91%). The gain is modest because
 the name's own prior carries most streets; it should matter most for ambiguous names and for new gemeenten.
+
+
+## Declined proposals
+`propose.evaluate(ctx, table, declined=[])` collects every accepted resolver change that the reviewed-safe filter drops, with the reason (`vague kind`, `local shuffle`, `wikidata only`, `place guess`, `river guess`...). Independent evidence for place readings comes from OSM places (`src/osm_places.py`, rule `osm_places`).

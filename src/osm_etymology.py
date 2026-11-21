@@ -58,6 +58,9 @@ PLACE_WORDS = re.compile(r"\b(commune|municipality|town|city|province|region|isl
 BIO_WORDS = re.compile(r"\b(species|genus|bird|insect|fish|mammal|plant|flower|tree|butterfly|dragonfly|beetle|fungus|shrub|herb|taxon)\b", re.I)
 
 
+KINDS = {k: v for k, v in json.loads((ROOT / "data" / "knowledge" / "osm_entity_kinds.json").read_text()).items() if not k.startswith("_")}
+
+
 def classify_entity(ent: dict) -> tuple[str | None, str | None]:
     """(category, subcategory) for a Wikidata entity as returned by wbgetentities, or (None, None) if we cannot tell."""
     claims = ent.get("claims", {})
@@ -207,6 +210,8 @@ def build():
         for q in qids:
             e = ents.get(q, {})
             cat, sub = classify_entity(e)
+            if q in KINDS:
+                cat, sub = KINDS[q][0], KINDS[q][1]
             items.append({"qid": q, "label": _label(e), "description": _desc(e), "category": cat, "subcategory": sub})
         out.append({"gemeente": g, "street": s, "via": "name:etymology:wikidata" if named else "wikidata P138" if via_p138 else "text only",
                     "ways": len(r["ways"]), "way_ids": r["ways"][:12], "tags": {k: sorted(v) for k, v in r.get("raw_tags", {}).items()},

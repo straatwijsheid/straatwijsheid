@@ -70,6 +70,24 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
       - [ ] **Declined resolver proposals (~830 streets)**, mostly place readings of ordinary words resting on Wikidata alone ('village',
             'mountain', 'human settlement' for Zwartven, Windberg, Burenstraat...) and buurt/wijk names matched as 'towns'. Revisit with independent
             evidence (OSM `place=*` nodes/areas by name and location; coordinates from Wikidata) rather than lowering thresholds.
+      - [x] **Independent-evidence pass done (2026-11-21)**: `src/osm_places.py --fetch` (12.7k named OSM places/water/parks/reserves in Noord-Brabant)
+            + rule `osm_places`: a street named like a hamlet/neighbourhood/stream/lake/park within 1 km is `place / local name` (rivers and lakes
+            get their kind), tier 2. 750 streets applied (660 were tier 5, 90 had a wrong person/thing kind); tier 5 fell 14.5k -> 13.8k (36.3%),
+            tier 2 now 35.0%. Of the 375 declined place readings only ~100 had a nearby feature at all, and those mostly confirmed "named after its
+            own hamlet", not "town"/"village": so the declined town/village guesses stay declined.
+      - [x] **Policy decided (user)**: streets named after their own neighbourhood/hamlet are `place / local name` (no separate subcategory).
+      - [ ] Remaining declined place readings (~270 with no nearby OSM feature): Wikidata-only settlements; leave as they are unless the local review sheet says otherwise.
+      - [ ] **Local-knowledge review**: `REVIEW_EINDHOVEN.md` (`python src/review_sheet.py <gemeente>...`): 168 Eindhoven person streets with no namesake, by buurt.
+            Answers go into `corrections.json` / buurt themes. Extend to Helmond, Veldhoven, Geldrop-Mierlo, Nuenen, Son en Breugel on request.
+            Check: the Generalenbuurt theme is labelled "Allied/Dutch WWII generals"; the streets look like 18th-19th c. Dutch generals instead.
+      - [ ] **OSM upload tooling (user, later)**: how to play by OSM's rules (no mass edits without the import/automated-edit procedure; per-edit
+            changeset comments, sources, own account) while avoiding one-at-a-time edits: e.g. a JOSM-ready `.osc`/MapRoulette challenge or
+            Overpass-turbo-assisted bulk-select per gemeente, small reviewed batches, `source=` + changeset discussion. Design with the user.
+      - [ ] **Coverage check**: for Cranendonck, 59 of 477 named OSM highways (12%) are not in `streets.geojson` (mostly paths/tracks, but also
+            Albert Plesmanstraat, Eindhovenseweg, Havenweg, Dennenlaan, Pastoor Thijssenlaan). Find out why (network filter? CBS outline?) and measure it for
+            other gemeenten before scaling.
+      - [ ] OSM additions: `data/knowledge/osm_suggestions.json` + OSM_FIXES.md section C. Philipsweg (Cranendonck): 15 ways to tag; Doctor Anton
+            Philipsweg: 4 of 16 ways tagged so far, 12 to go; Doctor Anton Philipsweg, Tilburg (7210536) now tagged; 6 ways at Maarheeze still to tag. Re-fetch 2026-11-21 moved both streets to tier 1 (`data/knowledge/osm_entity_kinds.json` fixes the kind for Q592767 / Q170416). Re-fetch again (`osm_etymology.py --fetch --build`, then rules --apply osm_etymology, rebuild) after more edits.
       - [ ] Person streets (about 400 of the declined) get a kind but no name unless backed; a name-level review of shared first names (Hendrik, Willem, Maurits...) could add namesakes via the buurt.
       - [ ] Spot-check 60 streets per wave 1-3 against Wikidata/web search to confirm the residue really is unidentifiable.
       - [ ] Only if that finds a systematic gap in a buurt theme: a targeted vocabulary pass for that theme, not a full redo.
