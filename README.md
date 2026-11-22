@@ -9,7 +9,7 @@ Current coverage: **all of Noord-Brabant, 59 gemeenten and about 44,600 named st
 The long-term goal is the whole of the Netherlands, and a steadily growing share of streets we can actually identify.
 Open work is tracked in the [issue tracker](https://github.com/straatwijsheid/straatwijsheid/issues).
 
-**Live map: <https://straatwijsheid.github.io/straatwijsheid/>**
+**Live map: <https://maps.straatwijsheid.nl/>**
 
 ## Documentation
 
