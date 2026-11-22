@@ -9,7 +9,7 @@ pipeline.py rebuild  ->  package_map.py  ->  release asset  ->  "publish map" wo
 ## One-time setup
 
 1. **Pages needs a public repository on a free plan.** Both repositories are public, so Pages is available. (GitHub Pages is not available for private repositories on the free plan.)
-2. **Enable Pages with GitHub Actions as the source:** the repository's Settings, Pages, Build and deployment, Source: *GitHub Actions*.
+2. **Pages is enabled with GitHub Actions as the source** (Settings, Pages, Build and deployment). The site is at <https://straatwijsheid.github.io/straatwijsheid/>.
 3. **Custom domain (optional):** straatwijsheid.nl is set under Settings, Pages, Custom domain, with the DNS records GitHub lists there. The map uses relative paths and works at the root of a domain as well as under `/straatwijsheid/`.
 
 ## Each publication
