@@ -28,7 +28,7 @@ Keep it (or an equivalent that names all three) when you reuse a map, an export 
 | Knowledge repository (`straatwijsheid/knowledge`): classifications, corrections, review answers, curated lists | CC-BY 4.0 | any use, including commercial, with credit as in its `ATTRIBUTION.md` |
 | Maps, images and screenshots built from the data | produced work | credit "© OpenStreetMap contributors" and the other sources; no share-alike on the image itself |
 | CSV/JSON street lists in the build outputs (`streets_classified.csv`, `streets_final.json`, `buurt_themes*`) | database combining our judgements with OSM-derived rows (street names, way classes, geometry) | treat as an ODbL derivative database: credit OSM contributors and, if you publish a database built from it, offer it under ODbL. Our own columns (category, subcategory, namesake, evidence tier) are CC-BY 4.0 on their own |
-| Wikidata cache and `all_streets_wikidata.jsonl` (planned release asset) | CC0 for the Wikidata content; our derived category and confidence fields are CC-BY 4.0 | free to reuse; mention "Contains data from Wikidata (CC0 1.0)" |
+| Wikidata cache (`all_streets_wikidata.jsonl`, a release asset) | CC0 for the Wikidata content; our derived category and confidence fields are CC-BY 4.0 | free to reuse; mention "Contains data from Wikidata (CC0 1.0)" |
 
 Rules of thumb: if you extract only our judgements (what a street is named after), CC-BY is enough. If you republish street names with geometry or other OSM data, ODbL applies to that database.
 
