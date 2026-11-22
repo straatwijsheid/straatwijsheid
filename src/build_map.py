@@ -190,7 +190,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         #gm-panel .gm-count {color:#888; font-size:11px;}
         #gm-panel .gm-only {font-size:11px; color:#2563eb; text-decoration:none;}
         #gm-panel .gm-sec {margin-top:8px; padding-top:6px; border-top:1px solid #eee;}
-        .street-tip {white-space:normal; max-width:340px; overflow-wrap:anywhere;}
+        .street-tip {white-space:normal; width:max-content; max-width:340px; overflow-wrap:break-word;}   /* max-content: an absolutely placed tooltip near the right edge would otherwise shrink to one letter per line */
       </style>
       <b>Streets: gemeente</b>
       __ROWS__
