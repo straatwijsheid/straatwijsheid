@@ -260,7 +260,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
       }
       function syncParts(grp) {
         Object.keys(grp.parts).forEach(function (k) {
-          var show = k === "s" || (k === "p" ? layers.paths : layers.planned), part = grp.parts[k];
+          var show = k === "s" ? layers.streets : (k === "p" ? layers.paths : layers.planned), part = grp.parts[k];
           if (show && !grp.hasLayer(part)) grp.addLayer(part);
           if (!show && grp.hasLayer(part)) grp.removeLayer(part);
         });
@@ -348,7 +348,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
           if (on[g.id] && !built[g.id]) { load(g).then(function () { apply(false); }, function () {}); return; }
           var layer = built[g.id];
           if (!layer) return;
-          var want = on[g.id] && layers.streets;
+          var want = on[g.id];   // the three layer switches act on the parts (syncParts), so paths stay when streets are switched off
           if (want && !map.hasLayer(layer)) map.addLayer(layer);
           if (!want && map.hasLayer(layer)) map.removeLayer(layer);
           syncParts(layer);
