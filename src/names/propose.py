@@ -50,14 +50,14 @@ def evaluate(ctx: Context, table: dict, idx: R.ContextIndex | None = None, min_s
         if tier < 3 or any(k in (row.get("notes") or "") for k in REVIEWED):
             continue
         entry = table[C.name_key(row["street"])]
-        res = R.resolve_street(entry, *idx.counters(row), street=(row["gemeente"], row["street"]))
+        res = R.resolve_street(entry, *idx.counters(row), street=(row["gemeente_code"], row["street"]))
         if res.decision != "accept" or res.score < min_score or res.margin < min_margin:
             continue
         cur, new = R.norm_kind(row) or (None, None), res.kind
         if new == cur and (res.label is None or res.label == row.get("entity_label")):
             continue
         cand = entry.candidates[new]
-        own = (row["gemeente"], row["street"])
+        own = (row["gemeente_code"], row["street"])
         osm_own = any((g, s) == own for g, s, _ in cand.osm)
         osm_any = bool(cand.osm)
         rules = set(cand.rules)
@@ -89,7 +89,7 @@ def evaluate(ctx: Context, table: dict, idx: R.ContextIndex | None = None, min_s
         if cur == new and label is None:
             continue
         why = f"{observed} classified streets elsewhere" + (f", rules {sorted(rules)}" if rules else "") + (", OSM" if osm_any else "")
-        out.append((Override(row["gemeente"], row["street"], new[0], new[1], label, None, round(min(0.6, 0.3 + res.score / 2), 2),
+        out.append((Override(row["gemeente_code"], row["street"], new[0], new[1], label, None, round(min(0.6, 0.3 + res.score / 2), 2),
                              notes=f"Name-level resolver: kind '{new[1]}' backed by {why}; neighbours in the buurt/wijk fit it (score {res.score}, margin {res.margin})", rule=RULE),
                     {"cur": cur, "tier": tier, "score": res.score, "margin": res.margin, "why": why}))
     return out

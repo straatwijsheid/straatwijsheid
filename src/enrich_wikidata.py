@@ -352,8 +352,9 @@ def missing_street_names(cache_path, gemeenten=None) -> list[str]:
     import geopandas as gpd
     root = Path(__file__).resolve().parent.parent
     g = gpd.read_file(config.RAW / "streets.geojson")
-    if gemeenten:
-        g = g[g["gemeente"].isin(gemeenten)]
+    if gemeenten:                                   # names or CBS codes
+        import gemeenten as registry
+        g = g[g["gemeente_code"].isin({registry.code_of(x) for x in gemeenten})]
     done = set()
     if cache_path.exists():
         with cache_path.open() as f:

@@ -59,7 +59,7 @@ def resolve(ctx: Context) -> list[Override]:
     mutual = collections.Counter((ctx.buurt(r), _grp(fam[r["street"]][0])) for r in targets if r["street"] in fam)
     out = []
     for r in targets:
-        g, s = r["gemeente"], r["street"]
+        g, s = r["gemeente_code"], r["street"]
         if (s in common or (is_compound(s) and s not in NOT_COMMON and not SURNAME_PREFIX.match(s))) and s not in fam:
             out.append(local_name(g, s, SPURIOUS, RULE))
             continue

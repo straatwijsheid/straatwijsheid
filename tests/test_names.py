@@ -12,13 +12,13 @@ from rules.base import Context                          # noqa: E402
 
 
 def row(g, s, cat, sub=None, label=None, source="claude_knowledge", notes=None):
-    return {"gemeente": g, "street": s, "category": cat, "subcategory": sub, "entity_label": label, "entity_description": None,
+    return {"gemeente": g, "gemeente_code": g, "street": s, "category": cat, "subcategory": sub, "entity_label": label, "entity_description": None,
             "confidence": 0.5, "source": source, "notes": notes}
 
 
 def ctx_of(rows, buurt_of, wijk_of=None):
-    streets = [{"gemeente": r["gemeente"], "name": r["street"], "buurt": buurt_of[(r["gemeente"], r["street"])],
-                "wijk": (wijk_of or {}).get((r["gemeente"], r["street"]))} for r in rows]
+    streets = [{"gemeente_code": r["gemeente_code"], "name": r["street"], "buurt": buurt_of[(r["gemeente_code"], r["street"])],
+                "wijk": (wijk_of or {}).get((r["gemeente_code"], r["street"]))} for r in rows]
     return Context(streets, rows, {}, set())
 
 
@@ -30,7 +30,7 @@ def test_name_key():
 def test_table_candidates_and_mass():
     rows = [row("A", "Willemstraat", "person", "monarch_statesman", "Willem"), row("B", "Willemlaan", "person", "monarch_statesman", "Willem"),
             row("C", "Willemstraat", "person", "politician_statesman", "Willem Drees")]
-    ctx = ctx_of(rows, {(r["gemeente"], r["street"]): f"b{r['gemeente']}" for r in rows})
+    ctx = ctx_of(rows, {(r["gemeente_code"], r["street"]): f"b{r['gemeente']}" for r in rows})
     t = C.build_table(ctx, rules=False)
     e = t["willem"] if "willem" in t else t["willems"]
     assert set(e.candidates) >= {("person", "monarch_statesman"), ("person", "politician_statesman")}
@@ -43,7 +43,7 @@ def test_table_candidates_and_mass():
 def _ambiguous_world():
     rows, buurt = [], {}
     def add(r, b):
-        rows.append(r); buurt[(r["gemeente"], r["street"])] = b
+        rows.append(r); buurt[(r["gemeente_code"], r["street"])] = b
     for i, g in enumerate("ABC"):                                   # three places where Willemstraat is a royal
         add(row(g, "Willemstraat", "person", "monarch_statesman", "Willem (House of Orange)"), f"roy{g}")
     for g in "DEF":                                                  # three where it is a politician
@@ -79,7 +79,7 @@ def test_no_evidence_gives_no_resolution():
 def test_label_only_when_namesakes_agree():
     rows = [row(g, "Mozartstraat", "person", "musician_composer", "Wolfgang Amadeus Mozart", source="wikidata") for g in "ABC"]
     rows += [row(g, "Beukenlaan", "thing", "flora", lab) for g, lab in zip("ABC", ("Beech", "Birch", "Oak"))]
-    ctx = ctx_of(rows, {(r["gemeente"], r["street"]): "b" + r["gemeente"] for r in rows})
+    ctx = ctx_of(rows, {(r["gemeente_code"], r["street"]): "b" + r["gemeente"] for r in rows})
     table, idx = C.build_table(ctx, rules=False), R.ContextIndex(ctx)
     m = R.resolve_street(table["mozart"], *idx.counters(ctx.rows[("A", "Mozartstraat")]))
     b = R.resolve_street(table["beuken"], *idx.counters(ctx.rows[("A", "Beukenlaan")]))
@@ -98,7 +98,7 @@ def test_adjacency_themes_and_context():
 def _world(extra):
     rows, buurt = [], {}
     def add(r):
-        rows.append(r); buurt[(r["gemeente"], r["street"])] = "b" + r["gemeente"]
+        rows.append(r); buurt[(r["gemeente_code"], r["street"])] = "b" + r["gemeente"]
     for g in "ABCD":
         add(row(g, "Hendrikstraat", "person", "monarch_statesman", "Prince Hendrik"))
         add(row(g, "Brouwersstraat", "thing", "occupation_guild", "Brewer"))
@@ -115,7 +115,7 @@ def test_propose_person_kind_only_and_skips_reviewed():
             row("N", "Bakkerslaan", "place", "local_landscape_feature")]
     ctx = _world(rows)
     table = C.build_table(ctx, rules=False)
-    got = {o.street: o for o, _ in propose.evaluate(ctx, table, min_score=0.3, min_margin=0.1) if o.gemeente == "N"}
+    got = {o.street: o for o, _ in propose.evaluate(ctx, table, min_score=0.3, min_margin=0.1) if o.gemeente_code == "N"}
     assert "Brouwersstraat" not in got                                   # a deliberately reviewed street is never overridden
     assert got["Hendrikstraat"].category == "person" and got["Hendrikstraat"].entity_label is None   # a shared first name: kind only
     assert got["Bakkerslaan"].subcategory == "occupation_guild"

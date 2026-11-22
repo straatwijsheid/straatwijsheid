@@ -4,7 +4,7 @@
   python src/acquire.py --list               gemeenten already in build/raw
 
 Default for a gemeente: the street network is taken from the outline of its own CBS buurten (robust: no geocoding, no stale OSM polygon),
-and the buurten are fetched under the same name. Exceptions (merged gemeenten, long official names) live in knowledge/global/gemeenten.json.
+and the buurten are fetched under the same name. Exceptions (merged gemeenten, long official names) live in knowledge/global/gemeenten.json; the identity of every gemeente (CBS code GM####, name, province) in knowledge/global/gemeenten_index.json (see gemeenten.py).
 
 Outputs, per gemeente:
   build/raw/streets_<slug>.geojson   one row per unique street name, merged geometry, with its buurt and wijk
@@ -48,15 +48,11 @@ def province_of_buurten(buurten: gpd.GeoDataFrame) -> str:
     return hit.value_counts().index[0]
 
 
-def record_province(gemeente: str, buurten: gpd.GeoDataFrame) -> None:
-    """Remember the province in the knowledge repository's global/provinces.json (the sharding of the per-gemeente knowledge depends on it)."""
-    import knowledge
-    path = config.GLOBAL / "provinces.json"
-    data = knowledge.read_json(path, {"_comment": "Province of every gemeente (from the CBS/PDOK province outlines; acquire.py adds new gemeenten). Shards the knowledge by province/gemeente.", "provinces": {}})
-    if gemeente not in data["provinces"]:
-        data["provinces"][gemeente] = province_of_buurten(buurten)
-        data["provinces"] = dict(sorted(data["provinces"].items()))
-        knowledge.write_json(path, data)
+def record_gemeente(code: str, name: str, buurten: gpd.GeoDataFrame, historic: bool = False) -> None:
+    """Register a new gemeente (code, name, province from the CBS province outlines) in the knowledge repository's global/gemeenten_index.json."""
+    import gemeenten
+    if code not in gemeenten.index():
+        gemeenten.register(code, name, province_of_buurten(buurten), historic)
 
 
 def fetch_streets(area) -> gpd.GeoDataFrame:
@@ -114,8 +110,10 @@ def fetch_buurten(gemeente: str, pdok_name: str, prefix: str | None = None) -> g
 
     buurten = buurten.rename(columns={"buurtnaam": "name"})
     buurten["wijk"] = buurten["wijkcode"].map(wijk_lookup)
+    cbs_codes = sorted(buurten["gemeentecode"].unique())          # the gemeente PDOK files these buurten under (today's, not a merged-away one's)
     buurten = buurten[["name", "wijk", "geometry"]].reset_index(drop=True)
     buurten["gemeente"] = gemeente
+    buurten.attrs["cbs_codes"] = cbs_codes
     print(f"Found {len(buurten)} buurt polygons across {buurten['wijk'].nunique()} wijken")
     return buurten
 
@@ -139,51 +137,98 @@ def join_streets_to_buurten(
     return streets
 
 
-def slug(gemeente: str) -> str:
-    return gemeente.lower().replace(" ", "-")
+def file_key(code: str) -> str:
+    """Per-gemeente raw files are named by CBS code: streets_gm0772.geojson (a name is not unique, a code is)."""
+    return code.lower()
+
+
+def _legacy_slug(name: str) -> str:
+    return name.lower().replace(" ", "-")
+
+
+def cbs_gemeenten() -> dict[str, str]:
+    """{code: official CBS name} for every current gemeente (PDOK/CBS gebiedsindelingen); official names are unique ('Bergen (NH.)', 'Bergen (L.)')."""
+    r = requests.get(PROVINCES_URL, params={"service": "WFS", "version": "2.0.0", "request": "GetFeature",
+                                            "typeNames": "gebiedsindelingen:gemeente_gegeneraliseerd", "outputFormat": "application/json"}, timeout=120)
+    r.raise_for_status()
+    return {f["properties"]["statcode"]: f["properties"]["statnaam"] for f in r.json()["features"]}
+
+
+def resolve(arg: str) -> tuple[str | None, str]:
+    """(code or None, name) for a gemeente given as code or name. The registry decides; a code the registry does not know yet is looked up at CBS;
+    an unknown name returns code None (the code then comes from PDOK or from `code` in gemeenten.json when the gemeente is fetched)."""
+    import gemeenten
+    code = gemeenten.known(arg)
+    if code:
+        return code, gemeenten.name_of(code)
+    if gemeenten.is_code(arg.upper()):
+        names = cbs_gemeenten()
+        if arg.upper() not in names:
+            raise KeyError(f"{arg} is not a current CBS gemeentecode")
+        return arg.upper(), names[arg.upper()]
+    return None, arg
 
 
 def combine() -> None:
-    """Merge every per-gemeente file into the combined files downstream reads."""
+    """Merge every per-gemeente file into the combined files downstream reads (in gemeente-name order, as before the files were named by code)."""
     import pandas as pd
+    import gemeenten
+
+    def order(p):
+        code = p.stem.split("_", 1)[1].upper()
+        return _legacy_slug(gemeenten.name_of(code)), code
 
     for kind in ("streets", "buurten"):
-        parts = [gpd.read_file(p) for p in sorted(RAW_DIR.glob(f"{kind}_*.geojson"))]
+        parts = [gpd.read_file(p) for p in sorted(RAW_DIR.glob(f"{kind}_*.geojson"), key=order)]
         combined = gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=parts[0].crs)
         combined.to_file(RAW_DIR / f"{kind}.geojson", driver="GeoJSON")
-        print(f"Wrote {kind}.geojson: {len(combined)} rows from {combined['gemeente'].nunique()} gemeente(n)")
+        print(f"Wrote {kind}.geojson: {len(combined)} rows from {combined['gemeente_code'].nunique()} gemeente(n)")
 
 
-def acquire(gemeente: str) -> None:
-    """Fetch one gemeente: buurten from PDOK, streets from the buurten outline, joined and written; then rebuild the combined files."""
+def acquire(arg: str) -> None:
+    """Fetch one gemeente (code or name): buurten from PDOK, streets from the buurten outline, joined and written; then rebuild the combined files."""
+    import gemeenten
+    code, gemeente = resolve(arg)
+    if not code and gemeenten.is_code(arg.upper()):
+        raise KeyError(arg)
     cfg = CONFIG.get("merged", {}).get(gemeente) or CONFIG.get("aliases", {}).get(gemeente) or {}
     pdok = cfg.get("pdok", gemeente)
     buurten = fetch_buurten(gemeente, pdok, cfg.get("buurt_prefix"))
     if not len(buurten):
         raise RuntimeError(f"PDOK has no buurten for '{pdok}': add an entry to knowledge/global/gemeenten.json")
-    record_province(gemeente, buurten)
+    if not code:
+        code = cfg.get("code")
+        cbs = buurten.attrs["cbs_codes"]
+        if not code and len(cbs) == 1 and gemeente not in CONFIG.get("merged", {}):
+            code = cbs[0]
+        if not code:
+            raise RuntimeError(f"cannot tell the gemeentecode of '{gemeente}' (PDOK files its buurten under {cbs}): add `code` to its entry in knowledge/global/gemeenten.json")
+    record_gemeente(code, gemeente, buurten, historic=gemeente in CONFIG.get("merged", {}))
     streets = fetch_streets(buurten.geometry.union_all())
     streets["gemeente"] = gemeente
+    streets["gemeente_code"] = code
     streets = join_streets_to_buurten(streets, buurten)
-    buurten.to_file(RAW_DIR / f"buurten_{slug(gemeente)}.geojson", driver="GeoJSON")
-    streets.to_file(RAW_DIR / f"streets_{slug(gemeente)}.geojson", driver="GeoJSON")
-    _snapshot(gemeente)
+    buurten["gemeente_code"] = code
+    buurten.to_file(RAW_DIR / f"buurten_{file_key(code)}.geojson", driver="GeoJSON")
+    streets.to_file(RAW_DIR / f"streets_{file_key(code)}.geojson", driver="GeoJSON")
+    _snapshot(code)
 
 
-def _snapshot(gemeente: str) -> None:
+def _snapshot(code: str) -> None:
     import snapshots
-    snapshots.record("streets/" + slug(gemeente), RAW_DIR / f"streets_{slug(gemeente)}.geojson",
-                     "OSM named highway ways (osm_streets.py) joined to CBS buurten", rows=len(gpd.read_file(RAW_DIR / f"streets_{slug(gemeente)}.geojson")), archive=False)
+    path = RAW_DIR / f"streets_{file_key(code)}.geojson"
+    snapshots.record("streets/" + file_key(code), path, "OSM named highway ways (osm_streets.py) joined to CBS buurten", rows=len(gpd.read_file(path)), archive=False)
 
 
-def supplement(gemeente: str) -> None:
+def supplement(code: str) -> None:
     """Add the named streets an earlier (osmnx drive-network) fetch missed, and fill highway/way_class for the streets it had.
     Existing rows keep their geometry; new rows are appended with `origin = supplement`."""
     import pandas as pd
+    import gemeenten
 
-    path = RAW_DIR / f"streets_{slug(gemeente)}.geojson"
+    path = RAW_DIR / f"streets_{file_key(code)}.geojson"
     old = gpd.read_file(path)
-    buurten = gpd.read_file(RAW_DIR / f"buurten_{slug(gemeente)}.geojson")
+    buurten = gpd.read_file(RAW_DIR / f"buurten_{file_key(code)}.geojson")
     fresh = fetch_streets(buurten.geometry.union_all())
     info = fresh.drop_duplicates("name").set_index("name")[["highway", "highway_all", "way_class"]]
     for col in info.columns:
@@ -192,61 +237,93 @@ def supplement(gemeente: str) -> None:
         old["origin"] = "drive_network"
     new = fresh[~fresh["name"].isin(set(old["name"]))].copy()
     if len(new):
-        new["gemeente"] = gemeente
+        new["gemeente"] = gemeenten.name_of(code)
+        new["gemeente_code"] = code
         new = join_streets_to_buurten(new, buurten)
         new["origin"] = "supplement"
         old = gpd.GeoDataFrame(pd.concat([old, new], ignore_index=True), crs=old.crs)
     old.to_file(path, driver="GeoJSON")
-    _snapshot(gemeente)
-    print(f"{gemeente}: +{len(new)} streets ({new['way_class'].value_counts().to_dict() if len(new) else {}}); now {len(old)}")
+    _snapshot(code)
+    print(f"{gemeenten.name_of(code)}: +{len(new)} streets ({new['way_class'].value_counts().to_dict() if len(new) else {}}); now {len(old)}")
 
 
-def gemeente_name(slug_or_name: str) -> str:
-    """The display name stored in the data for a slug ('bergen-op-zoom' -> 'Bergen op Zoom'); names pass through."""
-    for p in RAW_DIR.glob("streets_*.geojson"):
-        if p.stem[len("streets_"):] == slug(slug_or_name):
-            return gpd.read_file(p, rows=1)["gemeente"].iloc[0]
-    return slug_or_name
+def have(code: str) -> bool:
+    return (RAW_DIR / f"streets_{file_key(code)}.geojson").exists()
 
 
-def have(gemeente: str) -> bool:
-    return (RAW_DIR / f"streets_{slug(gemeente)}.geojson").exists()
+def fetched_codes() -> list[str]:
+    return sorted(p.stem[len("streets_"):].upper() for p in RAW_DIR.glob("streets_*.geojson"))
+
+
+def migrate_codes() -> None:
+    """One-off for a build directory made before gemeenten were keyed by code: streets_<slug>.geojson -> streets_gm####.geojson with a
+    `gemeente_code` column (and the same for buurten), snapshot histories moved to the new names, combined files rebuilt."""
+    import gemeenten
+    import snapshots
+    moved = []
+    for kind in ("streets", "buurten"):
+        for p in sorted(RAW_DIR.glob(f"{kind}_*.geojson")):
+            if gemeenten.is_code(p.stem.split("_", 1)[1].upper()):
+                continue
+            df = gpd.read_file(p)
+            code = gemeenten.code_of(df["gemeente"].iloc[0])
+            if "gemeente_code" not in df:
+                df.insert(list(df.columns).index("gemeente") + 1, "gemeente_code", code)
+            new = RAW_DIR / f"{kind}_{file_key(code)}.geojson"
+            df.to_file(new, driver="GeoJSON")
+            p.unlink()
+            if kind == "streets":
+                moved.append((p.stem[len("streets_"):], code, new, len(df)))
+    m = snapshots.load()
+    for old_slug, code, new, rows in moved:
+        hist = m["snapshots"].pop(f"streets/{old_slug}", [])
+        m["snapshots"][f"streets/{file_key(code)}"] = hist
+    snapshots.save(m)
+    for old_slug, code, new, rows in moved:
+        snapshots.record(f"streets/{file_key(code)}", new, "OSM named highway ways (osm_streets.py) joined to CBS buurten", rows=rows, archive=False,
+                         note="gemeente_code column added; file renamed from the gemeente name to its CBS code")
+    combine()
+    print(f"migrated {len(moved)} gemeenten to code-named files")
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("gemeenten", nargs="*")
+    ap.add_argument("gemeenten", nargs="*", help="gemeente names or CBS codes (GM####)")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--force", action="store_true", help="refetch gemeenten that are already in build/raw")
     ap.add_argument("--supplement", action="store_true", help="add streets an older fetch missed to gemeenten already in build/raw (all of them if none named)")
+    ap.add_argument("--migrate-codes", action="store_true", help="one-off: rename an older build directory's per-gemeente files by CBS code")
     ap.add_argument("--retries", type=int, default=4, help="Overpass is often busy: attempts per gemeente")
     a = ap.parse_args(argv)
+    if a.migrate_codes:
+        migrate_codes()
+        return
     if a.supplement:
-        todo = a.gemeenten or [p.stem[len("streets_"):] for p in sorted(RAW_DIR.glob("streets_*.geojson"))]
-        names = {slug(g): g for g in todo}
+        todo = [resolve(g)[0] for g in a.gemeenten] if a.gemeenten else fetched_codes()
         failed = []
-        for sl in sorted({slug(g) for g in todo}):
-            g = next((x for x in todo if slug(x) == sl), sl)
+        for code in sorted(set(todo)):
             for attempt in range(1, a.retries + 1):
                 try:
-                    supplement(gemeente_name(sl))
+                    supplement(code)
                     break
                 except Exception as e:                                 # noqa: BLE001
-                    print(f"{sl}: attempt {attempt}/{a.retries} failed: {str(e)[:120]}")
+                    print(f"{code}: attempt {attempt}/{a.retries} failed: {str(e)[:120]}")
                     time.sleep(10 * attempt)
             else:
-                failed.append(sl)
+                failed.append(code)
         combine()
         if failed:
             sys.exit(f"failed: {failed}")
         return
     if a.list or not a.gemeenten:
-        done = sorted(p.stem[len("streets_"):] for p in RAW_DIR.glob("streets_*.geojson"))
-        print(f"{len(done)} gemeenten in build/raw: {', '.join(done)}")
+        import gemeenten
+        done = fetched_codes()
+        print(f"{len(done)} gemeenten in build/raw: {', '.join(f'{c} {gemeenten.name_of(c)}' for c in done)}")
         return
     failed = []
     for g in a.gemeenten:
-        if have(g) and not a.force:
+        code, _ = resolve(g)
+        if code and have(code) and not a.force:
             print(f"{g}: already fetched (use --force to refetch)")
             continue
         for attempt in range(1, a.retries + 1):

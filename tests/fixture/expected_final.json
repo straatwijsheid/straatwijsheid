@@ -1,6 +1,7 @@
 [
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Aldenborghlaan",
   "buurt": "Budel",
   "category": "person",
@@ -11,6 +12,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Beatrixlaan",
   "buurt": "Maarheeze",
   "category": "person",
@@ -21,6 +23,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Bergsestraat",
   "buurt": "Gastel",
   "category": "thing",
@@ -31,6 +34,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Burgemeester van Velthovenstraat",
   "buurt": "Budel",
   "category": "person",
@@ -41,6 +45,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "De Goudvink",
   "buurt": "Budel",
   "category": "thing",
@@ -51,6 +56,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "De Roedel",
   "buurt": "Budel",
   "category": "thing",
@@ -61,6 +67,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "De Rutjens",
   "buurt": "Soerendonk",
   "category": "place",
@@ -71,6 +78,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "De Specht",
   "buurt": "Budel",
   "category": "thing",
@@ -81,6 +89,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Doctor Visschersstraat",
   "buurt": "Budel",
   "category": "person",
@@ -91,6 +100,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Eburonenstraat",
   "buurt": "Budel",
   "category": "thing",
@@ -101,6 +111,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "El Pinar",
   "buurt": "Verspreide huizen Hugten",
   "category": "place",
@@ -111,6 +122,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Heesakkerweg",
   "buurt": "Budel",
   "category": "place",
@@ -121,6 +133,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Hoortweg",
   "buurt": "Verspreide huizen Budel-Dorplein",
   "category": "place",
@@ -131,6 +144,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Houtsnip",
   "buurt": "Maarheeze",
   "category": "thing",
@@ -141,6 +155,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Jan Maasplein",
   "buurt": "Soerendonk",
   "category": "person",
@@ -151,6 +166,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Julianalaan",
   "buurt": "Maarheeze",
   "category": "person",
@@ -161,6 +177,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Keizer Ottostraat",
   "buurt": "Budel",
   "category": "person",
@@ -171,6 +188,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Koenraadtweg",
   "buurt": "Verspreide huizen Hugten",
   "category": "place",
@@ -181,6 +199,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Liedekerkestraat",
   "buurt": "Budel-Dorplein",
   "category": "place",
@@ -191,6 +210,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Moezelstraat",
   "buurt": "Budel",
   "category": "place",
@@ -201,6 +221,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Oranje Nassaulaan",
   "buurt": "Maarheeze",
   "category": "person",
@@ -211,6 +232,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Peellandstraat",
   "buurt": "Budel",
   "category": "thing",
@@ -221,6 +243,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Poelpad",
   "buurt": "Budel-Schoot",
   "category": "person",
@@ -231,6 +254,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Puttenstraat",
   "buurt": "Maarheeze",
   "category": "place",
@@ -241,6 +265,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Rijnstraat",
   "buurt": "Budel",
   "category": "place",
@@ -251,6 +276,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Schoolpad",
   "buurt": "Budel-Schoot",
   "category": "thing",
@@ -261,6 +287,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Sint Josephplein",
   "buurt": "Budel-Dorplein",
   "category": "person",
@@ -271,6 +298,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Thijssenstraat",
   "buurt": "Budel-Dorplein",
   "category": "person",
@@ -281,6 +309,7 @@
  },
  {
   "gemeente": "Cranendonck",
+  "gemeente_code": "GM1706",
   "street": "Zicht",
   "buurt": "Maarheeze",
   "category": "thing",
@@ -291,6 +320,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "17",
   "buurt": "Bergen",
   "category": "thing",
@@ -301,6 +331,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Achterbeekseweg",
   "buurt": "Roosten",
   "category": "place",
@@ -311,6 +342,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Achterstraat",
   "buurt": "Tuindorp",
   "category": "place",
@@ -321,6 +353,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Albertipad",
   "buurt": "Prinsejagt",
   "category": "person",
@@ -331,6 +364,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Anthony van Opbergenstraat",
   "buurt": "Prinsejagt",
   "category": "person",
@@ -341,6 +375,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Boccherinilaan",
   "buurt": "Genderdal",
   "category": "person",
@@ -351,6 +386,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Casellastraat",
   "buurt": "Blaarthem",
   "category": "person",
@@ -361,6 +397,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Cluselaan",
   "buurt": "Achtse Barrier-Spaaihoef",
   "category": "place",
@@ -371,6 +408,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Dardanuspad",
   "buurt": "Oude Gracht-Oost",
   "category": "person",
@@ -381,6 +419,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Elgarstraat",
   "buurt": "Genderdal",
   "category": "person",
@@ -391,6 +430,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Firapeellaan",
   "buurt": "Jagershoef",
   "category": "person",
@@ -401,6 +441,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Generaal van der Duynlaan",
   "buurt": "Generalenbuurt",
   "category": "person",
@@ -411,6 +452,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Glooiing",
   "buurt": "Blixembosch-Oost",
   "category": "place",
@@ -421,6 +463,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Groene Loper",
   "buurt": "TU-terrein",
   "category": "thing",
@@ -431,6 +474,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Jagerslaan",
   "buurt": "Schuttersbosch",
   "category": "place",
@@ -441,6 +485,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Jan van de Capellelaan",
   "buurt": "Doornakkers-Oost",
   "category": "person",
@@ -451,6 +496,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Kanaaldijk-Noord",
   "buurt": "Doornakkers-West",
   "category": "place",
@@ -461,6 +507,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Lombokpad",
   "buurt": "'t Hofke",
   "category": "place",
@@ -471,6 +518,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Molenstraat",
   "buurt": "Binnenstad",
   "category": "unresolved",
@@ -481,6 +529,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Nancylaan",
   "buurt": "Achtse Barrier-Spaaihoef",
   "category": "person",
@@ -491,6 +540,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Nassaustraat",
   "buurt": "Eliasterrein, Vonderkwartier",
   "category": "person",
@@ -501,6 +551,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Oranjestraat",
   "buurt": "Bergen",
   "category": "person",
@@ -511,6 +562,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Peter Zuidlaan",
   "buurt": "Grasrijk",
   "category": "person",
@@ -521,6 +573,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Pieter Pauluslaan",
   "buurt": "Lievendaal",
   "category": "person",
@@ -531,6 +584,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Rietvinkstraat",
   "buurt": "Villapark",
   "category": "thing",
@@ -541,6 +595,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Sint Petrus Canisiuslaan",
   "buurt": "Burghplan",
   "category": "person",
@@ -551,6 +606,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Spanvlinderplein",
   "buurt": "'t Hofke",
   "category": "thing",
@@ -561,6 +617,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Spijkert",
   "buurt": "Muschberg, Geestenberg",
   "category": "place",
@@ -571,6 +628,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Steilte",
   "buurt": "Blixembosch-Oost",
   "category": "place",
@@ -581,6 +639,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Suikerpeerstraat",
   "buurt": "Vaartbroek",
   "category": "thing",
@@ -591,6 +650,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Tervurenhof",
   "buurt": "Tempel",
   "category": "place",
@@ -601,6 +661,7 @@
  },
  {
   "gemeente": "Eindhoven",
+  "gemeente_code": "GM0772",
   "street": "Verhulststraat",
   "buurt": "Bennekel-Oost",
   "category": "person",
@@ -611,6 +672,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Acacialaan",
   "buurt": "Waalre",
   "category": "thing",
@@ -621,6 +683,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Achtereindsestraat",
   "buurt": "Verspreide huizen",
   "category": "place",
@@ -631,6 +694,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Antoon Coolenlaan",
   "buurt": "Aalst",
   "category": "person",
@@ -641,6 +705,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "August Sniederslaan",
   "buurt": "Aalst",
   "category": "person",
@@ -651,6 +716,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Bleeckhof",
   "buurt": "Waalre",
   "category": "person",
@@ -661,6 +727,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Booyenhoek",
   "buurt": "Ekenrooi",
   "category": "place",
@@ -671,6 +738,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Brabantialaan",
   "buurt": "Aalst",
   "category": "place",
@@ -681,6 +749,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Brederode",
   "buurt": "Aalst",
   "category": "person",
@@ -691,6 +760,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Chopinlaan",
   "buurt": "Ekenrooi",
   "category": "person",
@@ -701,6 +771,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Daslaan",
   "buurt": "Waalre",
   "category": "thing",
@@ -711,6 +782,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Dianestraat",
   "buurt": "Ekenrooi",
   "category": "person",
@@ -721,6 +793,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Emmastraat",
   "buurt": "Aalst",
   "category": "person",
@@ -731,6 +804,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Filips de Goedelaan",
   "buurt": "Ekenrooi",
   "category": "person",
@@ -741,6 +815,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Henricus de Waderloolaan",
   "buurt": "Waalre",
   "category": "person",
@@ -751,6 +826,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Kleine Broekweg",
   "buurt": "Waalre",
   "category": "unresolved",
@@ -761,6 +837,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Leenderweg",
   "buurt": "Verspreide huizen",
   "category": "person",
@@ -771,6 +848,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Mevrouw Brantlaan",
   "buurt": "Ekenrooi",
   "category": "person",
@@ -781,6 +859,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Onze Lieve Vrouwedijk",
   "buurt": "Verspreide huizen",
   "category": "place",
@@ -791,6 +870,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Oude Torenstraat",
   "buurt": "Waalre",
   "category": "place",
@@ -801,6 +881,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Paradijslaan",
   "buurt": "Waalre",
   "category": "place",
@@ -811,6 +892,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Pastoor van der Heijdenstraat",
   "buurt": "Ekenrooi",
   "category": "person",
@@ -821,6 +903,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Steph Zoetmulderdreef",
   "buurt": "Waalre",
   "category": "person",
@@ -831,6 +914,7 @@
  },
  {
   "gemeente": "Waalre",
+  "gemeente_code": "GM0866",
   "street": "Trolliuslaan",
   "buurt": "Voldijn",
   "category": "thing",

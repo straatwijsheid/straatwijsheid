@@ -1,13 +1,15 @@
 """Where the hand-curated knowledge lives, and how it is sharded by province and gemeente.
 
-  <knowledge>/global/                                         lists that apply everywhere (vocabulary, species, famous people, ...), plus provinces.json
+  <knowledge>/global/                                         lists that apply everywhere (vocabulary, species, famous people, ...), plus gemeenten_index.json
   <knowledge>/gemeenten/<province>/<gemeente>/corrections.json         reviewed street-level corrections
   <knowledge>/gemeenten/<province>/<gemeente>/review_notes.json        notes and extra questions for the review sheet
   <knowledge>/gemeenten/<province>/<gemeente>/overrides/<layer>.json   the street-level classification layers (see overrides.py)
 
-Every gemeente lies in exactly one province; global/provinces.json maps gemeente name -> province name (acquire.py adds new gemeenten; a gemeente
-without an entry is filed under `unassigned`, which `python src/knowledge.py --check` reports). Directory names are slugs, so a pull request
-about one gemeente touches one directory.
+Every gemeente lies in exactly one province. global/gemeenten_index.json (see gemeenten.py) maps the CBS gemeentecode (GM####) to name and province, and acquire.py
+adds new gemeenten; a gemeente without an entry is filed under `unassigned`, which `python src/knowledge.py --check` reports. Directory names are slugs
+(province, then name), so a pull request about one gemeente touches one directory and two same-named gemeenten in different provinces never share one.
+The shard directory *is* the gemeente's identity on disk: the entries inside keep their `gemeente` name for readability, and the loaders attach the
+`gemeente_code` of the shard they came from (the in-memory key is `(gemeente_code, street)`, never the name).
 
   python src/knowledge.py --check     provinces known for every shard directory and every acquired gemeente
   python src/knowledge.py --layout    print the tree with entry counts
@@ -20,6 +22,7 @@ import unicodedata
 from pathlib import Path
 
 import config
+import gemeenten
 
 UNASSIGNED = "unassigned"
 
@@ -34,17 +37,23 @@ def global_dir() -> Path:
     return config.KNOWLEDGE / "global"
 
 
-def provinces() -> dict:
-    p = global_dir() / "provinces.json"
-    return json.loads(p.read_text()).get("provinces", {}) if p.exists() else {}
-
-
 def province_of(gemeente: str) -> str:
-    return provinces().get(gemeente, UNASSIGNED)
+    """The province of a gemeente given by code or name (a name must be unique); UNASSIGNED if the registry does not know it."""
+    code = gemeenten.known(gemeente)
+    return gemeenten.province_of(code) if code else UNASSIGNED
 
 
 def gemeente_dir(gemeente: str) -> Path:
-    return config.KNOWLEDGE / "gemeenten" / slug(province_of(gemeente)) / slug(gemeente)
+    """The shard directory of a gemeente given by code or name."""
+    code = gemeenten.known(gemeente)
+    name = gemeenten.name_of(code) if code else gemeente
+    return config.KNOWLEDGE / "gemeenten" / slug(province_of(gemeente)) / slug(name)
+
+
+def code_of_shard(d: Path) -> str | None:
+    """The gemeentecode a shard directory belongs to (None for a directory the registry does not know)."""
+    by_dir = {gemeente_dir(c): c for c in gemeenten.index()}
+    return by_dir.get(d)
 
 
 def shard_dirs() -> list[Path]:
@@ -65,21 +74,22 @@ def load_sharded(filename: str, key: str, gemeente_field: str = "gemeente") -> l
     """The entries of `<gemeente dir>/<filename>[key]` from every shard, in a stable order (shard path, then file order)."""
     out = []
     for d in shard_dirs():
-        out.extend(read_json(d / filename, {}).get(key, []))
+        code = code_of_shard(d)
+        out.extend({**o, "gemeente_code": code} for o in read_json(d / filename, {}).get(key, []))
     return out
 
 
 def check() -> int:
-    prov = provinces()
+    known = set(gemeenten.index())
     bad = 0
     for d in shard_dirs():
-        if d.parent.name == UNASSIGNED:
-            print(f"unassigned shard: {d.relative_to(config.KNOWLEDGE)}"); bad += 1
+        if d.parent.name == UNASSIGNED or code_of_shard(d) is None:
+            print(f"shard without a registry entry: {d.relative_to(config.KNOWLEDGE)}"); bad += 1
     try:
         import geopandas as gpd
-        gems = set(gpd.read_file(config.RAW / "streets.geojson")["gemeente"])
-        for g in sorted(gems - set(prov)):
-            print(f"no province for acquired gemeente: {g}"); bad += 1
+        gems = set(gpd.read_file(config.RAW / "streets.geojson")["gemeente_code"])
+        for g in sorted(gems - known):
+            print(f"acquired gemeente not in gemeenten_index.json: {g}"); bad += 1
     except Exception as e:      # no build data (e.g. in a bare knowledge checkout): skip
         print(f"(acquired gemeenten not checked: {type(e).__name__})")
     print("ok" if not bad else f"{bad} problem(s)")

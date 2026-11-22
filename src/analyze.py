@@ -69,21 +69,25 @@ def permutation_test(wijken: list[list[str]], rng: random.Random) -> dict:
 
 
 def main():
-    themes = json.loads((config.ENRICHED / "buurt_themes_full.json").read_text())["buurten"]
+    import themes as themes_mod
+    themes = themes_mod.with_codes(json.loads((config.ENRICHED / "buurt_themes_full.json").read_text()))["buurten"]
     themes = [t for t in themes if t["category"] != "unclear"]
 
-    by_gemeente = defaultdict(lambda: defaultdict(list))
+    by_gemeente = defaultdict(lambda: defaultdict(list))        # keyed by CBS code; the name is for display
+    names = {t["gemeente_code"]: t["gemeente"] for t in themes}
     for t in themes:
-        by_gemeente[t["gemeente"]][t["wijk"]].append(t)
+        by_gemeente[t["gemeente_code"]][t["wijk"]].append(t)
+    order = sorted(by_gemeente, key=lambda c: (names[c], c))
 
     wijk_rows, tests = [], []
-    for gemeente, wijken in sorted(by_gemeente.items()):
+    for code in order:
+        gemeente, wijken = names[code], by_gemeente[code]
         for wijk, buurten in sorted(wijken.items()):
             labs = [labels_for(t) for t in buurten]
             cats = Counter(l["category"] for l in labs)
             groups = Counter(l["group"] for l in labs)
             wijk_rows.append({
-                "gemeente": gemeente, "wijk": wijk, "n_buurten": len(buurten),
+                "gemeente": gemeente, "gemeente_code": code, "wijk": wijk, "n_buurten": len(buurten),
                 "dominant_category": cats.most_common(1)[0][0],
                 "category_uniformity": round(cats.most_common(1)[0][1] / len(buurten), 2),
                 "dominant_group": groups.most_common(1)[0][0],
@@ -92,12 +96,12 @@ def main():
                 "buurten": [t["buurt"] for t in buurten],
             })
         for level in ("category", "group"):
-            # seed per (gemeente, level) so adding a gemeente never shifts earlier results
+            # seed per (gemeente name, level) so adding a gemeente never shifts earlier results (the name, not the code: results stay what they were)
             rng = random.Random(SEED + zlib.crc32(f"{gemeente}|{level}".encode()))
             wijk_labels = [[labels_for(t)[level] for t in b] for b in wijken.values()]
             n_testable = sum(1 for w in wijk_labels if len(w) >= 2)
             tests.append({
-                "gemeente": gemeente, "level": level,
+                "gemeente": gemeente, "gemeente_code": code, "level": level,
                 "wijken_total": len(wijken), "wijken_testable": n_testable,
                 "buurten_testable": sum(len(w) for w in wijk_labels if len(w) >= 2),
                 **permutation_test(wijk_labels, rng),
@@ -115,10 +119,11 @@ def main():
         print(f"{t['gemeente']:10s} {t['level']:9s} {t['wijken_testable']:>6d} {t['buurten_testable']:>7d} "
               f"{t['observed']:>9.0%} {t['chance_mean']:>7.0%} {t['p_value']:>8.4f}")
 
-    for gemeente in sorted(by_gemeente):
+    for code in order:
+        gemeente = names[code]
         print(f"\n{gemeente}: wijken with >=2 analyzable buurten")
         print(f"  {'wijk':34s} {'n':>3s} {'dominant group':32s} {'uniform':>8s}")
-        for r in sorted((r for r in wijk_rows if r["gemeente"] == gemeente and r["n_buurten"] >= 2),
+        for r in sorted((r for r in wijk_rows if r["gemeente_code"] == code and r["n_buurten"] >= 2),
                         key=lambda r: (-r["group_uniformity"], -r["n_buurten"])):
             print(f"  {r['wijk']:34s} {r['n_buurten']:3d} {r['dominant_group']:32s} {r['group_uniformity']:8.0%}")
 

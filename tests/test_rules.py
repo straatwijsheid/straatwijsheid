@@ -11,12 +11,12 @@ from rules.base import Context, core                                            
 
 
 def row(g, s, cat, sub=None, label=None, source="claude_knowledge", desc=None, notes=None):
-    return {"gemeente": g, "street": s, "category": cat, "subcategory": sub, "entity_label": label, "entity_description": desc,
+    return {"gemeente": g, "gemeente_code": g, "street": s, "category": cat, "subcategory": sub, "entity_label": label, "entity_description": desc,
             "confidence": 0.5, "source": source, "notes": notes}
 
 
 def ctx(rows, buurten=None, wikidata=None, places=()):
-    streets = [{"gemeente": r["gemeente"], "name": r["street"], "buurt": (buurten or {}).get((r["gemeente"], r["street"]), "B")} for r in rows]
+    streets = [{"gemeente_code": r["gemeente_code"], "name": r["street"], "buurt": (buurten or {}).get((r["gemeente_code"], r["street"]), "B")} for r in rows]
     return Context(streets, rows, wikidata or {}, set(places))
 
 
@@ -78,7 +78,7 @@ def test_harmonise_same_name():
     rows = [row(f"G{i}", "Kerkstraat", "place", "local_landmark") for i in range(4)]
     rows.append(row("G9", "Kerkstraat", "thing", "fauna", source="buurt_theme_fallback"))
     out = audits.harmonise_same_name(ctx(rows))
-    assert len(out) == 1 and out[0].gemeente == "G9" and out[0].category == "place"
+    assert len(out) == 1 and out[0].gemeente_code == "G9" and out[0].category == "place"
     # a person majority is never harmonised by vote
     prow = [row(f"G{i}", "Willemstraat", "person", "monarch_statesman", "Willem") for i in range(4)] + [row("G9", "Willemstraat", "place", "local_landmark")]
     assert audits.harmonise_same_name(ctx(prow)) == []
@@ -119,7 +119,7 @@ def test_corrections_apply_to_existing_streets_only():
     from rules import corrections
     entries = corrections.entries()
     assert entries and all(e.get("reason") for e in entries)               # every correction says why
-    streets = {(e["gemeente"], e["street"]) for e in entries}
+    streets = {(e["gemeente_code"], e["street"]) for e in entries}
     rows = [row(g, s, "place", "local_landscape_feature") for g, s in list(streets)[:3]]
     assert len(corrections.apply(ctx(rows))) == len(rows)                   # ones not present in the data are skipped
 

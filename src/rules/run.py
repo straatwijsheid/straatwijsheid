@@ -20,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config  # noqa: E402
+import gemeenten  # noqa: E402
 import overrides  # noqa: E402
 
 from rules import audits, corrections, directional, labels, osm, place_review, species, surnames, vocabulary    # noqa: E402
@@ -33,16 +34,16 @@ PRECEDENCE = overrides.PRECEDENCE   # later wins on the same street: reviewed co
 
 
 def rule_directional(ctx):
-    return [o for r in ctx.final if (o := directional.classify(r["gemeente"], r["street"], ctx.place_names))]
+    return [o for r in ctx.final if (o := directional.classify(r["gemeente_code"], r["street"], ctx.place_names))]
 
 
 def rule_vocabulary(ctx):
     """Vocabulary matches for streets that do not already name a specific namesake."""
-    return [o for r in ctx.final if evidence_tier(r) not in STRONG and (o := vocabulary.classify(r["gemeente"], r["street"]))]
+    return [o for r in ctx.final if evidence_tier(r) not in STRONG and (o := vocabulary.classify(r["gemeente_code"], r["street"]))]
 
 
 def rule_titles(ctx):
-    return [o for r in ctx.final if evidence_tier(r) == 5 and (o := vocabulary.classify_titles(r["gemeente"], r["street"]))]
+    return [o for r in ctx.final if evidence_tier(r) == 5 and (o := vocabulary.classify_titles(r["gemeente_code"], r["street"]))]
 
 
 def rule_species(ctx):
@@ -56,7 +57,7 @@ def rule_species(ctx):
         hit = species.describe(r["street"])
         if hit and (d in species.GENERIC_DESCRIPTIONS or d is None):
             en, la, stem = hit
-            out.append(Override(r["gemeente"], r["street"], r["category"], r["subcategory"], en, species.description(la, stem), r["confidence"], notes=r.get("notes"), rule="species"))
+            out.append(Override(r["gemeente_code"], r["street"], r["category"], r["subcategory"], en, species.description(la, stem), r["confidence"], notes=r.get("notes"), rule="species"))
     return out
 
 
@@ -112,7 +113,7 @@ def compare(ctx, proposals):
         else:
             diff += 1
             if len(examples) < 6:
-                examples.append(f"{o.gemeente[:10]:11}{o.street:28} now {cur['category']}/{cur.get('subcategory')}/{cur.get('entity_label')} -> {o.category}/{o.subcategory}/{o.entity_label}")
+                examples.append(f"{gemeenten.name_of(o.gemeente_code)[:10]:11}{o.street:28} now {cur['category']}/{cur.get('subcategory')}/{cur.get('entity_label')} -> {o.category}/{o.subcategory}/{o.entity_label}")
     return same, diff, examples
 
 

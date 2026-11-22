@@ -12,6 +12,7 @@ every other theme is derived here (`source: derived_from_street_classification`)
 from __future__ import annotations
 
 import config
+import gemeenten
 import argparse
 import collections
 import json
@@ -25,14 +26,14 @@ DERIVED, HAND = "derived_from_street_classification", "claude_reasoning"
 
 
 def derive(buurt: dict, streets: list[str], fin: dict) -> dict:
-    gemeente = buurt["gemeente"]
-    items = [(fin[(gemeente, s)], s) for s in streets if (gemeente, s) in fin]
+    gemeente, code = buurt["gemeente"], buurt["gemeente_code"]
+    items = [(fin[(code, s)], s) for s in streets if (code, s) in fin]
     cnt = collections.Counter()
     for x, _ in items:
         if x["category"] in ("person", "place", "thing"):
             cnt[(x["category"], x["subcategory"] or "other")] += 1
     n = sum(cnt.values())
-    t = {"gemeente": gemeente, "buurt": buurt["name"], "wijk": buurt.get("wijk"), "source": DERIVED}
+    t = {"gemeente": gemeente, "gemeente_code": code, "buurt": buurt["name"], "wijk": buurt.get("wijk"), "source": DERIVED}
     if n < 3:
         t.update(theme="Too few named streets to identify a theme", category="unclear", confidence=0.3, example_streets=streets[:4])
         return t
@@ -60,25 +61,35 @@ def derive(buurt: dict, streets: list[str], fin: dict) -> dict:
     return t
 
 
-def run(gemeenten=None, rebuild=False) -> int:
+def with_codes(data: dict) -> dict:
+    """Theme records written before gemeenten were keyed by code get their `gemeente_code` (by name, which must be unique)."""
+    for t in data["buurten"]:
+        if "gemeente_code" not in t:
+            t["gemeente_code"] = gemeenten.code_of(t["gemeente"])
+    return data
+
+
+def run(only=None, rebuild=False) -> int:
+    """`only`: restrict to these gemeenten (names or CBS codes)."""
     import geopandas as gpd
-    fin = {(x["gemeente"], x["street"]): x for x in json.loads(FINAL.read_text())}
+    fin = {(x["gemeente_code"], x["street"]): x for x in json.loads(FINAL.read_text())}
     sg = gpd.read_file(config.RAW / "streets.geojson")
     bg = gpd.read_file(config.RAW / "buurten.geojson")
-    if gemeenten:
-        sg, bg = sg[sg.gemeente.isin(gemeenten)], bg[bg.gemeente.isin(gemeenten)]
+    only = {gemeenten.code_of(g) for g in only} if only else None
+    if only:
+        sg, bg = sg[sg.gemeente_code.isin(only)], bg[bg.gemeente_code.isin(only)]
     by = collections.defaultdict(set)
-    for g, b, name in zip(sg["gemeente"], sg["buurt"], sg["name"]):
+    for g, b, name in zip(sg["gemeente_code"], sg["buurt"], sg["name"]):
         by[(g, b)].add(name)
-    data = json.loads(THEMES.read_text())
+    data = with_codes(json.loads(THEMES.read_text()))
     if rebuild:
-        data["buurten"] = [t for t in data["buurten"] if t.get("source") != DERIVED or (gemeenten and t["gemeente"] not in gemeenten)]
-    have = {(t["gemeente"], t["buurt"]) for t in data["buurten"]}
+        data["buurten"] = [t for t in data["buurten"] if t.get("source") != DERIVED or (only and t["gemeente_code"] not in only)]
+    have = {(t["gemeente_code"], t["buurt"]) for t in data["buurten"]}
     added = collections.Counter()
     for _, b in bg.iterrows():
-        if (b.gemeente, b["name"]) in have:
+        if (b.gemeente_code, b["name"]) in have:
             continue
-        t = derive({"gemeente": b.gemeente, "name": b["name"], "wijk": b.wijk}, sorted(by.get((b.gemeente, b["name"]), [])), fin)
+        t = derive({"gemeente": b.gemeente, "gemeente_code": b.gemeente_code, "name": b["name"], "wijk": b.wijk}, sorted(by.get((b.gemeente_code, b["name"]), [])), fin)
         data["buurten"].append(t)
         added[t["category"] if t["category"] in ("unclear", "mixed") else "single"] += 1
     THEMES.write_text(json.dumps(data, indent=2, ensure_ascii=False))

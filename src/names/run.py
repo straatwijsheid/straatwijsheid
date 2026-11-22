@@ -102,7 +102,7 @@ def backtest(ctx, table, n=4000, seed=7):
             kw = dict(kw)
             use_adj, only_adj = kw.pop("adj", False), kw.pop("only_adj", False)
             res = R.resolve_street(entry, collections.Counter() if only_adj else bc, collections.Counter() if only_adj else wc,
-                                   street=(r["gemeente"], r["street"]), exclude=(r["gemeente"], r["street"]), adj_c=ac if use_adj else None, **kw)
+                                   street=(r["gemeente_code"], r["street"]), exclude=(r["gemeente_code"], r["street"]), adj_c=ac if use_adj else None, **kw)
             scores[m].add(k, r["entity_label"], res)
             if evidence_tier(r) == 1:
                 t1[m].add(k, r["entity_label"], res)
@@ -116,14 +116,14 @@ def backtest(ctx, table, n=4000, seed=7):
     return sample
 
 
-def new_gemeente(ctx, table, gemeenten):
+def new_gemeente(ctx, table, codes):
     print("\nB. New-gemeente simulation: hide a whole gemeente and resolve it from what is known elsewhere.")
     print("   Seeds = the gemeente's own externally verified (tier 1) streets, as Wikidata would give for a new gemeente.")
     print("   Pass 1 uses the name only; pass 2 adds the seeds and the confident pass-1 predictions as neighbour context.")
     print("   Truth = the streets of that gemeente with a known kind (tier 1-3); each street's own seed/prediction is removed before it is scored.")
     tot1, tot2 = Score(), Score()
-    for g in gemeenten:
-        rows = [r for r in ctx.final if r["gemeente"] == g]
+    for g in codes:                                      # CBS codes
+        rows = [r for r in ctx.final if r["gemeente_code"] == g]
         truth = {(g, r["street"]): r for r in rows if evidence_tier(r) <= 3 and R.norm_kind(r) is not None}
         idx = R.ContextIndex(ctx, skip_gemeente=g)
         contrib = {}
@@ -191,7 +191,7 @@ def cmd_propose(ctx, table):
         if t < 3:
             continue
         e = table[C.name_key(r["street"])]
-        res = R.resolve_street(e, *idx.counters(r), street=(r["gemeente"], r["street"]))
+        res = R.resolve_street(e, *idx.counters(r), street=(r["gemeente_code"], r["street"]))
         cur = R.norm_kind(r) or (None, None)
         if res.decision != "accept":
             out[(t, "ambiguous/none")] += 1
@@ -226,7 +226,8 @@ def main(argv=None):
         cmd_show(ctx, table, a.show)
     if a.backtest:
         backtest(ctx, table, a.n)
-        new_gemeente(ctx, table, ["Tilburg", "Helmond", "Roosendaal", "Oss", "Boxtel", "Veghel"])
+        import gemeenten
+        new_gemeente(ctx, table, [gemeenten.code_of(n) for n in ["Tilburg", "Helmond", "Roosendaal", "Oss", "Boxtel", "Veghel"]])
     if a.propose:
         cmd_propose(ctx, table)
 

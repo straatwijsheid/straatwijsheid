@@ -25,11 +25,11 @@ def test_reconcile_reproduces_the_golden_classification_and_outputs_build():
         shutil.copytree(FIX / "build", build)
         env = {**os.environ, "STREETS_BUILD_DIR": str(build), "STREETS_KNOWLEDGE_DIR": str(FIX / "knowledge"), "WIKIDATA_CONTACT": ""}
         run("reconcile.py", env)
-        got = {(r["gemeente"], r["street"]): r for r in json.loads((build / "enriched" / "streets_final.json").read_text())}
+        got = {(r["gemeente_code"], r["street"]): r for r in json.loads((build / "enriched" / "streets_final.json").read_text())}
         expected = json.loads((FIX / "expected_final.json").read_text())
         assert len(got) == len(expected) == 84, (len(got), len(expected))
-        bad = [(e["gemeente"], e["street"], {k: (e[k], got[(e["gemeente"], e["street"])].get(k)) for k in e if e[k] != got[(e["gemeente"], e["street"])].get(k)})
-               for e in expected if any(e[k] != got[(e["gemeente"], e["street"])].get(k) for k in e)]
+        bad = [(e["gemeente"], e["street"], {k: (e[k], got[(e["gemeente_code"], e["street"])].get(k)) for k in e if e[k] != got[(e["gemeente_code"], e["street"])].get(k)})
+               for e in expected if any(e[k] != got[(e["gemeente_code"], e["street"])].get(k) for k in e)]
         assert not bad, f"{len(bad)} streets differ from the golden file, e.g. {bad[:3]}"
         for script in ("analyze.py", "export_csv.py", "build_map.py"):
             run(script, env)

@@ -6,6 +6,7 @@ a strongly monothematic buurt, the buurt theme wins (this is what fixes
 Pinkstraat -> "Pink" the singer, Pluvierlaan -> an unrelated person, etc.).
 """
 import config
+import gemeenten
 import json
 import re
 from pathlib import Path
@@ -70,16 +71,16 @@ def load_json(path: Path):
 
 
 def reconcile(wikidata_results: list[dict], context: dict, themes_by_buurt: dict) -> list[dict]:
-    """context maps street name -> [{"gemeente", "buurt"}, ...] (a name can exist in
-    several gemeenten); themes_by_buurt is keyed by (gemeente, buurt). Wikidata results
+    """context maps street name -> [{"gemeente", "gemeente_code", "buurt"}, ...] (a name can exist in
+    several gemeenten); themes_by_buurt is keyed by (gemeente_code, buurt). Wikidata results
     are per street *name*, so the same result fans out to each gemeente that has it."""
     final = []
-    unplaced = [{"gemeente": None, "buurt": None}]
+    unplaced = [{"gemeente": None, "gemeente_code": None, "buurt": None}]
     pairs = [(r, place) for r in wikidata_results for place in context.get(r["street"], unplaced)]
     for r, place in pairs:
         street = r["street"]
         buurt = place["buurt"]
-        theme = themes_by_buurt.get((place["gemeente"], buurt))
+        theme = themes_by_buurt.get((place.get("gemeente_code"), buurt))
 
         wd_conf = r.get("confidence", 0.0)
         wd_category = r.get("category")
@@ -87,6 +88,7 @@ def reconcile(wikidata_results: list[dict], context: dict, themes_by_buurt: dict
         row = {
             "street": street,
             "gemeente": place["gemeente"],
+            "gemeente_code": place.get("gemeente_code"),
             "buurt": buurt,
             "category": wd_category,
             "subcategory": r.get("subcategory"),
@@ -234,7 +236,7 @@ def apply_manual_overrides(final: list[dict], exclude=(), upto: str | None = Non
     import overrides
     layers = overrides.merged(exclude=exclude, upto=upto)
     for row in final:
-        o = layers.get((row["gemeente"], row["street"]))
+        o = layers.get((row["gemeente_code"], row["street"]))
         if not o:
             continue
         row.update({
@@ -255,19 +257,19 @@ def compute_final(exclude=(), upto: str | None = None) -> list[dict]:
     gdf = gpd.read_file(config.RAW / "streets.geojson")
     context = {}
     for _, row in gdf.iterrows():
-        context.setdefault(row["name"], []).append({"gemeente": row["gemeente"], "buurt": row["buurt"]})
+        context.setdefault(row["name"], []).append({"gemeente": row["gemeente"], "gemeente_code": row["gemeente_code"], "buurt": row["buurt"]})
     # the cache keeps lookups for gemeenten that were dropped from the map: don't emit unplaced rows for them
     wikidata_results = [r for r in wikidata_results if r["street"] in context]
     themes = load_json(config.ENRICHED / "buurt_themes_full.json")["buurten"]
-    themes_by_buurt = {(t["gemeente"], t["buurt"]): t for t in themes}
+    themes_by_buurt = {(gemeenten.code_of(t["gemeente"]) if "gemeente_code" not in t else t["gemeente_code"], t["buurt"]): t for t in themes}
 
     final = apply_manual_overrides(reconcile(wikidata_results, context, themes_by_buurt), exclude=exclude, upto=upto)
     ways = {}
     if "way_class" in gdf:
-        ways = {(g, n): (h, w) for g, n, h, w in zip(gdf["gemeente"], gdf["name"], gdf["highway"], gdf["way_class"])}
+        ways = {(g, n): (h, w) for g, n, h, w in zip(gdf["gemeente_code"], gdf["name"], gdf["highway"], gdf["way_class"])}
     for row in final:
         row["evidence_tier"] = evidence_tier(row)
-        h, w = ways.get((row["gemeente"], row["street"]), (None, None))
+        h, w = ways.get((row["gemeente_code"], row["street"]), (None, None))
         row["highway"] = h if isinstance(h, str) else None          # OSM highway type of the street
         row["way_class"] = w if isinstance(w, str) else "street"     # street | path | planned
     return final

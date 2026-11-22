@@ -50,7 +50,7 @@ def report():
     conflicts = []
     usable = 0
     for rec in recs:
-        row = ctx.rows.get((rec["gemeente"], rec["street"]))
+        row = ctx.rows.get((rec["gemeente_code"], rec["street"]))
         if row is None:
             by["(not in our data)"]["n"] += 1
             continue

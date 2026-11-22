@@ -62,6 +62,7 @@ repository root.
 
 # or stage by stage (each is also what pipeline.py runs)
 .venv/bin/python src/acquire.py "Tilburg"           # street network from the CBS buurten outline + buurten; exceptions in knowledge/global/gemeenten.json
+                                                    # a gemeente is identified by its CBS code (GM0855); names work unless two gemeenten share one (Bergen): then pass the code
 .venv/bin/python src/enrich_wikidata.py --missing   # every street name in streets.geojson not cached yet (resumable)
 .venv/bin/python src/reconcile.py                   # Wikidata + themes + overrides -> build/enriched/streets_final.json
 .venv/bin/python src/themes.py                      # buurt themes for buurten without one; then reconcile again
@@ -81,7 +82,7 @@ roughly 100 names a minute only when `WIKIDATA_CONTACT` is set.
 src/                 pipeline.py (orchestrator), acquire.py, enrich_wikidata.py, reconcile.py, themes.py, analyze.py, build_map.py, export_csv.py, tiers.py,
                      osm_etymology.py / osm_places.py (OpenStreetMap evidence), names/ (candidate table + resolver)
 src/rules/           tested classification rules (see src/rules/README.md); run.py is the CLI
-knowledge/      curated knowledge (the knowledge repository checks out here): global/ (species, vocabularies, famous people, place corrections, provinces)
+knowledge/      curated knowledge (the knowledge repository checks out here): global/ (species, vocabularies, famous people, place corrections, the gemeente registry `gemeenten_index.json`)
                      and gemeenten/<province>/<gemeente>/ (corrections, review sheet and notes, the override layers)
 build/raw/ enriched/ names/ output/ cache/   the build directory: rebuildable, never in git (set `build_dir` in config.local.toml to put it elsewhere)
 tests/               unit tests for the tiers, rules, overrides, snapshots and knowledge sharding

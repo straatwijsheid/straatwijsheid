@@ -26,6 +26,6 @@ def repair_saint_labels(ctx: Context) -> list[Override]:
                 and r["source"] in ("claude_knowledge", "title_heuristic"):
             new = saint_label(lab)
             if new != lab:
-                out.append(Override(r["gemeente"], r["street"], r["category"], r["subcategory"], new, r.get("entity_description"),
+                out.append(Override(r["gemeente_code"], r["street"], r["category"], r["subcategory"], new, r.get("entity_description"),
                                     r["confidence"], notes=r.get("notes"), rule=RULE))
     return out

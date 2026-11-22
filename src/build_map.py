@@ -1,6 +1,7 @@
 """Build an interactive map of Dutch streets colored by naming category,
 with buurt polygons showing the detected theme on hover/click."""
 import config
+import gemeenten
 import gzip
 import json
 from pathlib import Path
@@ -171,13 +172,13 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
     owns one street and one buurt FeatureGroup that toggling adds/removes. The view refits
     to whatever is selected."""
     rows = "".join(
-        f'''<div class="gm-row"><label><input type="checkbox" class="gm-check" autocomplete="off" data-g="{g["name"]}"{" checked" if g["name"] in initial else ""}>
-        {g["name"]} <span class="gm-count" data-g="{g["name"]}">{g["streets"]:,} streets</span></label>
-        <a href="#" class="gm-only" data-g="{g["name"]}">only</a></div>'''
+        f'''<div class="gm-row"><label><input type="checkbox" class="gm-check" autocomplete="off" data-g="{g["id"]}"{" checked" if g["id"] in initial else ""}>
+        {g["name"]} <span class="gm-count" data-g="{g["id"]}">{g["streets"]:,} streets</span></label>
+        <a href="#" class="gm-only" data-g="{g["id"]}">only</a></div>'''
         for g in registry
     )
     js_registry = json.dumps([
-        {k: g[k] for k in ("name", "slug", "bounds")} for g in registry
+        {k: g[k] for k in ("id", "name", "bounds")} for g in registry
     ])
     return """
     <div id="gm-panel" style="position:fixed; top:12px; right:12px; z-index:1000; background:white;
@@ -203,7 +204,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
     window.addEventListener('load', function () {
       var map = window[__MAP__], G = __REGISTRY__, R = __RENDER__, INITIAL = __INITIAL__;
       var on = {}, layers = {streets: true, buurten: true, paths: true, planned: true}, built = {}, loading = {};
-      G.forEach(function (g) { on[g.name] = INITIAL.indexOf(g.name) >= 0; });
+      G.forEach(function (g) { on[g.id] = INITIAL.indexOf(g.id) >= 0; });
 
       var esc = function (t) { return String(t).replace(/[&<>"']/g,
         function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]; }); };
@@ -303,18 +304,18 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         }, plain);                      // only a fetch/decompress failure falls back, not an error in ok()
       }
       function load(g) {
-        if (built[g.name]) return Promise.resolve(built[g.name]);
-        if (loading[g.name]) return loading[g.name];
-        var lab = countLabel(g.name), orig = lab && lab.textContent;
+        if (built[g.id]) return Promise.resolve(built[g.id]);
+        if (loading[g.id]) return loading[g.id];
+        var lab = countLabel(g.id), orig = lab && lab.textContent;
         if (lab) lab.textContent = "loading\u2026";
-        return loading[g.name] = new Promise(function (resolve, reject) {
-          loadScript("data/" + g.slug + ".js", function () {
-            var d = window.GM_DATA[g.slug];
-            built[g.name] = buildStreets(d);
+        return loading[g.id] = new Promise(function (resolve, reject) {
+          loadScript("data/" + g.id + ".js", function () {
+            var d = window.GM_DATA[g.id];
+            built[g.id] = buildStreets(d);
             if (lab) lab.textContent = orig;
-            resolve(built[g.name]);
+            resolve(built[g.id]);
           }, function (url) {
-            delete loading[g.name];
+            delete loading[g.id];
             if (lab) lab.textContent = "failed to load";
             reject(new Error("could not load " + url));
           });
@@ -332,7 +333,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
       // The view follows the selected gemeenten' streets (the whole region if none are selected).
       function fitSelection() {
         var bounds = null;
-        G.forEach(function (g) { if (on[g.name]) { var b = L.latLngBounds(g.bounds); bounds = bounds ? bounds.extend(b) : b; } });
+        G.forEach(function (g) { if (on[g.id]) { var b = L.latLngBounds(g.bounds); bounds = bounds ? bounds.extend(b) : b; } });
         map.fitBounds(bounds || allBounds, {padding: [20, 20], animate: false});
       }
       function apply(refit) {
@@ -341,10 +342,10 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
           if (!layers.buurten && map.hasLayer(buurtLayer)) map.removeLayer(buurtLayer);
         }
         G.forEach(function (g) {
-          if (on[g.name] && !built[g.name]) { load(g).then(function () { apply(false); }, function () {}); return; }
-          var layer = built[g.name];
+          if (on[g.id] && !built[g.id]) { load(g).then(function () { apply(false); }, function () {}); return; }
+          var layer = built[g.id];
           if (!layer) return;
-          var want = on[g.name] && layers.streets;
+          var want = on[g.id] && layers.streets;
           if (want && !map.hasLayer(layer)) map.addLayer(layer);
           if (!want && map.hasLayer(layer)) map.removeLayer(layer);
           syncParts(layer);
@@ -361,7 +362,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
       document.querySelectorAll('.gm-only').forEach(function (a) {
         a.addEventListener('click', function (e) {
           e.preventDefault();
-          G.forEach(function (g) { on[g.name] = (g.name === a.dataset.g); });
+          G.forEach(function (g) { on[g.id] = (g.id === a.dataset.g); });
           sync(); apply(true);
         });
       });
@@ -388,16 +389,17 @@ W = {"path": "p", "planned": "c"}   # way_class -> the one-letter code in the fe
 
 def main():
     streets = gpd.read_file(config.RAW / "streets.geojson")
-    # a street name can exist in several gemeenten, so everything is keyed by (gemeente, name)
-    final = {(r["gemeente"], r["street"]): r
+    # a street name can exist in several gemeenten, and so can a gemeente name: everything is keyed by (gemeente_code, name)
+    final = {(r["gemeente_code"], r["street"]): r
              for r in json.loads((config.ENRICHED / "streets_final.json").read_text())}
-    themes = {(t["gemeente"], t["buurt"]): t
-              for t in json.loads((config.ENRICHED / "buurt_themes_full.json").read_text())["buurten"]}
+    import themes as themes_mod
+    themes = {(t["gemeente_code"], t["buurt"]): t
+              for t in themes_mod.with_codes(json.loads((config.ENRICHED / "buurt_themes_full.json").read_text()))["buurten"]}
     buurten = gpd.read_file(config.RAW / "buurten.geojson")
     streets["geometry"] = streets.geometry.apply(round_geom)
     buurten["geometry"] = buurten.geometry.apply(round_geom)
 
-    keys = list(zip(streets["gemeente"], streets["name"]))
+    keys = list(zip(streets["gemeente_code"], streets["name"]))
     for field, default in (("category", "unresolved"), ("subcategory", None), ("confidence", None),
                            ("source", None), ("entity_label", None), ("entity_description", None),
                            ("buurt_theme", None), ("source_url", None), ("evidence_tier", None), ("notes", None)):
@@ -406,24 +408,21 @@ def main():
     streets["analyzed"] = [k in final for k in keys]
     streets["evidence_tier"] = [int(t) if t == t and t is not None else evidence_tier(final[k]) if k in final else 5
                                 for t, k in zip(streets["evidence_tier"], keys)]
-    gemeenten = sorted(streets["gemeente"].unique())
-    analyzed_gemeenten = set(streets.loc[streets["analyzed"], "gemeente"])
+    gemeente_codes = sorted(streets["gemeente_code"].unique(), key=lambda c: (gemeenten.name_of(c), c))   # in name order, as before
+    analyzed_gemeenten = set(streets.loc[streets["analyzed"], "gemeente_code"])
     # initial view is a placeholder; the panel's load handler fits to the selected gemeenten
     m = folium.Map(location=[51.44, 5.47], zoom_start=12, tiles="OpenStreetMap")
 
-    def slug(g):
-        return re.sub(r"[^a-z0-9]+", "-", g.lower()).strip("-")
-
-    bfeats = {g: [] for g in gemeenten}
+    bfeats = {g: [] for g in gemeente_codes}
     for _, row in buurten.iterrows():
-        theme = themes.get((row["gemeente"], row["name"]))
+        theme = themes.get((row["gemeente_code"], row["name"]))
         props = {"n": row["name"], "w": row["wijk"]}
         if theme:
             props.update(t=theme["theme"], c=CATEGORY_COLORS.get(theme["category"], "#9ca3af"), f=theme["confidence"])
         else:
             # not labeled: outline only, so the area is still visible; o=1 if analyzed but no streets
-            props["o"] = int(row["gemeente"] in analyzed_gemeenten)
-        bfeats[row["gemeente"]].append({"type": "Feature", "properties": props, "geometry": row["geometry"].__geo_interface__})
+            props["o"] = int(row["gemeente_code"] in analyzed_gemeenten)
+        bfeats[row["gemeente_code"]].append({"type": "Feature", "properties": props, "geometry": row["geometry"].__geo_interface__})
 
     palette = []
     def color_index(c):
@@ -431,7 +430,7 @@ def main():
             palette.append(c)
         return palette.index(c)
 
-    feats = {g: [] for g in gemeenten}
+    feats = {g: [] for g in gemeente_codes}
     for _, row in streets.iterrows():
         # color only reflects a specific, identified namesake (real entity_label);
         # everything else is thin gray with one shared "origin not identified" tooltip
@@ -449,7 +448,7 @@ def main():
                 gsub = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else ""
                 gprops["c"] = row["category"] if isinstance(row["category"], str) else "unresolved"
                 gprops["s"] = gsub
-            feats[row["gemeente"]].append({"type": "Feature", "properties": gprops, "geometry": geom})
+            feats[row["gemeente_code"]].append({"type": "Feature", "properties": gprops, "geometry": geom})
             continue
         subcat = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else None
         _, color = subgroup_color(row["category"], subcat)
@@ -461,7 +460,7 @@ def main():
         for key, field in (("d", "entity_description"), ("u", "source_url")):
             if isinstance(row[field], str) and row[field]:
                 props[key] = row[field]
-        feats[row["gemeente"]].append({"type": "Feature", "properties": props, "geometry": geom})
+        feats[row["gemeente_code"]].append({"type": "Feature", "properties": props, "geometry": geom})
     gray_style = {"color": CATEGORY_COLORS["unresolved"], "weight": 1, "opacity": 0.5}
     # one script per gemeente, loaded on demand (a <script> rather than fetch() so the map
     # still works when streets_map.html is opened straight from disk)
@@ -475,20 +474,22 @@ def main():
         path.with_name(path.name + ".gz").write_bytes(gzip.compress(text.encode("utf-8"), 9, mtime=0))
 
     registry = []
-    for g in gemeenten:
+    for g in gemeente_codes:
+        gid = g.lower()                                  # the map's id for a gemeente, and its data file name: data/gm0772.js
         payload = {"type": "FeatureCollection", "features": feats[g]}
-        write_js(data_dir / f"{slug(g)}.js",
-            f"(window.GM_DATA=window.GM_DATA||{{}})[{json.dumps(slug(g))}]="
+        write_js(data_dir / f"{gid}.js",
+            f"(window.GM_DATA=window.GM_DATA||{{}})[{json.dumps(gid)}]="
             + json.dumps(payload, separators=(",", ":"), ensure_ascii=False) + ";\n")
-        gs = streets[streets["gemeente"] == g]
+        gs = streets[streets["gemeente_code"] == g]
         minx, miny, maxx, maxy = gs.total_bounds
-        registry.append({"name": g, "slug": slug(g), "streets": len(gs), "bounds": [[miny, minx], [maxy, maxx]]})
-    allb = [f for g in gemeenten for f in bfeats[g]]
+        registry.append({"id": gid, "name": gemeenten.name_of(g), "streets": len(gs), "bounds": [[miny, minx], [maxy, maxx]]})
+    allb = [f for g in gemeente_codes for f in bfeats[g]]
     write_js(data_dir / "buurten.js",
         "window.GM_BUURTEN=" + json.dumps({"type": "FeatureCollection", "features": allb},
                                           separators=(",", ":"), ensure_ascii=False) + ";\n")
     render = {"palette": palette, "basis": SOURCE_LABELS, "tiers": {str(k): v for k, v in TIER_NAMES.items()}, "gray": gray_style, "unresolved": UNRESOLVED_TEXT}
-    initial = [DEFAULT_GEMEENTE] if DEFAULT_GEMEENTE in gemeenten else gemeenten
+    default = gemeenten.known(DEFAULT_GEMEENTE)
+    initial = [default.lower()] if default in gemeente_codes else [g.lower() for g in gemeente_codes]
     m.get_root().html.add_child(folium.Element(gemeente_panel(registry, m.get_name(), render, initial)))
 
     def subgroup_rows(category):

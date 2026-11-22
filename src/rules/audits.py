@@ -50,7 +50,7 @@ def harmonise_same_name(ctx: Context, min_occurrences=4, majority=0.7) -> list[O
                 continue
             if r["source"] == "claude_knowledge" and r["category"] == "person":
                 continue
-            out.append(Override(r["gemeente"], name, kind[0], kind[1], label[0], label[1], 0.4,
+            out.append(Override(r["gemeente_code"], name, kind[0], kind[1], label[0], label[1], 0.4,
                                 notes=f"Harmonised with the same-named street elsewhere ({k}/{len(rows)} agree on '{top}'); the street's own buurt gave no support for a different reading",
                                 rule=HARMONISE))
     return out
@@ -89,7 +89,7 @@ def person_consensus(ctx: Context, majority=0.7) -> list[Override]:
             continue
         support = sum(1 for y in ctx.neighbours(r) if y["category"] == "person" and y.get("subcategory") == sub)
         if support >= 2 and s in person_labels():
-            out.append(Override(r["gemeente"], s, "person", sub, person_labels()[s][1],
+            out.append(Override(r["gemeente_code"], s, "person", sub, person_labels()[s][1],
                                 f"Chosen because the buurt '{ctx.buurt(r)[1]}' has {support} other streets named after the same kind of person; other gemeenten' same-named streets agree",
                                 0.5, notes="Buurt-theme supported classification", rule=PERSON))
     return out
@@ -135,7 +135,7 @@ def _generic_words(ctx: Context) -> set:
     """Stripped names that occur in >=3 gemeenten, mostly as local names: ordinary words, not namesakes."""
     by = collections.defaultdict(lambda: collections.defaultdict(list))
     for r in ctx.final:
-        by[strip_road(r["street"])][r["gemeente"]].append(r)
+        by[strip_road(r["street"])][r["gemeente_code"]].append(r)
     voc = set()
     for w, gm in by.items():
         if len(gm) >= 3:
@@ -154,7 +154,7 @@ def theme_forced(ctx: Context) -> list[Override]:
     for x in ctx.final:
         if x["source"] not in THEME_SOURCES or is_local(x["category"], x.get("subcategory")):
             continue
-        n, g, c, sub = x["street"], x["gemeente"], x["category"], x.get("subcategory") or ""
+        n, g, c, sub = x["street"], x["gemeente_code"], x["category"], x.get("subcategory") or ""
         others = [y for y in ctx.by_name[n] if y is not x and (y["source"] in TRUSTED)]
         same = [y for y in others if (y["category"], y.get("subcategory")) == (c, x.get("subcategory"))]
         majority_local = len(others) >= 2 and sum(1 for y in others if broad(y["category"], y.get("subcategory")) == "local") > len(others) / 2

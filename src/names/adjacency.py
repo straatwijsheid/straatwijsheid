@@ -21,10 +21,10 @@ CACHE = config.NAMES / "adjacency.json"
 
 
 def build(root=ROOT, distance=ADJACENT_M) -> dict:
-    """{(gemeente, street): [adjacent street names]}"""
-    streets = gpd.read_file(config.RAW / "streets.geojson")[["gemeente", "name", "geometry"]]
+    """{(gemeente_code, street): [adjacent street names]}"""
+    streets = gpd.read_file(config.RAW / "streets.geojson")[["gemeente_code", "name", "geometry"]]
     adj = collections.defaultdict(set)
-    for g, d in streets.groupby("gemeente"):
+    for g, d in streets.groupby("gemeente_code"):
         d = d.reset_index(drop=True).to_crs(d.estimate_utm_crs())
         left = d.assign(geometry=d.geometry.buffer(distance))
         sj = gpd.sjoin(left, d[["name", "geometry"]].rename(columns={"name": "nb"}), predicate="intersects")
@@ -37,10 +37,11 @@ def build(root=ROOT, distance=ADJACENT_M) -> dict:
 def load(rebuild=False) -> dict:
     if CACHE.exists() and not rebuild:
         raw = json.loads(CACHE.read_text())
-        return {tuple(k.split("\t")): v for k, v in raw.items()}
+        if raw.pop("_keys", None) == "gemeente_code":                # caches written before gemeenten were keyed by code are rebuilt
+            return {tuple(k.split("\t")): v for k, v in raw.items()}
     adj = build()
     CACHE.parent.mkdir(exist_ok=True)
-    CACHE.write_text(json.dumps({"\t".join(k): v for k, v in adj.items()}, ensure_ascii=False))
+    CACHE.write_text(json.dumps({"_keys": "gemeente_code", **{"\t".join(k): v for k, v in adj.items()}}, ensure_ascii=False))
     return adj
 
 

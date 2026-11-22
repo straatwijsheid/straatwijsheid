@@ -32,7 +32,7 @@ def core(name: str) -> str:
 @dataclass
 class Override:
     """One street's classification, in the shape the override layers store."""
-    gemeente: str
+    gemeente_code: str          # the CBS code (the key); `record()` adds the display name
     street: str
     category: str
     subcategory: Optional[str] = None
@@ -45,13 +45,16 @@ class Override:
     rule: Optional[str] = field(default=None, compare=False)   # which rule produced it (not stored in the file)
 
     def record(self) -> dict:
+        """The entry as a layer stores it: the gemeente's name for display, then its code (the key; overrides.write_layer keeps it out of the file)."""
+        import gemeenten
         d = asdict(self)
         d.pop("rule")
-        return d
+        code = d.pop("gemeente_code")
+        return {"gemeente": gemeenten.name_of(code), "gemeente_code": code, **d}
 
     @property
     def key(self):
-        return (self.gemeente, self.street)
+        return (self.gemeente_code, self.street)
 
     @property
     def kind(self):
@@ -83,7 +86,7 @@ def broad(category, subcategory) -> str:
 class Context:
     """Everything the rules need to know about the dataset, loaded once.
 
-    streets  -- list of {gemeente, name, buurt} (from build/raw/streets.geojson)
+    streets  -- list of {gemeente_code, name, buurt, wijk} (from build/raw/streets.geojson)
     final    -- list of streets_final.json records (the current classification)
     """
     streets: list
@@ -92,22 +95,22 @@ class Context:
     place_names: set = field(default_factory=set)      # lowercase gemeente/wijk/buurt names
 
     def __post_init__(self):
-        self.buurt_of = {(s["gemeente"], s["name"]): s["buurt"] for s in self.streets}
-        self.wijk_of = {(s["gemeente"], s["name"]): s.get("wijk") for s in self.streets}
-        self.rows = {(r["gemeente"], r["street"]): r for r in self.final}
+        self.buurt_of = {(s["gemeente_code"], s["name"]): s["buurt"] for s in self.streets}
+        self.wijk_of = {(s["gemeente_code"], s["name"]): s.get("wijk") for s in self.streets}
+        self.rows = {(r["gemeente_code"], r["street"]): r for r in self.final}
         self.by_name = collections.defaultdict(list)
         self.by_buurt = collections.defaultdict(list)
         self.by_wijk = collections.defaultdict(list)
         for r in self.final:
             self.by_name[r["street"]].append(r)
-            self.by_buurt[(r["gemeente"], self.buurt_of.get((r["gemeente"], r["street"])))].append(r)
-            self.by_wijk[(r["gemeente"], self.wijk_of.get((r["gemeente"], r["street"])))].append(r)
+            self.by_buurt[(r["gemeente_code"], self.buurt_of.get((r["gemeente_code"], r["street"])))].append(r)
+            self.by_wijk[(r["gemeente_code"], self.wijk_of.get((r["gemeente_code"], r["street"])))].append(r)
 
     def buurt(self, row):
-        return (row["gemeente"], self.buurt_of.get((row["gemeente"], row["street"])))
+        return (row["gemeente_code"], self.buurt_of.get((row["gemeente_code"], row["street"])))
 
     def wijk(self, row):
-        return (row["gemeente"], self.wijk_of.get((row["gemeente"], row["street"])))
+        return (row["gemeente_code"], self.wijk_of.get((row["gemeente_code"], row["street"])))
 
     def neighbours(self, row, trusted_only=True):
         """Other streets in the same buurt that carry a specific namesake from a trusted source."""
@@ -119,7 +122,7 @@ class Context:
     def load(cls, root: Path = ROOT, final: list | None = None):
         """The data the rules look at. `final` replaces streets_final.json with rows computed in memory (the state below a rule's own layer)."""
         import geopandas as gpd
-        gdf = gpd.read_file(config.RAW / "streets.geojson")[["gemeente", "name", "buurt", "wijk"]]
+        gdf = gpd.read_file(config.RAW / "streets.geojson")[["gemeente_code", "name", "buurt", "wijk"]]
         streets = gdf.to_dict("records")
         if final is None:
             final = json.loads((config.ENRICHED / "streets_final.json").read_text())

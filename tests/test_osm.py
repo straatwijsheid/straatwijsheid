@@ -19,7 +19,7 @@ def ent(p31=(), p106=(), desc="", ):
 
 
 def row(g, s, cat, sub=None, label=None, source="claude_knowledge"):
-    return {"gemeente": g, "street": s, "category": cat, "subcategory": sub, "entity_label": label, "entity_description": None,
+    return {"gemeente": g, "gemeente_code": g, "street": s, "category": cat, "subcategory": sub, "entity_label": label, "entity_description": None,
             "confidence": 0.5, "source": source, "notes": None}
 
 
@@ -34,11 +34,11 @@ def test_classify_entity():
 
 
 def _ctx(rows):
-    return Context([{"gemeente": r["gemeente"], "name": r["street"], "buurt": "b", "wijk": None} for r in rows], rows, {}, set())
+    return Context([{"gemeente_code": r["gemeente_code"], "name": r["street"], "buurt": "b", "wijk": None} for r in rows], rows, {}, set())
 
 
 def rec(g, s, cat, sub, label, qid="Q1"):
-    return {"gemeente": g, "street": s, "via": "name:etymology:wikidata", "ways": 1, "text": [],
+    return {"gemeente": g, "gemeente_code": g, "street": s, "via": "name:etymology:wikidata", "ways": 1, "text": [],
             "items": [{"qid": qid, "label": label, "description": "d", "category": cat, "subcategory": sub}]}
 
 

@@ -31,9 +31,9 @@ LAYER_ORDER = [LEGACY] + PRECEDENCE
 FIELDS = ("category", "subcategory", "entity_label", "entity_description", "confidence", "source", "source_url", "notes")
 
 
-def layer_path(name: str, gemeente: str) -> Path:
+def layer_path(name: str, gemeente_code: str) -> Path:
     """One file per layer per gemeente: <knowledge>/gemeenten/<province>/<gemeente>/overrides/<layer>.json (see knowledge.py)."""
-    return knowledge.gemeente_dir(gemeente) / "overrides" / f"{name}.json"
+    return knowledge.gemeente_dir(gemeente_code) / "overrides" / f"{name}.json"
 
 
 def layer_files(name: str) -> list[Path]:
@@ -41,18 +41,20 @@ def layer_files(name: str) -> list[Path]:
 
 
 def load_layer(name: str) -> list[dict]:
+    """The entries of a layer, each with the `gemeente_code` of the shard it was read from (the key; the stored `gemeente` name is for display)."""
     out = []
     for p in layer_files(name):
-        out.extend(json.loads(p.read_text())["overrides"])
+        code = knowledge.code_of_shard(p.parent.parent)
+        out.extend({**o, "gemeente_code": code} for o in json.loads(p.read_text())["overrides"])
     return out
 
 
 def write_layer(name: str, entries: list[dict]) -> None:
     """Write the layer sharded by gemeente; a gemeente that no longer has entries loses its file."""
-    entries = sorted(entries, key=lambda o: (o["gemeente"], o["street"]))
+    entries = sorted(entries, key=lambda o: (o["gemeente_code"], o["street"]))
     by: dict[str, list] = {}
     for o in entries:
-        by.setdefault(o["gemeente"], []).append(o)
+        by.setdefault(o["gemeente_code"], []).append({k: v for k, v in o.items() if k != "gemeente_code"})   # the code is the shard, not stored per entry
     keep = {layer_path(name, g) for g in by}
     for p in layer_files(name):
         if p not in keep:
@@ -62,7 +64,7 @@ def write_layer(name: str, entries: list[dict]) -> None:
 
 
 def merged(exclude=(), upto: str | None = None) -> dict:
-    """{(gemeente, street): entry}: layers applied in LAYER_ORDER, later wins. `exclude` skips named layers; `upto` stops before that layer
+    """{(gemeente_code, street): entry}: layers applied in LAYER_ORDER, later wins. `exclude` skips named layers; `upto` stops before that layer
     (what a rule sees when it computes its own proposals: everything that ranks below it, nothing of itself or above)."""
     out = {}
     for name in LAYER_ORDER:
@@ -71,13 +73,13 @@ def merged(exclude=(), upto: str | None = None) -> dict:
         if name in exclude:
             continue
         for o in load_layer(name):
-            out[(o["gemeente"], o["street"])] = o
+            out[(o["gemeente_code"], o["street"])] = o
     return out
 
 
 def diff(old: list[dict], new: list[dict]) -> dict:
     """How a regenerated layer differs from the one on disk."""
-    key = lambda o: (o["gemeente"], o["street"])
+    key = lambda o: (o["gemeente_code"], o["street"])
     value = lambda o: tuple(o.get(f) for f in FIELDS)
     a, b = {key(o): value(o) for o in old}, {key(o): value(o) for o in new}
     return {"added": len(b.keys() - a.keys()), "removed": len(a.keys() - b.keys()), "changed": sum(1 for k in a.keys() & b.keys() if a[k] != b[k]),
@@ -88,7 +90,7 @@ def status() -> None:
     owner = {}
     for name in LAYER_ORDER:
         for o in load_layer(name):
-            owner[(o["gemeente"], o["street"])] = name
+            owner[(o["gemeente_code"], o["street"])] = name
     import collections
     decided = collections.Counter(owner.values())
     for name in LAYER_ORDER:

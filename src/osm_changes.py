@@ -11,6 +11,7 @@ import collections
 import json
 
 import config
+import gemeenten
 
 TAGS = ("name", "name:etymology:wikidata", "name:etymology", "name:etymology:wikipedia", "wikidata", "subject:wikidata", "highway")
 
@@ -46,18 +47,20 @@ def _gemeente(changes: list[dict]) -> None:
     if not pts:
         return
     b = gpd.read_file(config.RAW / "buurten.geojson")
-    area = b.dissolve(by="gemeente").reset_index()[["gemeente", "geometry"]].to_crs("EPSG:4326")
+    area = b.dissolve(by="gemeente_code").reset_index()[["gemeente_code", "geometry"]].to_crs("EPSG:4326")
     g = gpd.GeoDataFrame({"i": [i for i, _ in pts]}, geometry=[Point(c["lon"], c["lat"]) for _, c in pts], crs="EPSG:4326")
     j = gpd.sjoin(g, area, how="left", predicate="within")
     j = j[~j.index.duplicated()]
-    for i, gem in zip(j["i"], j["gemeente"]):
-        changes[i]["gemeente"] = gem if isinstance(gem, str) else None
+    for i, gem in zip(j["i"], j["gemeente_code"]):
+        changes[i]["gemeente_code"] = gem if isinstance(gem, str) else None
+        changes[i]["gemeente"] = gemeenten.name_of(gem) if isinstance(gem, str) else None
 
 
 def write_report(changes: list[dict], fetched_at: str, previous_at: str | None) -> None:
     _gemeente(changes)
     for c in changes:
         c.setdefault("gemeente", None)
+        c.setdefault("gemeente_code", None)
     config.ENRICHED.mkdir(parents=True, exist_ok=True)
     with (config.ENRICHED / "osm_changes.jsonl").open("a") as f:
         for c in changes:
@@ -65,11 +68,11 @@ def write_report(changes: list[dict], fetched_at: str, previous_at: str | None) 
     tag = lambda t: t.get("name:etymology:wikidata") or t.get("wikidata") or t.get("name:etymology") or "-"
     by = collections.defaultdict(list)
     for c in changes:
-        by[(c["gemeente"] or "(outside our gemeenten)", c["name"] or "(unnamed)")].append(c)
+        by[(c["gemeente"] or "(outside our gemeenten)", c["gemeente_code"] or "", c["name"] or "(unnamed)")].append(c)
     counts = collections.Counter(c["change"] for c in changes)
     lines = [f"# OSM etymology changes", "", f"Fetched {fetched_at}; compared with the snapshot of {previous_at or 'none (first snapshot)'}.", "",
              f"{len(changes)} way changes in {len(by)} streets: " + ", ".join(f"{v} {k}" for k, v in counts.items()), ""]
-    for (gem, name), cs in sorted(by.items()):
+    for (gem, _code, name), cs in sorted(by.items()):
         k = collections.Counter(c["change"] for c in cs)
         olds = sorted({tag(c["old"]) for c in cs} - {"-"})
         news = sorted({tag(c["new"]) for c in cs} - {"-"})

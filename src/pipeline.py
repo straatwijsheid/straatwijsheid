@@ -1,6 +1,6 @@
 """The whole pipeline in one place, for any gemeenten.
 
-  python src/pipeline.py add Tilburg Breda       new gemeenten, end to end
+  python src/pipeline.py add Tilburg Breda       new gemeenten (names or CBS codes GM####), end to end
   python src/pipeline.py rebuild                 everything downstream of the data (after rules/overrides/knowledge changed)
   python src/pipeline.py status                  what is missing at each stage
   python src/pipeline.py bootstrap               fresh checkout: build directory + clone the knowledge repository
@@ -101,21 +101,23 @@ def tiers():
     rows = json.loads((config.ENRICHED / "streets_final.json").read_text())
     c = collections.Counter(r["evidence_tier"] for r in rows)
     n = len(rows)
-    print(f"\n{n} streets in {len({r['gemeente'] for r in rows})} gemeenten; evidence tiers: " + ", ".join(f"{t}: {c[t]} ({c[t] / n:.1%})" for t in sorted(c)))
+    print(f"\n{n} streets in {len({r['gemeente_code'] for r in rows})} gemeenten; evidence tiers: " + ", ".join(f"{t}: {c[t]} ({c[t] / n:.1%})" for t in sorted(c)))
 
 
 def status():
     import geopandas as gpd
-    gems = sorted(set(gpd.read_file(config.RAW / "streets.geojson")["gemeente"]))
+    import gemeenten
+    gems = sorted(set(gpd.read_file(config.RAW / "streets.geojson")["gemeente_code"]))
     final = json.loads((config.ENRICHED / "streets_final.json").read_text())
     themes = json.loads((config.ENRICHED / "buurt_themes_full.json").read_text())["buurten"]
-    have_final = {r["gemeente"] for r in final}
-    have_theme = {t["gemeente"] for t in themes}
+    have_final = {r["gemeente_code"] for r in final}
+    have_theme = {gemeenten.code_of(t["gemeente"]) if "gemeente_code" not in t else t["gemeente_code"] for t in themes}
     sys.path.insert(0, str(SRC))
     from enrich_wikidata import missing_street_names
     miss = missing_street_names(config.ENRICHED / "all_streets_wikidata.jsonl")
     print(f"acquired: {len(gems)} gemeenten; classified: {len(have_final)}; with themes: {len(have_theme)}")
-    print(f"not classified: {sorted(set(gems) - have_final) or 'none'}; without themes: {sorted(set(gems) - have_theme) or 'none'}")
+    show = lambda codes: [f"{gemeenten.name_of(c)} ({c})" for c in sorted(codes)] or "none"
+    print(f"not classified: {show(set(gems) - have_final)}; without themes: {show(set(gems) - have_theme)}")
     print(f"street names not yet looked up on Wikidata: {len(miss)}")
 
 

@@ -1,0 +1,16 @@
+{
+ "gemeenten": {
+  "GM0772": {
+   "name": "Eindhoven",
+   "province": "Noord-Brabant"
+  },
+  "GM0866": {
+   "name": "Waalre",
+   "province": "Noord-Brabant"
+  },
+  "GM1706": {
+   "name": "Cranendonck",
+   "province": "Noord-Brabant"
+  }
+ }
+}

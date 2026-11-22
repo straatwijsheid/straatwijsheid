@@ -17,7 +17,7 @@ def _fin(items):
 
 
 def test_theme_single_mixed_unclear():
-    b = {"gemeente": "G", "name": "B", "wijk": "W"}
+    b = {"gemeente": "G", "gemeente_code": "G", "name": "B", "wijk": "W"}
     fin = _fin([("a", "person", "musician_composer", "Bach"), ("b", "person", "musician_composer", None), ("c", "person", "musician_composer", None),
                 ("d", "person", "musician_composer", None), ("e", "thing", "flora", None)])
     t = T.derive(b, list("abcde"), fin)
@@ -41,7 +41,7 @@ def test_acquire_config():
     cfg = acquire.CONFIG
     assert cfg["merged"]["Weesp"]["pdok"] == "Amsterdam" and cfg["merged"]["Weesp"]["buurt_prefix"].startswith("BU")
     assert cfg["aliases"]["Nuenen"]["pdok"] == "Nuenen, Gerwen en Nederwetten"
-    assert acquire.slug("Bergen op Zoom") == "bergen-op-zoom"
+    assert acquire.file_key("GM0758") == "gm0758"                  # raw files are named by CBS code, not by name
 
 
 def test_missing_street_names():

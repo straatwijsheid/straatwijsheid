@@ -45,7 +45,7 @@ class ContextIndex:
         self.buurt = collections.defaultdict(collections.Counter)
         self.wijk = collections.defaultdict(collections.Counter)
         for r in ctx.final:
-            if skip_gemeente and r["gemeente"] == skip_gemeente:
+            if skip_gemeente and r["gemeente_code"] == skip_gemeente:
                 continue
             self.add(r, TIER_WEIGHT[evidence_tier(r)])
 
@@ -56,7 +56,7 @@ class ContextIndex:
         k = kind or norm_kind(row)
         if k is None:
             return
-        self.known[(row["gemeente"], row["street"])] = (k, weight)
+        self.known[(row["gemeente_code"], row["street"])] = (k, weight)
         b, w = self._keys(row)
         if b is not None:
             self.buurt[b][k] += weight
@@ -65,7 +65,7 @@ class ContextIndex:
 
     def sub(self, row, weight, kind):
         """Undo a contribution made with add(row, weight, kind)."""
-        self.known.pop((row["gemeente"], row["street"]), None)
+        self.known.pop((row["gemeente_code"], row["street"]), None)
         b, w = self._keys(row)
         if b is not None:
             self.buurt[b][kind] -= weight
@@ -77,7 +77,7 @@ class ContextIndex:
         if k is None:
             return
         wt = TIER_WEIGHT[evidence_tier(row)]
-        self.known.pop((row["gemeente"], row["street"]), None)
+        self.known.pop((row["gemeente_code"], row["street"]), None)
         b, w = self._keys(row)
         if b is not None:
             self.buurt[b][k] -= wt
@@ -88,8 +88,8 @@ class ContextIndex:
         """Weighted kind counts of the streets that touch this one (empty without an adjacency map)."""
         c = collections.Counter()
         if self.adjacency:
-            for nb in self.adjacency.get((row["gemeente"], row["street"]), ()):
-                kw = self.known.get((row["gemeente"], nb))
+            for nb in self.adjacency.get((row["gemeente_code"], row["street"]), ()):
+                kw = self.known.get((row["gemeente_code"], nb))
                 if kw:
                     c[kw[0]] += kw[1]
         return c

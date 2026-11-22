@@ -47,7 +47,7 @@ def propose(ctx: Context, records: list) -> list[Override]:
     wd = _wikidata_qids()
     out = []
     for rec in records:
-        row = ctx.rows.get((rec["gemeente"], rec["street"]))
+        row = ctx.rows.get((rec["gemeente_code"], rec["street"]))
         if row is None:
             continue
         kind, detail = classify_pair(row, rec)
@@ -66,7 +66,7 @@ def propose(ctx: Context, records: list) -> list[Override]:
         if kind == "agree" and not replaced and row.get("subcategory") not in (None, "other", "unspecified_individual"):
             sub = row.get("subcategory")   # same kind already known: OSM supplies the specific namesake, not a re-labelling of the kind
         desc = items[0].get("description")
-        out.append(Override(rec["gemeente"], rec["street"], cat, sub, label, desc, 0.85, source="osm_etymology",
+        out.append(Override(rec["gemeente_code"], rec["street"], cat, sub, label, desc, 0.85, source="osm_etymology",
                             source_url=f"https://www.wikidata.org/wiki/{items[0]['qid']}",
                             notes=f"OpenStreetMap {rec['via']}: {', '.join(i['qid'] for i in items)}", rule=RULE))
     return out

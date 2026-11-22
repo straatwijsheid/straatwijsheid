@@ -136,12 +136,12 @@ def build_table(ctx: Context, wikidata: dict | None = None, rules: bool = True, 
     for row in ctx.final:
         key = name_key(row["street"])
         e = table.setdefault(key, NameEntry(key))
-        e.streets.append((row["gemeente"], row["street"]))
+        e.streets.append((row["gemeente_code"], row["street"]))
         k = kind_of(row)
         if k is not None:
             tier = evidence_tier(row)
             label = row.get("entity_label") or None
-            e.cand(LOCAL if is_local(*k) and k[1] == "local_landscape_feature" else k).occurrences.append((row["gemeente"], row["street"], tier, label))
+            e.cand(LOCAL if is_local(*k) and k[1] == "local_landscape_feature" else k).occurrences.append((row["gemeente_code"], row["street"], tier, label))
     for key, e in table.items():
         names = sorted({s for _, s in e.streets})
         # --- Wikidata ---
@@ -182,7 +182,7 @@ def build_table(ctx: Context, wikidata: dict | None = None, rules: bool = True, 
             continue
         e = table.get(name_key(rec["street"]))
         if e is not None:
-            e.cand((items[0]["category"], items[0]["subcategory"])).osm.append((rec["gemeente"], rec["street"], items[0].get("label")))
+            e.cand((items[0]["category"], items[0]["subcategory"])).osm.append((rec["gemeente_code"], rec["street"], items[0].get("label")))
     return table
 
 

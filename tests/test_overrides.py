@@ -7,10 +7,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import config
 import overrides as O
+from _registry import write_registry
+
+CODE = "GM0001"
 
 
 def entry(street, label, g="G"):
-    return {"gemeente": g, "street": street, "category": "person", "subcategory": "other", "entity_label": label, "entity_description": None,
+    return {"gemeente": g, "gemeente_code": CODE, "street": street, "category": "person", "subcategory": "other", "entity_label": label, "entity_description": None,
             "confidence": 0.5, "source": "claude_knowledge", "source_url": None, "notes": None}
 
 
@@ -20,6 +23,7 @@ class Tmp:
         self.d = tempfile.TemporaryDirectory()
         self.old = (config.KNOWLEDGE, config.ENRICHED)
         config.KNOWLEDGE, config.ENRICHED = Path(self.d.name) / "k", Path(self.d.name) / "e"
+        write_registry({CODE: ("G", "Province")})
         return self
 
     def __exit__(self, *a):
@@ -33,10 +37,10 @@ def test_later_layer_wins_and_exclude_upto():
         O.write_layer("vocabulary", [entry("A", "vocab")])
         O.write_layer("corrections", [entry("A", "reviewed"), entry("C", "reviewed")])
         m = O.merged()
-        assert m[("G", "A")]["entity_label"] == "reviewed" and m[("G", "B")]["entity_label"] == "hand" and ("G", "C") in m
-        assert O.merged(exclude={"corrections"})[("G", "A")]["entity_label"] == "vocab"
-        assert O.merged(upto="vocabulary")[("G", "A")]["entity_label"] == "hand"      # a rule sees only what ranks below it
-        assert ("G", "C") not in O.merged(upto="vocabulary")
+        assert m[(CODE, "A")]["entity_label"] == "reviewed" and m[(CODE, "B")]["entity_label"] == "hand" and (CODE, "C") in m
+        assert O.merged(exclude={"corrections"})[(CODE, "A")]["entity_label"] == "vocab"
+        assert O.merged(upto="vocabulary")[(CODE, "A")]["entity_label"] == "hand"      # a rule sees only what ranks below it
+        assert (CODE, "C") not in O.merged(upto="vocabulary")
 
 
 def test_diff_reports_regeneration():
@@ -54,9 +58,9 @@ def test_layer_order_is_complete_and_legacy_first():
 def test_write_layer_is_deterministic():
     with Tmp():
         O.write_layer("vocabulary", [entry("B", "b"), entry("A", "a")])
-        first = O.layer_path("vocabulary", "G").read_text()
+        first = O.layer_path("vocabulary", CODE).read_text()
         O.write_layer("vocabulary", [entry("A", "a"), entry("B", "b")])
-        assert first == O.layer_path("vocabulary", "G").read_text()
+        assert first == O.layer_path("vocabulary", CODE).read_text()
 
 
 if __name__ == "__main__":

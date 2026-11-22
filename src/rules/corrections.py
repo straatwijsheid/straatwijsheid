@@ -21,10 +21,10 @@ def entries() -> list:
 
 
 def apply(ctx: Context, osm_records: list | None = None) -> list[Override]:
-    osm = {(r["gemeente"], r["street"]): r for r in (osm_records or [])}
+    osm = {(r["gemeente_code"], r["street"]): r for r in (osm_records or [])}
     out = []
     for e in entries():
-        key = (e["gemeente"], e["street"])
+        key = (e["gemeente_code"], e["street"])
         if key not in ctx.rows:
             continue
         label, desc, source, url = e.get("entity_label"), e.get("entity_description"), "claude_knowledge", e.get("source_url")
@@ -32,6 +32,6 @@ def apply(ctx: Context, osm_records: list | None = None) -> list[Override]:
             item = next((i for i in osm[key]["items"] if i.get("label")), None)
             if item:
                 label, desc, source, url = item["label"], item.get("description"), "osm_etymology", f"https://www.wikidata.org/wiki/{item['qid']}"
-        out.append(Override(e["gemeente"], e["street"], e["category"], e.get("subcategory"), label, desc, e.get("confidence", 0.5),
+        out.append(Override(e["gemeente_code"], e["street"], e["category"], e.get("subcategory"), label, desc, e.get("confidence", 0.5),
                             source=source, source_url=url, notes=f"Reviewed correction: {e['reason']}", rule=RULE))
     return out

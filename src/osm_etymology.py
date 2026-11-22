@@ -15,6 +15,7 @@ classifications are. Three kinds of tag on a street's ways are used:
 from __future__ import annotations
 
 import config
+import gemeenten
 import argparse
 import collections
 import json
@@ -183,10 +184,10 @@ def build():
     import geopandas as gpd
     from shapely.geometry import Point
     b = gpd.read_file(config.RAW / "buurten.geojson")
-    gem = b.dissolve(by="gemeente").reset_index()[["gemeente", "geometry"]]
+    gem = b.dissolve(by="gemeente_code").reset_index()[["gemeente_code", "geometry"]]
     pts = gpd.GeoDataFrame({"i": range(len(ways))}, geometry=[Point(w["center"]["lon"], w["center"]["lat"]) for w in ways], crs="EPSG:4326")
     joined = gpd.sjoin(pts, gem.to_crs("EPSG:4326"), how="left", predicate="within")
-    gem_of = dict(zip(joined["i"], joined["gemeente"]))
+    gem_of = dict(zip(joined["i"], joined["gemeente_code"]))
     per = collections.defaultdict(lambda: {"ways": [], "etymology_qids": [], "own_qids": [], "text": []})
     for i, w in enumerate(ways):
         t, g = w.get("tags", {}), gem_of.get(i)
@@ -219,7 +220,7 @@ def build():
                     p138.setdefault(q, []).append(dv["value"]["id"])
     ents = _wd_entities(list(ents) + [q for v in p138.values() for q in v])
     out = []
-    for (g, s), r in sorted(per.items()):
+    for (g, s), r in sorted(per.items(), key=lambda kv: (gemeenten.name_of(kv[0][0]), kv[0][1], kv[0][0])):      # by gemeente name, as always
         named = list(dict.fromkeys(r["etymology_qids"]))
         via_p138 = list(dict.fromkeys(q for o in r["own_qids"] for q in p138.get(o, [])))
         qids = named or via_p138
@@ -232,7 +233,7 @@ def build():
             if q in KINDS:
                 cat, sub = KINDS[q][0], KINDS[q][1]
             items.append({"qid": q, "label": _label(e), "description": _desc(e), "category": cat, "subcategory": sub})
-        out.append({"gemeente": g, "street": s, "via": "name:etymology:wikidata" if named else "wikidata P138" if via_p138 else "text only",
+        out.append({"gemeente": gemeenten.name_of(g), "gemeente_code": g, "street": s, "via": "name:etymology:wikidata" if named else "wikidata P138" if via_p138 else "text only",
                     "ways": len(r["ways"]), "way_ids": r["ways"][:12], "tags": {k: sorted(v) for k, v in r.get("raw_tags", {}).items()},
                     "center": r["centers"][0] if r.get("centers") else None, "items": items, "text": r["text"][:2]})
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=1))

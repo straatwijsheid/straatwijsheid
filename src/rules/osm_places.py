@@ -33,10 +33,10 @@ def _norm(s):
 
 def _locations():
     import geopandas as gpd
-    g = gpd.read_file(config.RAW / "streets.geojson")[["gemeente", "name", "geometry"]]
+    g = gpd.read_file(config.RAW / "streets.geojson")[["gemeente_code", "name", "geometry"]]
     pts = g.geometry.representative_point()
     loc = {}
-    for gem, name, p in zip(g["gemeente"], g["name"], pts):
+    for gem, name, p in zip(g["gemeente_code"], g["name"], pts):
         loc.setdefault((gem, name), (p.y, p.x))
     return loc
 
@@ -58,7 +58,7 @@ def propose(ctx: Context, features: list | None = None) -> list[Override]:
             continue
         if cat == "place" and sub not in (None, "local_landscape_feature", "local_landmark"):
             continue
-        p = loc.get((row["gemeente"], row["street"]))
+        p = loc.get((row["gemeente_code"], row["street"]))
         if not p:
             continue
         best = None
@@ -79,7 +79,7 @@ def propose(ctx: Context, features: list | None = None) -> list[Override]:
             word = WORD.get(f["kind"], f["kind"])
         if cat == "place" and sub == "local_landmark" and new_sub == "local_landscape_feature":
             new_sub = "local_landmark"
-        out.append(Override(row["gemeente"], row["street"], new_cat, new_sub, f["name"],
+        out.append(Override(row["gemeente_code"], row["street"], new_cat, new_sub, f["name"],
                             f"{word} (OpenStreetMap {f['kind']}); the street is named after this local place", 0.55, source="osm_place",
                             source_url=f"https://www.openstreetmap.org/{ {'n': 'node', 'w': 'way', 'r': 'relation'}[f['id'][0]] }/{f['id'][1:]}",
                             notes=f"Same-named OpenStreetMap feature '{f['name']}' ({f['kind']}) {round(d * 1000)} m from the street; read as named after the local place "

@@ -29,7 +29,7 @@ def review(ctx: Context) -> list[Override]:
     for r in ctx.final:
         if r["source"] != "wikidata" or r["category"] != "place":
             continue
-        g, s = r["gemeente"], r["street"]
+        g, s = r["gemeente_code"], r["street"]
         if s in nap:
             cat, sub, label, desc, note = nap[s]
             out.append(Override(g, s, cat, sub, label, desc, 0.4, notes=note, rule=RULE))
