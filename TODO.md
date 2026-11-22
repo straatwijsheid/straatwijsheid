@@ -10,7 +10,7 @@ Noord-Brabant (59 gemeenten, 38,090 streets) is done as a first pass; everything
 each milestone unblocks the next; items outside this list (tier-2 verification, resolver declines, review sheets, OSM upload tooling, PMTiles, OSM refresh phases 2-6)
 are quality work that does not block publishing.
 
-**M0. Finish what is in flight (do first; moving data mid-run would break it)**
+**M0. Finish what is in flight: DONE 2026-11-22 (only the Elisabethlaan check and the held `bare_surname`/`wikidata_place_review` reviews remain, not blockers)**
 - [x] Wikidata lookup of the new names done; rebuilt with themes; rules applied to the supplement (2026-11-22): species, vocabulary, titles, directional_road, same_name_harmonise,
       person_consensus, theme_forced_name_fit, name_resolver, osm_places (tightened: a park/square named exactly like the street is not evidence), osm_etymology (2,228 overrides).
       Held back: `bare_surname` (168 proposals, sampled ~50% wrong: Ankerstraat/Koggestraat -> monarchs) and `wikidata_place_review` (68, turns Linden/Heide into "foreign towns").
@@ -18,7 +18,7 @@ are quality work that does not block publishing.
 - [x] Tiers per `way_class`: street 10% tier 1 / 37% tier 5; path 12% / 54%; planned 11% / 56%. Decide whether paths/planned roads count in the headline numbers (they will appear in the README).
 - [ ] Elisabethlaan (Eindhoven, Philipsdorp): OSM tag Q76366670 = Maria Heyligers, neither of the user's candidates (Anna Elisabeth / Maria Elisabeth Philips); add to OSM_FIXES as a "check" item or confirm with the user's source.
 - [ ] Review the held `bare_surname` (168) and `wikidata_place_review` (68) proposals; improve `bare_surname` (common nouns like Anker, Kogge are not surnames).
-- [ ] Baarle-Nassau (46% gap): check the Baarle-Hertog enclaves are not double counted (a public number must not rest on a known glitch).
+- [x] Baarle-Nassau (46% gap) checked 2026-11-22: not an enclave artefact. The CBS outline does contain the Baarle-Hertog enclaves and 82 Belgian ways lie inside it, but every one of those names also has a Dutch way, so there are no Belgian-only streets in our list (a re-fetch with an `(area.nl)` filter returned the identical 322 names). The 46% is rural tracks and paths (148 added, mostly `track`) the drive-network fetch never had. Residual limitation: a street name shared with Baarle-Hertog (Molenstraat, Kapelstraat...) may carry its Belgian segments in the merged geometry. `osm_streets.py` now fetches only ways inside the NL area.
 
 **M1. Foundations that everything else touches**
 - [ ] `config.py` + git-ignored `config.local.toml` (BUILD_DIR, KNOWLEDGE_DIR, `WIKIDATA_CONTACT`, Overpass URL); replace the ~15 hard-coded `ROOT/data/...`/`output` paths. (Precursor of the build/ split and of unattended runs.)

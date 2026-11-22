@@ -31,7 +31,9 @@ def way_class(highway: str) -> str:
 def fetch_ways(bbox, retries=6) -> list[dict]:
     """Named highway ways with geometry inside a (south, west, north, east) box. Overpass is often busy: retries with growing pauses."""
     s, w, n, e = bbox
-    q = f'[out:json][timeout:300];way["highway"]["name"]({s},{w},{n},{e});out tags geom;'
+    # (area.nl): only ways inside the Netherlands. CBS outlines of Baarle-Nassau contain the Belgian Baarle-Hertog enclaves, and border gemeenten
+    # reach into Belgium/Germany in the bbox; without this filter those streets would be counted as Dutch.
+    q = f'[out:json][timeout:300];area["ISO3166-1"="NL"]->.nl;way["highway"]["name"]({s},{w},{n},{e})(area.nl);out tags geom;'
     for attempt in range(1, retries + 1):
         try:
             r = requests.post(OVERPASS, data={"data": q}, headers=UA, timeout=360)
