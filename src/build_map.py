@@ -192,8 +192,18 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         #gm-panel .gm-count {color:#888; font-size:11px;}
         #gm-panel .gm-only {font-size:11px; color:#2563eb; text-decoration:none;}
         #gm-panel .gm-sec {margin-top:8px; padding-top:6px; border-top:1px solid #eee;}
+        #gm-q {width:100%; box-sizing:border-box; padding:5px 7px; font-size:13px; border:1px solid #ccc; border-radius:4px; margin-bottom:6px;}
+        #gm-results .gm-grp {margin:4px 0 1px; font-size:10px; text-transform:uppercase; color:#888; letter-spacing:.04em;}
+        #gm-results .gm-hit {padding:3px 5px; cursor:pointer; border-radius:3px; line-height:1.25;}
+        #gm-results .gm-hit.act, #gm-results .gm-hit:hover {background:#e8f0fe;}
+        #gm-results .gm-hit small {color:#777;}
+        #gm-results .gm-none {color:#888; font-size:12px; padding:3px 5px;}
         .street-tip {white-space:normal; width:max-content; max-width:340px; overflow-wrap:break-word;}   /* max-content: an absolutely placed tooltip near the right edge would otherwise shrink to one letter per line */
       </style>
+      <div id="gm-search">
+        <input id="gm-q" type="search" autocomplete="off" placeholder="Search gemeente, buurt or street" aria-label="Search gemeente, buurt or street">
+        <div id="gm-results"></div>
+      </div>
       <b>Streets: gemeente</b>
       __ROWS__
       <div class="gm-sec"><b>Layers</b>
@@ -379,6 +389,87 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         apply(true);
         return true;
       }
+
+      // ---- search: gemeente (from the registry), buurt and street (data/search.js, loaded the first time the box is used) ----
+      var SEARCH = null, searchLoading = false, hits = [], act = -1, mark = null;
+      var fold = function (t) { return String(t).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); };
+      var gname = {}; G.forEach(function (g) { gname[g.id] = g.name; });
+      var qbox = document.getElementById("gm-q"), results = document.getElementById("gm-results");
+      function loadSearch() {
+        if (SEARCH || searchLoading) return;
+        searchLoading = true;
+        loadScript("data/search.js", function () {
+          SEARCH = window.GM_SEARCH;
+          SEARCH.s.forEach(function (r) { r.f = fold(r[0]); });
+          SEARCH.b.forEach(function (r) { r.f = fold(r[0]); });
+          runSearch();
+        }, function (url) { searchLoading = false; results.innerHTML = '<div class="gm-none">search index failed to load</div>'; });
+      }
+      // prefix matches first, then matches inside a word; shorter names first within each
+      function find(list, q, max, name) {
+        var a = [], b = [];
+        for (var i = 0; i < list.length; i++) {
+          var f = name(list[i]), k = f.indexOf(q);
+          if (k === 0) a.push(list[i]); else if (k > 0) b.push(list[i]);
+        }
+        var by = function (x, y) { return name(x).length - name(y).length; };
+        return a.sort(by).concat(b.sort(by)).slice(0, max);
+      }
+      function runSearch() {
+        var q = fold(qbox.value.trim());
+        hits = []; act = -1;
+        if (q.length < 2) { results.innerHTML = ""; return; }
+        if (!SEARCH) { results.innerHTML = '<div class="gm-none">loading…</div>'; loadSearch(); return; }
+        find(G, q, 5, function (g) { return fold(g.name); }).forEach(function (g) { hits.push({kind: "Gemeente", label: esc(g.name), g: g.id, bounds: g.bounds}); });
+        find(SEARCH.b, q, 8, function (r) { return r.f; }).forEach(function (r) {
+          hits.push({kind: "Buurt", label: esc(r[0]) + " <small>" + esc(gname[r[1]]) + "</small>", g: r[1], bounds: [[r[2], r[3]], [r[4], r[5]]]}); });
+        find(SEARCH.s, q, 12, function (r) { return r.f; }).forEach(function (r) {
+          hits.push({kind: "Street", label: esc(r[0]) + " <small>" + esc(gname[r[1]]) + (r[6] === "p" ? ", path" : r[6] === "c" ? ", under construction" : "") + "</small>",
+                     g: r[1], name: r[0], way: r[6], bounds: [[r[2], r[3]], [r[4], r[5]]]}); });
+        var h = "", last = "";
+        hits.forEach(function (x, i) {
+          if (x.kind !== last) { h += '<div class="gm-grp">' + x.kind + "</div>"; last = x.kind; }
+          h += '<div class="gm-hit" data-i="' + i + '">' + x.label + "</div>";
+        });
+        results.innerHTML = h || '<div class="gm-none">nothing found</div>';
+      }
+      function clearMark() { if (mark) { map.removeLayer(mark); mark = null; } }
+      function setLayer(l, v) { layers[l] = v; document.querySelectorAll('.ly-check[data-l="' + l + '"]').forEach(function (c) { c.checked = v; }); }
+      function go(x) {
+        clearMark();
+        var g = G.filter(function (y) { return y.id === x.g; })[0];
+        on[g.id] = true; sync();
+        if (x.kind === "Buurt") setLayer("buurten", true);
+        if (x.kind === "Street") setLayer(x.way === "p" ? "paths" : x.way === "c" ? "planned" : "streets", true);   // a found street is always shown
+        results.innerHTML = ""; qbox.value = x.kind === "Gemeente" ? "" : qbox.value;
+        map.fitBounds(x.bounds, {padding: [60, 60], maxZoom: x.kind === "Street" ? 17 : 15});
+        load(g).then(function () {
+          apply(false);
+          if (x.kind !== "Street") return;
+          var f = window.GM_DATA[g.id].features.filter(function (f) { return f.properties.n === x.name; })[0];
+          if (!f) return;
+          mark = L.geoJson(f, {style: {color: "#facc15", weight: 7, opacity: 0.9}, interactive: false}).addTo(map);
+          L.popup({maxWidth: 320}).setLatLng(L.latLngBounds(x.bounds).getCenter()).setContent(tpl(f)).openOn(map);
+        });
+      }
+      qbox.addEventListener("focus", loadSearch);
+      qbox.addEventListener("input", runSearch);
+      qbox.addEventListener("keydown", function (e) {
+        var items = results.querySelectorAll(".gm-hit");
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault();
+          if (!items.length) return;
+          act = (act + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+          items.forEach(function (it, i) { it.classList.toggle("act", i === act); });
+          items[act].scrollIntoView({block: "nearest"});
+        } else if (e.key === "Enter" && hits.length) { e.preventDefault(); go(hits[Math.max(act, 0)]); }
+        else if (e.key === "Escape") { qbox.value = ""; results.innerHTML = ""; clearMark(); map.closePopup(); }
+      });
+      results.addEventListener("click", function (e) {
+        var el = e.target.closest ? e.target.closest(".gm-hit") : null;
+        if (el) go(hits[+el.dataset.i]);
+      });
+      map.on("click", clearMark);
       loadBuurten();
       if (!initialFit()) { map.on('resize', function once() { if (initialFit()) map.off('resize', once); }); }
     });
@@ -491,6 +582,13 @@ def main():
     write_js(data_dir / "buurten.js",
         "window.GM_BUURTEN=" + json.dumps({"type": "FeatureCollection", "features": allb},
                                           separators=(",", ":"), ensure_ascii=False) + ";\n")
+    # search index: [name, gemeente id, south, west, north, east(, way class)]; coordinates to ~10 m
+    def bbox(geom):
+        minx, miny, maxx, maxy = geom.bounds
+        return [round(miny, 4), round(minx, 4), round(maxy, 4), round(maxx, 4)]
+    search = {"s": [[r["name"], r["gemeente_code"].lower(), *bbox(r["geometry"]), W.get(r.get("way_class"), "")] for _, r in streets.iterrows()],
+              "b": [[r["name"], r["gemeente_code"].lower(), *bbox(r["geometry"])] for _, r in buurten.iterrows()]}
+    write_js(data_dir / "search.js", "window.GM_SEARCH=" + json.dumps(search, separators=(",", ":"), ensure_ascii=False) + ";\n")
     render = {"palette": palette, "basis": SOURCE_LABELS, "tiers": {str(k): v for k, v in TIER_NAMES.items()}, "gray": gray_style, "unresolved": UNRESOLVED_TEXT}
     default = gemeenten.known(DEFAULT_GEMEENTE)
     initial = [default.lower()] if default in gemeente_codes else [g.lower() for g in gemeente_codes]
