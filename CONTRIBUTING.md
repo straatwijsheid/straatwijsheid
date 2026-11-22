@@ -94,6 +94,12 @@ Rules live in `src/rules/` (see `src/rules/README.md`): a pure function that tak
 
 The principle behind every rule: the buurt decides between readings of a name, but never alone.
 
+## Change the knowledge layout
+
+The knowledge repository carries a `schema_version` file and core (`src/schema.py`) refuses a checkout whose version it does not read, so an old checkout or old code fails
+at start-up with a message saying which side to update. If you change the layout or a file format in a way old code cannot read, bump the number in both
+places in step: `schema_version` in the knowledge repository and `SCHEMA_VERSION` in `src/schema.py` (and `tests/fixture/knowledge/schema_version`), and merge the knowledge change first.
+
 ## Commits and pull requests
 
 - One logical change per commit. A short imperative subject that says what changed; add the issue number, e.g. `Key gemeenten by CBS code, not by name (#1)`. Put the why in the body.

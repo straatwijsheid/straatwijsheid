@@ -16,6 +16,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import config
+import schema
 
 CODE = re.compile(r"^GM\d{4}$")
 
@@ -32,6 +33,8 @@ def _load(p: str, mtime: float) -> dict:
 def index() -> dict[str, dict]:
     """{code: {"name", "province", ["historic"]}}"""
     p = path()
+    if p.parent.exists():
+        schema.require()           # every stage reads the registry first: refuse an incompatible knowledge checkout here
     return _load(str(p), p.stat().st_mtime) if p.exists() else {}
 
 

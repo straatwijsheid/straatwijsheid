@@ -133,6 +133,8 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.command == "bootstrap":
         return stage_bootstrap(clone=not a.no_clone)
+    import schema
+    schema.require()                  # every other command: refuse an incompatible knowledge checkout before doing anything
     if a.command == "status":
         return status()
     if a.command == "add":

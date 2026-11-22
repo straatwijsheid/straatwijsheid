@@ -130,6 +130,8 @@ def main(argv=None):
     ap.add_argument("--force", action="store_true", help="allow replacing tier-1 (externally verified) streets")
     ap.add_argument("rules", nargs="*")
     a = ap.parse_args(argv)
+    import schema
+    schema.require()                  # refuse an incompatible knowledge checkout before reading or writing any layer
     off = disabled()
     if a.list or not (a.check or a.apply):
         for k, (_, d) in RULES.items():
