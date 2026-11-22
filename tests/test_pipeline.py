@@ -39,7 +39,7 @@ def test_themes_never_touch_hand_written(tmp=None):
 def test_acquire_config():
     import acquire
     cfg = acquire.CONFIG
-    assert cfg["merged"]["Weesp"]["pdok"] == "Amsterdam" and cfg["merged"]["Weesp"]["buurt_prefix"].startswith("BU")
+    assert cfg["merged"]["Uden"]["pdok"] == "Maashorst" and cfg["merged"]["Uden"]["buurt_prefix"].startswith("BU")
     assert cfg["aliases"]["Nuenen"]["pdok"] == "Nuenen, Gerwen en Nederwetten"
     assert acquire.file_key("GM0758") == "gm0758"                  # raw files are named by CBS code, not by name
 
