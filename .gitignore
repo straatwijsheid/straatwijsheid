@@ -10,3 +10,6 @@ config.local.toml
 
 # archived one-off wave scripts: kept locally only (hard-coded paths); not part of the public repositories
 scripts/legacy/
+
+# the knowledge repository is checked out here (pipeline.py bootstrap)
+/knowledge/
