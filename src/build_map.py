@@ -111,7 +111,9 @@ SOURCE_LABELS = {
 # reconcile only keeps a plausible person for title_heuristic rows
 TRUSTED_ENTITY_SOURCES = {"wikidata", "wikidata_surname_only", "web_search", "osm_etymology", "claude_knowledge", "title_heuristic"}
 DEFAULT_GEMEENTE = "Eindhoven"  # the only gemeente switched on at load; the rest load when ticked
-UNRESOLVED_TEXT = "Origin not identified (no confident match found)"
+TAGLINE = "Where the streets have a name"
+REVIEW_URL = "https://github.com/straatwijsheid/knowledge#know-your-neighbourhood-help-us-name-the-streets"
+UNRESOLVED_TEXT = "Where the streets have no (known) name: origin not identified, no confident match found"
 
 
 def round_geom(g, nd=5):
@@ -413,6 +415,7 @@ def main():
     analyzed_gemeenten = set(streets.loc[streets["analyzed"], "gemeente_code"])
     # initial view is a placeholder; the panel's load handler fits to the selected gemeenten
     m = folium.Map(location=[51.44, 5.47], zoom_start=12, tiles="OpenStreetMap")
+    m.get_root().title = "Straatwijsheid: " + TAGLINE
 
     bfeats = {g: [] for g in gemeente_codes}
     for _, row in buurten.iterrows():
@@ -514,6 +517,7 @@ def main():
           " style="font-size:11px; padding:2px 6px; cursor:pointer; border:1px solid #ccc;
                     border-radius:4px; background:#f8f8f8;">show detail</button>
       </div>
+      <div style="font-size:11px; color:#666; font-style:italic;">{TAGLINE}</div>
       <div style="margin-top:6px;">
         <span style="color:#2563eb;">&#9632;</span> Person<br>
         <span style="color:#16a34a;">&#9632;</span> Place<br>
@@ -528,7 +532,8 @@ def main():
       <div style="margin-top:6px; font-size:11px; color:#666; max-width:220px;">
         <b>Evidence tier</b> (shown in each street's tooltip): 1 identified, external evidence &middot;
         2 identified from knowledge, unverified &middot; 3 kind known from the name &middot;
-        4 kind inferred from the neighbourhood theme &middot; 5 not identified.
+        4 kind inferred from the neighbourhood theme &middot; 5 not identified: where the streets have no (known) name.
+        Know one? <a href="{REVIEW_URL}" target="_blank" rel="noopener">Help name them</a> through a review sheet.
       </div>
       <div id="legend-detail" style="display:none; margin-top:8px; border-top:1px solid #eee; padding-top:6px;">
         <div style="color:#2563eb; font-weight:600;">Person</div>

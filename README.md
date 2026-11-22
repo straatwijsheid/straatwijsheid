@@ -1,5 +1,7 @@
 # What are the streets named after?
 
+*Where the streets have a name.*
+
 A pipeline and an interactive map that work out what Dutch streets are named after: **a person, a place or a thing**,
 with sub-kinds (composer, saint, tree, river, castle...), and test whether naming themes cluster by neighbourhood.
 
@@ -29,7 +31,7 @@ Every street carries an `evidence_tier` (defined in `src/tiers.py`, shown in the
 | 2 | Identified from general knowledge, not verified | 33.7% |
 | 3 | Kind known from the name (a title, a species word, a trade term...) but no individual | 16.1% |
 | 4 | Kind inferred from the neighbourhood's naming theme, or a weak match | 4.4% |
-| 5 | Not identified (generic or local names, anything unresolved) | 38.2% |
+| 5 | Not identified: where the streets have no (known) name (generic or local names, anything unresolved); [help name them](https://github.com/straatwijsheid/knowledge#know-your-neighbourhood-help-us-name-the-streets) | 38.2% |
 
 About 41% of streets name a specific namesake, but only about 8% have external evidence behind that. Refinement should only
 ever move streets toward tier 1.
