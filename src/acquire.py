@@ -28,8 +28,35 @@ import config  # noqa: E402
 RAW_DIR = config.RAW
 config.ensure_dirs()
 
-CONFIG = json.loads((config.KNOWLEDGE / "gemeenten.json").read_text())
+CONFIG = json.loads((config.GLOBAL / "gemeenten.json").read_text())
 PDOK_WFS_URL = "https://service.pdok.nl/cbs/wijkenbuurten/2024/wfs/v1_0"
+PROVINCES_URL = "https://service.pdok.nl/cbs/gebiedsindelingen/2024/wfs/v1_0"
+
+
+def province_of_buurten(buurten: gpd.GeoDataFrame) -> str:
+    """The province a gemeente lies in (every gemeente lies in exactly one): where most of its buurten's representative points fall in the CBS province outlines."""
+    import io
+    r = requests.get(PROVINCES_URL, params={"service": "WFS", "version": "2.0.0", "request": "GetFeature", "typeNames": "gebiedsindelingen:provincie_gegeneraliseerd",
+                                            "outputFormat": "application/json"}, timeout=120)
+    r.raise_for_status()
+    prov = gpd.read_file(io.BytesIO(r.content))
+    pts = buurten.to_crs(prov.crs).copy()
+    pts["geometry"] = pts.geometry.representative_point()
+    hit = gpd.sjoin(pts, prov[["statnaam", "geometry"]], how="inner", predicate="within")["statnaam"]
+    if not len(hit):
+        raise RuntimeError("could not place the gemeente in a province")
+    return hit.value_counts().index[0]
+
+
+def record_province(gemeente: str, buurten: gpd.GeoDataFrame) -> None:
+    """Remember the province in the knowledge repository's global/provinces.json (the sharding of the per-gemeente knowledge depends on it)."""
+    import knowledge
+    path = config.GLOBAL / "provinces.json"
+    data = knowledge.read_json(path, {"_comment": "Province of every gemeente (from the CBS/PDOK province outlines; acquire.py adds new gemeenten). Shards the knowledge by province/gemeente.", "provinces": {}})
+    if gemeente not in data["provinces"]:
+        data["provinces"][gemeente] = province_of_buurten(buurten)
+        data["provinces"] = dict(sorted(data["provinces"].items()))
+        knowledge.write_json(path, data)
 
 
 def fetch_streets(area) -> gpd.GeoDataFrame:
@@ -134,6 +161,7 @@ def acquire(gemeente: str) -> None:
     buurten = fetch_buurten(gemeente, pdok, cfg.get("buurt_prefix"))
     if not len(buurten):
         raise RuntimeError(f"PDOK has no buurten for '{pdok}': add an entry to data/knowledge/gemeenten.json")
+    record_province(gemeente, buurten)
     streets = fetch_streets(buurten.geometry.union_all())
     streets["gemeente"] = gemeente
     streets = join_streets_to_buurten(streets, buurten)

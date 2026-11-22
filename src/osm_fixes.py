@@ -25,7 +25,7 @@ from rules.base import ROOT                                  # noqa: E402
 WAYS = config.RAW / "osm_etymology_ways.json"
 ENTS = config.CACHE / "wikidata_entities.json"
 CAND = config.CACHE / "osm_fix_candidates.json"
-OUT = ROOT / "OSM_FIXES.md"
+OUT = config.OUTPUT / "reports" / "OSM_FIXES.md"
 UA = {"User-Agent": "street-etymology-research/0.1 (open-data research script)"}
 STREET_CLASSES = {"Q79007", "Q34442", "Q83620", "Q787113", "Q1068842"}
 ABBR = [(r"\bdoctor\b", "dr"), (r"\bprofessor\b", "prof"), (r"\bmonseigneur\b", "mgr"), (r"\bburgemeester\b", "burg"), (r"\bdominee\b", "ds"),
@@ -70,7 +70,7 @@ def missing_etymology(area) -> list:
     """Section C: ways of streets with a confidently known namesake that still lack name:etymology:wikidata (re-read from OSM now)."""
     import geopandas as gpd
     from shapely.geometry import Point
-    sug = json.loads((config.KNOWLEDGE / "osm_suggestions.json").read_text())["suggestions"]
+    sug = json.loads((config.GLOBAL / "osm_suggestions.json").read_text())["suggestions"]
     names = "|".join(re.escape(x["street"]) for x in sug)
     q = f'[out:json][timeout:90];area["ISO3166-2"="NL-NB"]->.a;way(area.a)["name"~"^({names})$"]["highway"];out tags center meta;'
     els = None
@@ -98,13 +98,13 @@ def missing_etymology(area) -> list:
         lines.append(f"- **Already tagged ({len(done)}):** " + (", ".join(f"[{e['id']}](https://www.openstreetmap.org/way/{e['id']})" for e in done) or "none"))
         lines.append(f"- **Still to tag ({len(todo)}):** " + (", ".join(f"[{e['id']}](https://www.openstreetmap.org/way/{e['id']}) ({e['tags'].get('highway')}, ~{round(e['center']['lat'], 4)}, {round(e['center']['lon'], 4)})" for e in sorted(todo, key=lambda e: e['id'])) or "none"))
         lines.append("")
-    for x in json.loads((config.KNOWLEDGE / "osm_suggestions.json").read_text()).get("other_ways", []):
+    for x in json.loads((config.GLOBAL / "osm_suggestions.json").read_text()).get("other_ways", []):
         lines.append(f"### {x['street']}, {x['where']}")
         lines.append(f"- **More correct:** `name:etymology:wikidata=[{x['qid']}](https://www.wikidata.org/wiki/{x['qid']})` ({x['label']}). Why: {x['reason']}")
         lines.append("- **Already tagged:** " + ", ".join(f"[{w}](https://www.openstreetmap.org/way/{w})" for w in x["tagged"]))
         lines.append("- **Still to tag:** " + ", ".join(f"[{w}](https://www.openstreetmap.org/way/{w})" for w in x["todo"]))
         lines.append("")
-    checks = json.loads((config.KNOWLEDGE / "osm_suggestions.json").read_text()).get("checks", [])
+    checks = json.loads((config.GLOBAL / "osm_suggestions.json").read_text()).get("checks", [])
     if checks:
         lines += ["", "## D. Tags to check (possibly wrong, no certain correction)", ""]
         for x in checks:
@@ -182,6 +182,7 @@ def main():
             lines.append(f"- **{name}**, gemeente {gname} (~{L[0]['lat']}, {L[0]['lon']}); way(s) {ways_txt}.\n  - *Wrong:* tagged `wikidata={q}`, the item for \"{lab}\" ({L[0]['item_desc'][:55]}), a different street.\n  - *More correct:* {fix}.")
         lines.append("")
     lines += missing_etymology(area)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(lines) + "\n")
     print(f"wrote {config.rel(OUT)}: {len(A)} ways with a mismatching wikidata tag ({len({a['name'] for a in A})} names)")
 

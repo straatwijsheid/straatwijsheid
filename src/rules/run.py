@@ -26,8 +26,8 @@ from rules import audits, corrections, directional, labels, osm, place_review, s
 from rules.base import Context, Override                                               # noqa: E402
 from tiers import evidence_tier                                                               # noqa: E402
 
-STATUS = config.KNOWLEDGE / "rules_status.json"
-EXCLUSIONS = config.KNOWLEDGE / "rule_exclusions.json"
+STATUS = config.GLOBAL / "rules_status.json"
+EXCLUSIONS = config.GLOBAL / "rule_exclusions.json"
 STRONG = {1, 2}   # tiers that name a specific namesake
 PRECEDENCE = overrides.PRECEDENCE   # later wins on the same street: reviewed corrections and external evidence last
 
@@ -168,7 +168,7 @@ def main(argv=None):
         print(f"  layer {n}: {len(layer)} entries; against the layer on disk: {change['added']} added, {change['removed']} removed, {change['changed']} changed, {change['unchanged']} unchanged")
         if a.apply:
             overrides.write_layer(n, list(layer.values()))
-            print(f"  wrote {config.rel(overrides.layer_path(n))}")
+            print(f"  wrote {len(overrides.layer_files(n))} files {n}.json under {config.rel(config.KNOWLEDGE / 'gemeenten')}")
     if a.apply:
         print("\nnow re-run reconcile.py, analyze.py, build_map.py, export_csv.py (or `pipeline.py rebuild`)")
     return 0

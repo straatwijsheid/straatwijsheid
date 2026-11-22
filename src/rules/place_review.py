@@ -12,7 +12,7 @@ import json
 import re
 from functools import lru_cache
 
-from .base import KNOWLEDGE, Context, Override
+from .base import GLOBAL, Context, Override
 
 RULE = "wikidata_place_review"
 OBSCURE = re.compile(r"\b(south africa|austria|germany|france|italy|spain|united states|canada|brazil|poland|czech|switzerland|sweden|norway|denmark|russia|china|india|australia|mexico|argentina|ireland|united kingdom|england|scotland|romania|bulgaria|ukraine|wales|queensland|ontario|maryland|arkansas|yorkshire)\b", re.I)
@@ -21,7 +21,7 @@ WELL_KNOWN = re.compile(r"\b(capital|largest city|longest river|country|volcano|
 
 @lru_cache(None)
 def corrections() -> dict:
-    return json.loads((KNOWLEDGE / "place_match_corrections.json").read_text())
+    return json.loads((GLOBAL / "place_match_corrections.json").read_text())
 
 
 def review(ctx: Context) -> list[Override]:

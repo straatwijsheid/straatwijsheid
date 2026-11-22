@@ -7,14 +7,14 @@ from __future__ import annotations
 import re
 from functools import lru_cache
 
-from .base import KNOWLEDGE, read_lines
+from .base import GLOBAL, read_lines
 
 ROAD = re.compile(r"(straat|laan|plein|weg|hof|pad|singel|kade|park|erf|dreef|steeg|plantsoen|baan)$")
 
 
 @lru_cache(None)
 def stems() -> frozenset:
-    return frozenset(read_lines(KNOWLEDGE / "common_stems.txt"))
+    return frozenset(read_lines(GLOBAL / "common_stems.txt"))
 
 
 def strip_road(name: str) -> str:

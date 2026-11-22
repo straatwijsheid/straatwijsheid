@@ -7,7 +7,7 @@
 # Where rebuildable data goes (raw/ enriched/ output/ cache/ names/). Unset keeps the current layout inside the repository.
 # build_dir = "~/street-etymology-build"
 
-# The knowledge directory (hand-made overrides, corrections, vocabularies). Default: data/knowledge in this repository.
+# The knowledge directory (hand-made overrides, corrections, vocabularies). Default: data/knowledge in this repository (where the knowledge repository is checked out).
 # knowledge_dir = "~/street-knowledge"
 
 # An Overpass mirror, if the default is busy.

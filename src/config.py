@@ -44,6 +44,7 @@ def _dir(value) -> Path | None:
 
 BUILD_DIR = _dir(setting("STREETS_BUILD_DIR", "build_dir"))
 KNOWLEDGE = _dir(setting("STREETS_KNOWLEDGE_DIR", "knowledge_dir")) or ROOT / "data" / "knowledge"
+GLOBAL = KNOWLEDGE / "global"        # curated lists that apply everywhere; per-gemeente knowledge is under KNOWLEDGE/gemeenten (see knowledge.py)
 CONTACT = setting("WIKIDATA_CONTACT", "wikidata_contact")
 OVERPASS_URL = setting("OVERPASS_URL", "overpass_url", "https://overpass-api.de/api/interpreter")
 

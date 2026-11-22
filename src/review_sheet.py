@@ -1,12 +1,13 @@
 """Local-knowledge review sheet: streets in a gemeente (or set) read as a kind of person but with no namesake, grouped by buurt.
 
-  python src/review_sheet.py Eindhoven > REVIEW_EINDHOVEN.md
+  python src/review_sheet.py Eindhoven > <knowledge>/gemeenten/<province>/eindhoven/REVIEW.md
 
 Reply with the buurt and a line per street ("Banstraat = Jan Ban, organist" / "wrong: not a composer street"); the answers go into
-data/knowledge/corrections.json (street-level, tier 2 or 1 if the user points to Wikidata/OSM) and sharpen the buurt themes."""
+the gemeente's corrections.json (knowledge repo) (street-level, tier 2 or 1 if the user points to Wikidata/OSM) and sharpen the buurt themes."""
 from __future__ import annotations
 
 import config
+import knowledge
 import collections
 import json
 import sys
@@ -16,7 +17,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main(gemeenten):
-    notes = json.loads((config.KNOWLEDGE / "review_notes.json").read_text())
+    notes = {"notes": {}, "extra": []}
+    for g in gemeenten:
+        n = knowledge.read_json(knowledge.gemeente_dir(g) / "review_notes.json", {})
+        notes["notes"].update({f"{g}|{street}": text for street, text in n.get("notes", {}).items()})
+        notes["extra"].extend(n.get("extra", []))
     rows = json.loads((config.ENRICHED / "streets_final.json").read_text())
     by = collections.defaultdict(list)
     for r in rows:

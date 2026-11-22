@@ -19,7 +19,7 @@ from rules.audits import BASE_FIRST_NAMES, NOT_A_FIRST_NAME        # noqa: E402
 from rules.base import ROOT                                          # noqa: E402
 from rules.compound import looks_like_person                         # noqa: E402
 
-OUT = ROOT / "WIKIDATA_FIXES.md"
+OUT = config.OUTPUT / "reports" / "WIKIDATA_FIXES.md"
 # Generic items used as 'named after' whose English label/description describe one notable tree although the Dutch label is the plain species word.
 GENERIC_TARGETS = {
     "Q33036816": ("oak", [("Q12004", "Quercus (oak genus)"), ("Q165145", "Quercus robur (pedunculate oak)")]),
@@ -66,6 +66,7 @@ def main():
                       "- **More correct:** the person the street is named after. I cannot identify them from the name alone: check the municipality's street-name records (or the street's Wikipedia/heemkunde page) and set P138 to that person; if the street merely runs along the citadel, remove P138.", ""]
     if not n2:
         L.append("(none found)\n")
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(L) + "\n")
     print(f"wrote {config.rel(OUT)}: {sum(len(v) for v in by_target.values())} generic-tree items, {n2} contradicting statements")
 

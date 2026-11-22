@@ -11,7 +11,7 @@ import json
 import re
 from functools import lru_cache
 
-from .base import KNOWLEDGE, Context, Override, broad, local_name, person, is_local, read_lines
+from .base import GLOBAL, Context, Override, broad, local_name, person, is_local, read_lines
 from .compound import is_compound, looks_like_person, strip_road, SURNAME_PREFIX
 from .evidence import THEME_SOURCES, TRUSTED
 from . import species
@@ -65,7 +65,7 @@ NEVER_PERSON = {"Handelsweg", "Pagestraat", "Vendelier", "Gildestraat", "Nonnenp
 
 @lru_cache(None)
 def person_labels() -> dict:
-    return json.loads((KNOWLEDGE / "person_labels.json").read_text())
+    return json.loads((GLOBAL / "person_labels.json").read_text())
 
 
 def person_consensus(ctx: Context, majority=0.7) -> list[Override]:

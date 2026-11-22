@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from functools import lru_cache
 
-from .base import KNOWLEDGE, core, read_lines
+from .base import GLOBAL, core, read_lines
 
 # placeholders / obscure local names that must never get a species from the stem dictionary
 SKIP = set("fliere knelisroos kriezel krullevaar lieverman melkster repeltand roskam hennegras leliegras kropaar kwikzeel lichtmot "
@@ -31,7 +31,7 @@ GENERIC_DESCRIPTIONS = {None, "Vegetable or crop", "Animal", "Mammal or animal",
 @lru_cache(None)
 def stems() -> dict:
     out = {}
-    for line in read_lines(KNOWLEDGE / "species.txt"):
+    for line in read_lines(GLOBAL / "species.txt"):
         if "=" not in line:
             continue
         k, v = line.split("=", 1)
@@ -45,7 +45,7 @@ def stems() -> dict:
 @lru_cache(None)
 def streets() -> dict:
     out = {}
-    for line in read_lines(KNOWLEDGE / "species_streets.txt"):
+    for line in read_lines(GLOBAL / "species_streets.txt"):
         if "=" in line:
             s, v = line.split("=", 1)
             en, la, stem = v.split("|")

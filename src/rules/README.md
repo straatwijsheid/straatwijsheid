@@ -31,7 +31,7 @@ After `--apply`, re-run `src/reconcile.py --full`, `src/analyze.py`, `src/build_
   places, so identities are only asserted where the street's own buurt supports that kind of person, and a label that
   rests on the theme alone must also be backed by the name itself (a species word, a title or first-name pattern, a place).
 * **Evidence only moves toward tier 1** (`src/tiers.py`): `apply` never replaces a verified (tier 1) street without `--force`.
-* **Knowledge is data**, in `data/knowledge/`: `species.txt`, `species_streets.txt`, `vocabulary.json`, `famous_people.txt`,
+* **Knowledge is data**, in `data/knowledge/global/` (curated lists) and `data/knowledge/gemeenten/<province>/<gemeente>/` (per-gemeente decisions): `species.txt`, `species_streets.txt`, `vocabulary.json`, `famous_people.txt`,
   `person_labels.json`, `place_match_corrections.json`, `directional_places.json`, `common_stems.txt`, `common_words.txt`,
   `common_compounds.txt`. Improve a rule by editing data first; code only holds logic.
 

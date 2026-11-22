@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 import config
-from config import KNOWLEDGE, ROOT
+from config import GLOBAL, KNOWLEDGE, ROOT
 
 SOURCE = "claude_knowledge"   # provenance value used for every rule/hand-made override
 

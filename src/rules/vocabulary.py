@@ -10,7 +10,7 @@ import json
 import re
 from functools import lru_cache
 
-from .base import KNOWLEDGE, core, Override, person
+from .base import GLOBAL, core, Override, person
 from . import species
 
 RULE = "vocabulary"
@@ -18,7 +18,7 @@ RULE = "vocabulary"
 
 @lru_cache(None)
 def vocab() -> dict:
-    v = json.loads((KNOWLEDGE / "vocabulary.json").read_text())
+    v = json.loads((GLOBAL / "vocabulary.json").read_text())
     for k in ("FLOWER", "HERB", "FOOD", "TREE", "BIRD", "MAMMAL", "FISH", "ASTRO", "FUNGUS", "CURRENCY", "APPLE", "FIRST_NAMES"):
         v[k] = set(v[k])
     return v

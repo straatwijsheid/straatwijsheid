@@ -9,7 +9,7 @@ from __future__ import annotations
 import collections
 import re
 
-from .base import KNOWLEDGE, Context, Override, local_name, person, read_lines
+from .base import GLOBAL, Context, Override, local_name, person, read_lines
 from .compound import is_compound, SURNAME_PREFIX
 from .evidence import TRUSTED
 
@@ -30,14 +30,14 @@ def _grp(sub):
 
 def famous() -> dict:
     out = {}
-    for line in read_lines(KNOWLEDGE / "famous_people.txt"):
+    for line in read_lines(GLOBAL / "famous_people.txt"):
         s, code, label = line.split("|")
         out[s] = (KIND[code], label)
     return out
 
 
 def common_words() -> set:
-    return set(read_lines(KNOWLEDGE / "common_words.txt")) | (set(read_lines(KNOWLEDGE / "common_compounds.txt")) - NOT_COMMON)
+    return set(read_lines(GLOBAL / "common_words.txt")) | (set(read_lines(GLOBAL / "common_compounds.txt")) - NOT_COMMON)
 
 
 def is_target(row) -> bool:

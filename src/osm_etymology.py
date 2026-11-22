@@ -60,7 +60,7 @@ PLACE_WORDS = re.compile(r"\b(commune|municipality|town|city|province|region|isl
 BIO_WORDS = re.compile(r"\b(species|genus|bird|insect|fish|mammal|plant|flower|tree|butterfly|dragonfly|beetle|fungus|shrub|herb|taxon)\b", re.I)
 
 
-KINDS = {k: v for k, v in json.loads((config.KNOWLEDGE / "osm_entity_kinds.json").read_text()).items() if not k.startswith("_")}
+KINDS = {k: v for k, v in json.loads((config.GLOBAL / "osm_entity_kinds.json").read_text()).items() if not k.startswith("_")}
 
 
 def classify_entity(ent: dict) -> tuple[str | None, str | None]:

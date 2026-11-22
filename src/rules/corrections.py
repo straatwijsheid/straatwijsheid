@@ -1,4 +1,4 @@
-"""Reviewed street-level corrections, kept as data (data/knowledge/corrections.json) and applied by a rule.
+"""Reviewed street-level corrections, kept as data (per gemeente: <knowledge>/gemeenten/<province>/<gemeente>/corrections.json) and applied by a rule.
 
 Each entry fixes one street in one gemeente and says why. Fields: gemeente, street, category, subcategory, entity_label,
 entity_description, confidence, reason. `"from_osm": true` takes the namesake (label, description, Wikidata link) from the
@@ -8,14 +8,16 @@ from __future__ import annotations
 import json
 from functools import lru_cache
 
-from .base import KNOWLEDGE, Context, Override
+import knowledge
+
+from .base import Context, Override
 
 RULE = "corrections"
 
 
 @lru_cache(None)
 def entries() -> list:
-    return json.loads((KNOWLEDGE / "corrections.json").read_text())["corrections"]
+    return knowledge.load_sharded("corrections.json", "corrections")
 
 
 def apply(ctx: Context, osm_records: list | None = None) -> list[Override]:

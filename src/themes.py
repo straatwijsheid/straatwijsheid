@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 THEMES = config.ENRICHED / "buurt_themes_full.json"
 FINAL = config.ENRICHED / "streets_final.json"
-LABELS = json.loads((config.KNOWLEDGE / "theme_labels.json").read_text())
+LABELS = json.loads((config.GLOBAL / "theme_labels.json").read_text())
 DERIVED, HAND = "derived_from_street_classification", "claude_reasoning"
 
 

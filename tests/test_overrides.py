@@ -54,9 +54,9 @@ def test_layer_order_is_complete_and_legacy_first():
 def test_write_layer_is_deterministic():
     with Tmp():
         O.write_layer("vocabulary", [entry("B", "b"), entry("A", "a")])
-        first = O.layer_path("vocabulary").read_text()
+        first = O.layer_path("vocabulary", "G").read_text()
         O.write_layer("vocabulary", [entry("A", "a"), entry("B", "b")])
-        assert first == O.layer_path("vocabulary").read_text()
+        assert first == O.layer_path("vocabulary", "G").read_text()
 
 
 if __name__ == "__main__":

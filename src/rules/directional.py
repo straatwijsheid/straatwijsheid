@@ -9,7 +9,7 @@ import json
 import re
 from functools import lru_cache
 
-from .base import KNOWLEDGE, Override
+from .base import GLOBAL, Override
 
 RULE = "directional_road"
 PATTERN = re.compile(r"^([A-Z][\w'’-]*?)(se|sche)(weg|dijk|straat|baan|laan|steeg|pad|dreef)$")
@@ -17,7 +17,7 @@ PATTERN = re.compile(r"^([A-Z][\w'’-]*?)(se|sche)(weg|dijk|straat|baan|laan|st
 
 @lru_cache(None)
 def _places():
-    return json.loads((KNOWLEDGE / "directional_places.json").read_text())
+    return json.loads((GLOBAL / "directional_places.json").read_text())
 
 
 def classify(gemeente: str, name: str, place_names: set) -> Override | None:
