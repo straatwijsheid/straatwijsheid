@@ -76,6 +76,10 @@ for t in tests/test_*.py; do .venv/bin/python $t | tail -1; done
 Network notes: Overpass can refuse connections from busy IPs (a VPN endpoint change has fixed it), and Wikidata lookups run at
 roughly 100 names a minute only when `WIKIDATA_CONTACT` is set.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md): setup, tests, and how to add a gemeente, a correction, an exclusion or a rule. Knowledge changes go to the [knowledge repository](https://github.com/straatwijsheid/knowledge).
+
 ## Repository layout
 
 ```
