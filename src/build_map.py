@@ -170,7 +170,7 @@ def street_explanation(row) -> str:
 def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: list[str]) -> str:
     """Top-right control: multi-select checkboxes per gemeente (with an 'only' shortcut)
     plus on/off toggles for the street and buurt layers. A gemeente's data lives in its own
-    script file (data/<slug>.js) that is fetched the first time it is switched on; it then
+    script file (data/gm####.js, named by CBS code) that is fetched the first time it is switched on; it then
     owns one street and one buurt FeatureGroup that toggling adds/removes. The view refits
     to whatever is selected."""
     rows = "".join(
