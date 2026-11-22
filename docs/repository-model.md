@@ -44,5 +44,4 @@ Paths, the Overpass URL and the optional Wikidata contact come from, in order, a
 
 ## Visibility and releases
 
-Both repositories are private until the public-hygiene work is done; making them public, publishing the map and cutting a first release are tracked in the issue tracker (milestone "M5 First public release"). Release assets (the built map, a dated raw snapshot) belong to
-releases, not to git history.
+Both repositories are public. `main` cannot be force-pushed or deleted, and in the core repository the `test` workflow is a required check for pull requests. Release assets (the built map, a dated raw snapshot) belong to releases, not to git history.

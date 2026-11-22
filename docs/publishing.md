@@ -8,8 +8,7 @@ pipeline.py rebuild  ->  package_map.py  ->  release asset  ->  "publish map" wo
 
 ## One-time setup
 
-1. **Pages needs a public repository on a free plan.** GitHub Pages is not available for private repositories on the free plan; the organisation is on the free plan today. So either make the repository public (see the public-release issue) or move the organisation to a plan that
-   supports private Pages. Until then the workflow cannot deploy.
+1. **Pages needs a public repository on a free plan.** Both repositories are public, so Pages is available. (GitHub Pages is not available for private repositories on the free plan.)
 2. **Enable Pages with GitHub Actions as the source:** the repository's Settings, Pages, Build and deployment, Source: *GitHub Actions*.
 3. **Custom domain (optional):** straatwijsheid.nl is set under Settings, Pages, Custom domain, with the DNS records GitHub lists there. The map uses relative paths and works at the root of a domain as well as under `/straatwijsheid/`.
 
@@ -34,4 +33,3 @@ To look at the packaged site before publishing: `python3 -m http.server --direct
 
 - The basemap is OpenStreetMap's public tile server, used under its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/); [NOTICE.md](../NOTICE.md) says how we meet it. The map must keep: the HTTPS tile URL, the visible credit "© OpenStreetMap contributors" linked to the copyright page, no prefetching or offline copies, and no restrictive referrer policy (browsers send their own User-Agent and Referer). The server is best-effort with no guarantee, and access can be withdrawn; if the site grows a real audience, switch provider or serve our own tiles by changing `tile_url` and `tile_attribution` (`config.local.toml` or `TILE_URL` / `TILE_ATTRIBUTION`), no code change.
 - [NOTICE.md](../NOTICE.md) must be accurate.
-- The legend links to the review sheets in the knowledge repository, which is private for now.

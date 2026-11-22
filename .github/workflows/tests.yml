@@ -15,7 +15,7 @@ jobs:
         with:
           repository: straatwijsheid/knowledge
           path: knowledge
-          # needed only while the knowledge repository is private: a fine-grained token with read access to it, stored as a secret in this repository
+          # the knowledge repository is public, so the default token reads it; the secret is only a fallback for a private knowledge repository (a fine-grained token with read access)
           token: ${{ secrets.KNOWLEDGE_READ_TOKEN || github.token }}
       - uses: actions/setup-python@v5
         with:
