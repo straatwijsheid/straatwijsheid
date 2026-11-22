@@ -32,6 +32,6 @@ To look at the packaged site before publishing: `python3 -m http.server --direct
 
 ## Before the map is public
 
-- The basemap is OpenStreetMap's public tile server. Check its usage policy for a public site: [#50](https://github.com/straatwijsheid/straatwijsheid/issues/50).
-- The attribution on the map and [NOTICE.md](../NOTICE.md) must be accurate.
+- The basemap is OpenStreetMap's public tile server, used under its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/); [NOTICE.md](../NOTICE.md) says how we meet it. The map must keep: the HTTPS tile URL, the visible credit "© OpenStreetMap contributors" linked to the copyright page, no prefetching or offline copies, and no restrictive referrer policy (browsers send their own User-Agent and Referer). The server is best-effort with no guarantee, and access can be withdrawn; if the site grows a real audience, switch provider or serve our own tiles by changing `tile_url` and `tile_attribution` (`config.local.toml` or `TILE_URL` / `TILE_ATTRIBUTION`), no code change.
+- [NOTICE.md](../NOTICE.md) must be accurate.
 - The legend links to the review sheets in the knowledge repository, which is private for now.

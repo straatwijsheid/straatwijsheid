@@ -58,4 +58,4 @@ It reads `raw/streets.geojson`, `raw/buurten.geojson`, `enriched/streets_final.j
 
 - A single page loads and draws one or a few gemeenten at a time; showing the whole country at once needs tiled data (issue #45).
 - The search index is one file; it will need splitting as coverage grows (#52, #45).
-- The basemap is the OpenStreetMap standard tile layer, whose usage policy matters for a public map (issue #50).
+- The basemap is the OpenStreetMap standard tile layer, used under its tile usage policy (see [NOTICE.md](../NOTICE.md)); the provider is the `tile_url` setting.

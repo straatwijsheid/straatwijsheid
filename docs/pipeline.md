@@ -77,6 +77,7 @@ Notes per stage:
 | knowledge directory (the knowledge repository) | `knowledge/` |
 | Wikidata contact | none |
 | Overpass URL | `https://overpass-api.de/api/interpreter` |
+| Basemap tile URL and credit (`tile_url`, `tile_attribution`) | OpenStreetMap's tile server |
 
 `pipeline.py bootstrap` creates the build directory and clones the knowledge repository (`--no-clone` only checks it is there). Core refuses a knowledge checkout whose `schema_version` it does not read (`src/schema.py`).
 

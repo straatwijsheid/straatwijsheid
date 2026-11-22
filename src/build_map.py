@@ -505,7 +505,8 @@ def main():
     gemeente_codes = sorted(streets["gemeente_code"].unique(), key=lambda c: (gemeenten.name_of(c), c))   # in name order, as before
     analyzed_gemeenten = set(streets.loc[streets["analyzed"], "gemeente_code"])
     # initial view is a placeholder; the panel's load handler fits to the selected gemeenten
-    m = folium.Map(location=[51.44, 5.47], zoom_start=12, tiles="OpenStreetMap")
+    m = folium.Map(location=[51.44, 5.47], zoom_start=12, tiles=None)
+    folium.TileLayer(tiles=config.TILE_URL, attr=config.TILE_ATTRIBUTION, name="basemap", max_zoom=19).add_to(m)   # the provider and its credit are settings (src/config.py)
     m.get_root().title = "Straatwijsheid: " + TAGLINE
 
     bfeats = {g: [] for g in gemeente_codes}

@@ -9,6 +9,7 @@ personal details such as the Wikidata contact) > default. `config.example.toml` 
   knowledge repo     STREETS_KNOWLEDGE_REPO  knowledge_repo          https://github.com/straatwijsheid/knowledge.git
   Wikidata contact   WIKIDATA_CONTACT        wikidata_contact        (none: lookups work but are throttled harder)
   Overpass URL       OVERPASS_URL            overpass_url            https://overpass-api.de/api/interpreter
+  basemap tile URL   TILE_URL                tile_url                https://tile.openstreetmap.org/{z}/{x}/{y}.png   (TILE_ATTRIBUTION / tile_attribution: the credit the provider requires)
 
 Rebuildable data lives under the build directory: raw/ enriched/ output/ cache/ names/. `python src/config.py` prints the resolved settings (the contact is only shown as set / not set).
 """
@@ -48,6 +49,9 @@ KNOWLEDGE_REPO = setting("STREETS_KNOWLEDGE_REPO", "knowledge_repo", "https://gi
 GLOBAL = KNOWLEDGE / "global"        # curated lists that apply everywhere; per-gemeente knowledge is under KNOWLEDGE/gemeenten (see knowledge.py)
 CONTACT = setting("WIKIDATA_CONTACT", "wikidata_contact")
 OVERPASS_URL = setting("OVERPASS_URL", "overpass_url", "https://overpass-api.de/api/interpreter")
+# The map's basemap. The OpenStreetMap tile policy asks sites not to hard-code the tile URL, so switching provider is a setting, not a code change.
+TILE_URL = setting("TILE_URL", "tile_url", "https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+TILE_ATTRIBUTION = setting("TILE_ATTRIBUTION", "tile_attribution", '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors')
 
 RAW, ENRICHED, OUTPUT, CACHE, NAMES = (BUILD_DIR / d for d in ("raw", "enriched", "output", "cache", "names"))
 
@@ -69,7 +73,7 @@ def ensure_dirs() -> None:
 
 def describe() -> str:
     rows = [("repository", ROOT), ("build directory", BUILD_DIR), ("raw", RAW), ("enriched", ENRICHED), ("output", OUTPUT),
-            ("cache", CACHE), ("names", NAMES), ("knowledge", KNOWLEDGE), ("knowledge repo", KNOWLEDGE_REPO), ("wikidata contact", "set" if CONTACT else "not set"), ("overpass", OVERPASS_URL),
+            ("cache", CACHE), ("names", NAMES), ("knowledge", KNOWLEDGE), ("knowledge repo", KNOWLEDGE_REPO), ("wikidata contact", "set" if CONTACT else "not set"), ("overpass", OVERPASS_URL), ("tiles", TILE_URL),
             ("local config", LOCAL_FILE if LOCAL_FILE.exists() else f"{LOCAL_FILE.name} not present")]
     return "\n".join(f"{k:18}{v}" for k, v in rows)
 

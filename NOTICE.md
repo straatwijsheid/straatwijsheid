@@ -36,7 +36,7 @@ Rules of thumb: if you extract only our judgements (what a street is named after
 
 - Overpass API (OpenStreetMap data): we send a generic client name, with no personal details. Be polite with it and use a mirror for large runs (`overpass_url` in `config.local.toml`).
 - Wikidata / Wikimedia APIs: polite pacing and a User-Agent. An optional contact address can be given in the git-ignored `config.local.toml` or the `WIKIDATA_CONTACT` environment variable; it is never written to a tracked file or an output.
-- The map's basemap tiles come from OpenStreetMap's public tile servers, which are for light use (see the OpenStreetMap tile usage policy). A public site with real traffic needs a different tile provider, or our own tiles, before it is published.
+- The map's basemap tiles come from OpenStreetMap's public tile server (`https://tile.openstreetmap.org`), used under its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/): ordinary interactive viewing only (no prefetching, bulk download or offline copies), browser caching left on, the credit "© OpenStreetMap contributors" linked to the copyright page shown on the map, and the visitor's browser sending its own User-Agent and Referer. The server is best-effort and the policy may change or access be withdrawn; the tile URL is a setting (`tile_url`), so moving to another provider or to our own tiles needs no code change.
 
 ## Test fixture
 
