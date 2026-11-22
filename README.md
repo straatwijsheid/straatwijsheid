@@ -38,6 +38,8 @@ ever move streets toward tier 1.
 
 ## How it works
 
+Full walkthrough: [docs/pipeline.md](docs/pipeline.md).
+
 1. **Acquire** street names (OpenStreetMap via Overpass) and buurt/wijk boundaries (CBS via PDOK) for a gemeente.
 2. **Look up** each street's core name (the name without "straat", "laan"...) on Wikidata.
 3. **Reconcile** the per-street Wikidata guesses with each buurt's naming theme. A confident individual match is trusted; a weak one
