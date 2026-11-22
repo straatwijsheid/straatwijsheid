@@ -87,6 +87,10 @@ build/raw/ enriched/ names/ output/ cache/   the build directory: rebuildable, n
 tests/               unit tests for the tiers, rules, overrides, snapshots and knowledge sharding
 ```
 
+## Data and licences
+
+Code is MIT. The data comes from OpenStreetMap (ODbL), CBS/PDOK (CC-BY 4.0) and Wikidata (CC0); our own classifications are CC-BY 4.0 in the [knowledge repository](https://github.com/straatwijsheid/knowledge). [NOTICE.md](NOTICE.md) explains what you can reuse and how to credit it.
+
 ## Known limits
 
 * Classification depth varies by gemeente (they were built in waves): the Kempen gemeenten are the weakest, with about half their streets unidentified.
