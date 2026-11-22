@@ -139,6 +139,13 @@ def acquire(gemeente: str) -> None:
     streets = join_streets_to_buurten(streets, buurten)
     buurten.to_file(RAW_DIR / f"buurten_{slug(gemeente)}.geojson", driver="GeoJSON")
     streets.to_file(RAW_DIR / f"streets_{slug(gemeente)}.geojson", driver="GeoJSON")
+    _snapshot(gemeente)
+
+
+def _snapshot(gemeente: str) -> None:
+    import snapshots
+    snapshots.record("streets/" + slug(gemeente), RAW_DIR / f"streets_{slug(gemeente)}.geojson",
+                     "OSM named highway ways (osm_streets.py) joined to CBS buurten", rows=len(gpd.read_file(RAW_DIR / f"streets_{slug(gemeente)}.geojson")), archive=False)
 
 
 def supplement(gemeente: str) -> None:
@@ -162,6 +169,7 @@ def supplement(gemeente: str) -> None:
         new["origin"] = "supplement"
         old = gpd.GeoDataFrame(pd.concat([old, new], ignore_index=True), crs=old.crs)
     old.to_file(path, driver="GeoJSON")
+    _snapshot(gemeente)
     print(f"{gemeente}: +{len(new)} streets ({new['way_class'].value_counts().to_dict() if len(new) else {}}); now {len(old)}")
 
 

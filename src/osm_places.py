@@ -47,7 +47,9 @@ def fetch():
         kind = next((f"{k}={t[k]}" for k in ("place", "natural", "waterway", "leisure", "landuse", "historic", "boundary") if k in t), "?")
         out.append({"name": t["name"], "kind": kind, "lat": round(c["lat"], 5), "lon": round(c["lon"], 5), "id": f'{e["type"][0]}{e["id"]}'})
     RAW.write_text(json.dumps(out, ensure_ascii=False))
-    print(f"wrote {RAW} ({len(out)} features)")
+    import snapshots
+    e = snapshots.record("osm_places", RAW, "Overpass: named places, water, parks, reserves, Noord-Brabant", query=QUERY, rows=len(out))
+    print(f"wrote {config.rel(RAW)} ({len(out)} features; snapshot {e['fetched_at']}, sha {e['sha256'][:10]})")
 
 
 def haversine_km(lat1, lon1, lat2, lon2):

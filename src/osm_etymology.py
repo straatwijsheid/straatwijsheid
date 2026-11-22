@@ -7,7 +7,8 @@ classifications are. Three kinds of tag on a street's ways are used:
   name:etymology            free text ("Named after the painter ...")   (kept as a hint)
   wikidata                  the street's own Wikidata item; its 'named after' (P138) statement gives the namesake
 
-  python src/osm_etymology.py --fetch      Overpass -> data/raw/osm_etymology_ways.json   (Noord-Brabant)
+  python src/osm_etymology.py --fetch      Overpass -> data/raw/osm_etymology_ways.json   (Noord-Brabant); records a dated snapshot and writes OSM_CHANGES.md
+  python src/osm_etymology.py --refresh    fetch + changes report + build
   python src/osm_etymology.py --build      resolve the Wikidata items -> data/enriched/osm_etymology.json
   python src/osm_etymology.py --report     how often our classification agrees with it, by evidence tier
 """
@@ -39,7 +40,7 @@ QUERY = """[out:json][timeout:300];area["ISO3166-2"="NL-NB"]->.a;
  way(area.a)["highway"]["name"]["name:etymology"];
  way(area.a)["highway"]["name"]["name:etymology:wikipedia"];
  way(area.a)["highway"]["name"]["wikidata"];);
-out tags center;"""
+out tags center meta;"""
 
 # --- Wikidata item -> our (category, subcategory) -------------------------------------------------------------------
 HUMAN, FICTIONAL_HUMAN = "Q5", "Q15632617"
@@ -113,18 +114,35 @@ def classify_entity(ent: dict) -> tuple[str | None, str | None]:
 
 # --- fetch -----------------------------------------------------------------------------------------------------------
 def fetch():
+    """Download the etymology-tagged ways, store them as the current snapshot (dated, checksummed, archived: src/snapshots.py) and report what changed
+    since the previous snapshot (osm_changes.py). Contributor names are dropped; way version and timestamp are kept."""
+    import osm_changes
+    import snapshots
     for attempt in range(5):
         try:
             r = requests.post(OVERPASS, data={"data": QUERY}, headers=UA, timeout=400)
             r.raise_for_status()
             els = r.json()["elements"]
-            RAW.write_text(json.dumps(els, ensure_ascii=False))
-            print(f"fetched {len(els)} ways -> {config.rel(RAW)}")
-            return els
+            break
         except Exception as e:                                   # noqa: BLE001
             print(f"overpass attempt {attempt + 1} failed: {str(e)[:80]}")
             time.sleep(10 * (attempt + 1))
-    sys.exit("Overpass unreachable; try again later (or another endpoint / VPN)")
+    else:
+        sys.exit("Overpass unreachable; try again later (or another endpoint / VPN)")
+    for e in els:
+        e.pop("user", None)
+        e.pop("uid", None)
+    old_sha = snapshots.history("osm_etymology_ways")[-1]["sha256"] if snapshots.history("osm_etymology_ways") else None
+    RAW.write_text(json.dumps(els, ensure_ascii=False))
+    entry = snapshots.record("osm_etymology_ways", RAW, "Overpass: named highways with etymology/wikidata tags, Noord-Brabant", query=QUERY, rows=len(els))
+    print(f"fetched {len(els)} ways -> {config.rel(RAW)} (snapshot {entry['fetched_at']}, sha {entry['sha256'][:10]})")
+    prev = snapshots.previous_archive("osm_etymology_ways", entry["sha256"])
+    prev_at = next((h["fetched_at"] for h in snapshots.history("osm_etymology_ways") if h["archive"] and prev and config.rel(prev) == h["archive"]), None)
+    if prev:
+        osm_changes.write_report(osm_changes.diff_ways(snapshots.read_archive(prev), els), entry["fetched_at"], prev_at)
+    else:
+        print("no earlier snapshot to compare with")
+    return els
 
 
 def _wd_entities(qids: list[str]) -> dict:
@@ -230,12 +248,13 @@ def load():
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--fetch", action="store_true")
+    ap.add_argument("--refresh", action="store_true", help="fetch + report changes + rebuild (everything except applying the rules)")
     ap.add_argument("--build", action="store_true")
     ap.add_argument("--report", action="store_true")
     a = ap.parse_args(argv)
-    if a.fetch:
+    if a.fetch or a.refresh:
         fetch()
-    if a.build:
+    if a.build or a.refresh:
         build()
     if a.report:
         from osm_report import report
