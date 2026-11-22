@@ -12,6 +12,7 @@ Evidence is *mass*: an occurrence weighs by its evidence tier, a rule hit or a s
 occurrences. A candidate's prior is its share of the name's total mass."""
 from __future__ import annotations
 
+import config
 import collections
 import json
 import re
@@ -101,7 +102,7 @@ class NameEntry:
 
 def load_wikidata_records(root: Path = ROOT) -> dict:
     out = {}
-    for line in (root / "data" / "enriched" / "all_streets_wikidata.jsonl").read_text().splitlines():
+    for line in (config.ENRICHED / "all_streets_wikidata.jsonl").read_text().splitlines():
         if line.strip():
             r = json.loads(line)
             out[r["street"]] = r

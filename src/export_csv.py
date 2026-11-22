@@ -1,4 +1,5 @@
 """Write the flat CSV exports in output/: streets_classified.csv and buurt_themes.csv."""
+import config
 import json
 from pathlib import Path
 
@@ -9,8 +10,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from tiers import TIER_NAMES, evidence_tier  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
-DATA, OUT = ROOT / "data", ROOT / "output"
+OUT = config.OUTPUT
 
 COLS = ["gemeente", "street", "wijk", "buurt", "category", "subcategory", "entity_label",
         "entity_description", "evidence_tier", "evidence_tier_name", "highway", "way_class", "confidence", "source", "source_url",
@@ -18,11 +18,11 @@ COLS = ["gemeente", "street", "wijk", "buurt", "category", "subcategory", "entit
 
 
 def main():
-    final = pd.DataFrame(json.loads((DATA / "enriched" / "streets_final.json").read_text()))
+    final = pd.DataFrame(json.loads((config.ENRICHED / "streets_final.json").read_text()))
     if "evidence_tier" not in final:
         final["evidence_tier"] = [evidence_tier(r) for r in final.to_dict("records")]
     final["evidence_tier_name"] = final["evidence_tier"].map(TIER_NAMES)
-    streets = gpd.read_file(DATA / "raw" / "streets.geojson")[["gemeente", "name", "wijk"]]
+    streets = gpd.read_file(config.RAW / "streets.geojson")[["gemeente", "name", "wijk"]]
     streets = streets.rename(columns={"name": "street"}).drop_duplicates(["gemeente", "street"])
     df = final.merge(streets, on=["gemeente", "street"], how="left")
     for c in COLS:
@@ -31,7 +31,7 @@ def main():
     df = df[COLS].sort_values(["gemeente", "wijk", "buurt", "street"])
     df.to_csv(OUT / "streets_classified.csv", index=False)
 
-    themes = json.loads((DATA / "enriched" / "buurt_themes_full.json").read_text())["buurten"]
+    themes = json.loads((config.ENRICHED / "buurt_themes_full.json").read_text())["buurten"]
     rows = [{**{k: t.get(k) for k in ("gemeente", "buurt", "wijk", "theme", "category", "subcategory",
                                       "confidence", "source")},
              "example_streets": "; ".join(t.get("example_streets", []))} for t in themes]

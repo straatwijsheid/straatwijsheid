@@ -8,20 +8,21 @@ sharper context than its buurt, so the resolver can use them as well.
 Two streets are adjacent when their geometries come within ADJACENT_M metres (same gemeente). Cached in data/names/adjacency.json."""
 from __future__ import annotations
 
+import config
 import collections
 import json
 
 import geopandas as gpd
 
-from rules.base import DATA, ROOT
+from rules.base import ROOT
 
 ADJACENT_M = 8.0
-CACHE = DATA / "names" / "adjacency.json"
+CACHE = config.NAMES / "adjacency.json"
 
 
 def build(root=ROOT, distance=ADJACENT_M) -> dict:
     """{(gemeente, street): [adjacent street names]}"""
-    streets = gpd.read_file(root / "data" / "raw" / "streets.geojson")[["gemeente", "name", "geometry"]]
+    streets = gpd.read_file(config.RAW / "streets.geojson")[["gemeente", "name", "geometry"]]
     adj = collections.defaultdict(set)
     for g, d in streets.groupby("gemeente"):
         d = d.reset_index(drop=True).to_crs(d.estimate_utm_crs())

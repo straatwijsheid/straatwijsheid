@@ -5,13 +5,13 @@ with its buurt's dominant theme. When it's low-confidence or conflicts with
 a strongly monothematic buurt, the buurt theme wins (this is what fixes
 Pinkstraat -> "Pink" the singer, Pluvierlaan -> an unrelated person, etc.).
 """
+import config
 import json
 import re
 from pathlib import Path
 
 from tiers import evidence_tier  # src/ is on sys.path when run as a script
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 CONFIDENT_THRESHOLD = 0.7
 STRONG_THEME_THRESHOLD = 0.8
@@ -231,7 +231,7 @@ def load_jsonl(path: Path) -> list[dict]:
 def apply_manual_overrides(final: list[dict]) -> list[dict]:
     """Individually researched corrections (web search or general knowledge),
     applied last since they're the highest-quality evidence available."""
-    overrides_path = DATA_DIR / "enriched" / "manual_overrides.json"
+    overrides_path = config.ENRICHED / "manual_overrides.json"
     if not overrides_path.exists():
         return final
     overrides = {(o["gemeente"], o["street"]): o
@@ -254,14 +254,14 @@ def main():
     """Classify every street in data/raw/streets.geojson from the Wikidata cache, the buurt themes and the override layers -> streets_final.json."""
     import geopandas as gpd
 
-    wikidata_results = load_jsonl(DATA_DIR / "enriched" / "all_streets_wikidata.jsonl")
-    gdf = gpd.read_file(DATA_DIR / "raw" / "streets.geojson")
+    wikidata_results = load_jsonl(config.ENRICHED / "all_streets_wikidata.jsonl")
+    gdf = gpd.read_file(config.RAW / "streets.geojson")
     context = {}
     for _, row in gdf.iterrows():
         context.setdefault(row["name"], []).append({"gemeente": row["gemeente"], "buurt": row["buurt"]})
     # the cache keeps lookups for gemeenten that were dropped from the map: don't emit unplaced rows for them
     wikidata_results = [r for r in wikidata_results if r["street"] in context]
-    themes = load_json(DATA_DIR / "enriched" / "buurt_themes_full.json")["buurten"]
+    themes = load_json(config.ENRICHED / "buurt_themes_full.json")["buurten"]
     themes_by_buurt = {(t["gemeente"], t["buurt"]): t for t in themes}
 
     final = apply_manual_overrides(reconcile(wikidata_results, context, themes_by_buurt))
@@ -274,7 +274,7 @@ def main():
         row["highway"] = h if isinstance(h, str) else None          # OSM highway type of the street
         row["way_class"] = w if isinstance(w, str) else "street"     # street | path | planned
 
-    out_path = DATA_DIR / "enriched" / "streets_final.json"
+    out_path = config.ENRICHED / "streets_final.json"
     out_path.write_text(json.dumps(final, indent=2, ensure_ascii=False))
     from collections import Counter
 

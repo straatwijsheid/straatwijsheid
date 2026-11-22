@@ -6,6 +6,7 @@ our tier-1/2 kind agrees. Where our own tier-1/2 classification and OSM disagree
 reported (`python src/osm_report.py`) for review."""
 from __future__ import annotations
 
+import config
 from .base import Context, Override, ROOT
 from .evidence import TRUSTED   # noqa: F401  (kept for symmetry with other rules)
 
@@ -34,7 +35,7 @@ def _wikidata_qids() -> dict:
     """street -> the Wikidata item our own name matching accepted (None when the match was not accepted)."""
     import json
     out = {}
-    for line in (ROOT / "data" / "enriched" / "all_streets_wikidata.jsonl").open():
+    for line in (config.ENRICHED / "all_streets_wikidata.jsonl").open():
         r = json.loads(line)
         out[r["street"]] = r.get("wikidata_qid")
     return out

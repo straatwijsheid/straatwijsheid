@@ -52,6 +52,32 @@ def test_missing_street_names():
         assert names == sorted(set(names))
 
 
+def test_config_precedence_and_build_dir():
+    import os
+    import subprocess
+    import config
+    old_local, old_env = dict(config._LOCAL), os.environ.get("TEST_SETTING")
+    try:
+        config._LOCAL.clear()
+        config._LOCAL["k"] = "from-file"
+        os.environ.pop("TEST_SETTING", None)
+        assert config.setting("TEST_SETTING", "k", "dflt") == "from-file"          # file beats default
+        os.environ["TEST_SETTING"] = "from-env"
+        assert config.setting("TEST_SETTING", "k", "dflt") == "from-env"           # environment beats file
+        os.environ["TEST_SETTING"] = ""
+        assert config.setting("TEST_SETTING", "missing", "dflt") == "dflt"         # empty counts as unset
+    finally:
+        config._LOCAL.clear(); config._LOCAL.update(old_local)
+        os.environ.pop("TEST_SETTING", None)
+        if old_env is not None:
+            os.environ["TEST_SETTING"] = old_env
+    with tempfile.TemporaryDirectory() as d:
+        env = dict(os.environ, STREETS_BUILD_DIR=d, WIKIDATA_CONTACT="secret@example.org")
+        out = subprocess.run([sys.executable, str(Path(config.__file__)), ], env=env, capture_output=True, text=True, check=True).stdout
+        assert f"{Path(d).resolve()}/raw" in out and "enriched" in out and (Path(d) / "raw").is_dir()   # build dir is created and used
+        assert "secret@example.org" not in out and "set" in out                                         # the contact is never printed
+
+
 if __name__ == "__main__":
     fails = 0
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]

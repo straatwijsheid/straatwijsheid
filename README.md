@@ -54,7 +54,8 @@ repository root.
 
 ```bash
 # any gemeente(s), end to end (acquire -> Wikidata -> reconcile -> themes -> rules check -> outputs)
-export WIKIDATA_CONTACT="you@example.org"          # a contact for polite, fast Wikidata access; never stored in the repo
+# a contact for polite, fast Wikidata access goes in config.local.toml (git-ignored; copy config.example.toml) or in the WIKIDATA_CONTACT environment variable
+.venv/bin/python src/config.py                      # shows where everything lives and which settings are in effect
 .venv/bin/python src/pipeline.py add Tilburg Breda
 .venv/bin/python src/pipeline.py status             # what is missing at each stage
 .venv/bin/python src/pipeline.py rebuild            # after rules/overrides/knowledge changed: reconcile, analyze, map, CSVs, tier statistics

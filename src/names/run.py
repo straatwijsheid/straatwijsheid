@@ -17,11 +17,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import config  # noqa: E402
+
 from names import adjacency as A, candidates as C, resolve as R   # noqa: E402
-from rules.base import Context, DATA                          # noqa: E402
+from rules.base import Context                          # noqa: E402
 from tiers import evidence_tier                               # noqa: E402
 
-OUT = DATA / "names" / "candidates.jsonl"
+OUT = config.NAMES / "candidates.jsonl"
 
 
 def load():
@@ -41,7 +43,7 @@ def write_table(table):
                                 "labels": [[l, round(w, 2)] for l, w in c.labels().most_common(3)], "rules": sorted(c.rules),
                                 "wikidata": [{"strength": s, "label": l, "description": d} for s, l, d in c.wikidata[:2]]}
                                for k, c in sorted(e.candidates.items(), key=lambda kv: -kv[1].mass())]}, ensure_ascii=False) + "\n")
-    print(f"wrote {OUT.relative_to(DATA.parent)} ({len(table)} names)")
+    print(f"wrote {config.rel(OUT)} ({len(table)} names)")
 
 
 def _tokens(s):

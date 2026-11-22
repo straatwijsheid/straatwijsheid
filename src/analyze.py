@@ -12,6 +12,7 @@ across that gemeente's buurten, keep the wijk structure, and see how often chanc
 the observed pooled uniformity. Two label levels: the top-level category (person / place /
 thing) and the finer legend group used on the map.
 """
+import config
 import json
 import random
 import zlib
@@ -20,8 +21,6 @@ from pathlib import Path
 
 from build_map import subgroup_color
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-OUT_DIR = Path(__file__).resolve().parent.parent / "output"
 PERMUTATIONS = 10_000
 SEED = 20260920
 
@@ -70,7 +69,7 @@ def permutation_test(wijken: list[list[str]], rng: random.Random) -> dict:
 
 
 def main():
-    themes = json.loads((DATA_DIR / "enriched" / "buurt_themes_full.json").read_text())["buurten"]
+    themes = json.loads((config.ENRICHED / "buurt_themes_full.json").read_text())["buurten"]
     themes = [t for t in themes if t["category"] != "unclear"]
 
     by_gemeente = defaultdict(lambda: defaultdict(list))
@@ -104,8 +103,8 @@ def main():
                 **permutation_test(wijk_labels, rng),
             })
 
-    OUT_DIR.mkdir(exist_ok=True)
-    out_path = OUT_DIR / "wijk_theme_clustering.json"
+    config.OUTPUT.mkdir(exist_ok=True)
+    out_path = config.OUTPUT / "wijk_theme_clustering.json"
     out_path.write_text(json.dumps({"permutation_tests": tests, "wijken": wijk_rows},
                                    indent=2, ensure_ascii=False))
     print(f"Wrote {out_path}\n")

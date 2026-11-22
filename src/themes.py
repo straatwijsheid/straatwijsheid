@@ -11,15 +11,16 @@ every other theme is derived here (`source: derived_from_street_classification`)
 """
 from __future__ import annotations
 
+import config
 import argparse
 import collections
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-THEMES = ROOT / "data" / "enriched" / "buurt_themes_full.json"
-FINAL = ROOT / "data" / "enriched" / "streets_final.json"
-LABELS = json.loads((ROOT / "data" / "knowledge" / "theme_labels.json").read_text())
+THEMES = config.ENRICHED / "buurt_themes_full.json"
+FINAL = config.ENRICHED / "streets_final.json"
+LABELS = json.loads((config.KNOWLEDGE / "theme_labels.json").read_text())
 DERIVED, HAND = "derived_from_street_classification", "claude_reasoning"
 
 
@@ -62,8 +63,8 @@ def derive(buurt: dict, streets: list[str], fin: dict) -> dict:
 def run(gemeenten=None, rebuild=False) -> int:
     import geopandas as gpd
     fin = {(x["gemeente"], x["street"]): x for x in json.loads(FINAL.read_text())}
-    sg = gpd.read_file(ROOT / "data" / "raw" / "streets.geojson")
-    bg = gpd.read_file(ROOT / "data" / "raw" / "buurten.geojson")
+    sg = gpd.read_file(config.RAW / "streets.geojson")
+    bg = gpd.read_file(config.RAW / "buurten.geojson")
     if gemeenten:
         sg, bg = sg[sg.gemeente.isin(gemeenten)], bg[bg.gemeente.isin(gemeenten)]
     by = collections.defaultdict(set)

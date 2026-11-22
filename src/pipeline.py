@@ -6,7 +6,7 @@
 
 `add` runs, in order (each stage is also a script you can run alone):
   1 acquire    src/acquire.py            streets + buurten for the gemeenten (skips ones already fetched)
-  2 wikidata   src/enrich_wikidata.py    look up every street name not cached yet (needs WIKIDATA_CONTACT; run it in your own shell if it is long)
+  2 wikidata   src/enrich_wikidata.py    look up every street name not cached yet (needs a Wikidata contact, see src/config.py; run it in your own shell if it is long)
   3 reconcile  src/reconcile.py          Wikidata guesses + buurt themes + overrides -> streets_final.json
   4 themes     src/themes.py             derive buurt themes for buurten that have none, then reconcile again so the themes act
   5 osm        src/osm_etymology.py      refresh OpenStreetMap etymology tags (--refresh-osm)
@@ -17,6 +17,7 @@ Rules that need review (corrections, vocabulary exclusions) stay a human step: b
 """
 from __future__ import annotations
 
+import config
 import argparse
 import collections
 import json
@@ -40,8 +41,8 @@ def stage_acquire(gems):
 
 
 def stage_wikidata(gems):
-    if not os.environ.get("WIKIDATA_CONTACT"):
-        sys.exit("Stage wikidata needs WIKIDATA_CONTACT in your shell (a contact address, never stored). Either export it and re-run, or run\n"
+    if not config.CONTACT:
+        sys.exit("Stage wikidata needs a Wikidata contact (a contact address, never stored in a tracked file): set WIKIDATA_CONTACT or wikidata_contact in config.local.toml and re-run, or run\n"
                  f"  {PY} src/enrich_wikidata.py --missing\nyourself, then continue with: python src/pipeline.py rebuild --themes")
     run(SRC / "enrich_wikidata.py", "--missing", *[x for g in gems for x in ("--gemeente", g)])
 
@@ -72,7 +73,7 @@ def stage_outputs():
 
 
 def tiers():
-    rows = json.loads((ROOT / "data" / "enriched" / "streets_final.json").read_text())
+    rows = json.loads((config.ENRICHED / "streets_final.json").read_text())
     c = collections.Counter(r["evidence_tier"] for r in rows)
     n = len(rows)
     print(f"\n{n} streets in {len({r['gemeente'] for r in rows})} gemeenten; evidence tiers: " + ", ".join(f"{t}: {c[t]} ({c[t] / n:.1%})" for t in sorted(c)))
@@ -80,14 +81,14 @@ def tiers():
 
 def status():
     import geopandas as gpd
-    gems = sorted(set(gpd.read_file(ROOT / "data" / "raw" / "streets.geojson")["gemeente"]))
-    final = json.loads((ROOT / "data" / "enriched" / "streets_final.json").read_text())
-    themes = json.loads((ROOT / "data" / "enriched" / "buurt_themes_full.json").read_text())["buurten"]
+    gems = sorted(set(gpd.read_file(config.RAW / "streets.geojson")["gemeente"]))
+    final = json.loads((config.ENRICHED / "streets_final.json").read_text())
+    themes = json.loads((config.ENRICHED / "buurt_themes_full.json").read_text())["buurten"]
     have_final = {r["gemeente"] for r in final}
     have_theme = {t["gemeente"] for t in themes}
     sys.path.insert(0, str(SRC))
     from enrich_wikidata import missing_street_names
-    miss = missing_street_names(ROOT / "data" / "enriched" / "all_streets_wikidata.jsonl")
+    miss = missing_street_names(config.ENRICHED / "all_streets_wikidata.jsonl")
     print(f"acquired: {len(gems)} gemeenten; classified: {len(have_final)}; with themes: {len(have_theme)}")
     print(f"not classified: {sorted(set(gems) - have_final) or 'none'}; without themes: {sorted(set(gems) - have_theme) or 'none'}")
     print(f"street names not yet looked up on Wikidata: {len(miss)}")

@@ -9,6 +9,7 @@ Data: data/raw/osm_places.json (`python src/osm_places.py --fetch`). Never overr
 or streets already read as a non-local kind of place (towns, regions: the directional-road rule handles those)."""
 from __future__ import annotations
 
+import config
 import collections
 import json
 import re
@@ -17,7 +18,7 @@ import unicodedata
 from .base import Context, Override, ROOT, core
 
 RULE = "osm_places"
-RAW = ROOT / "data" / "raw" / "osm_places.json"
+RAW = config.RAW / "osm_places.json"
 MAX_KM = 1.0
 KIND = {"waterway=river": ("river", "river"), "waterway=stream": ("river", "stream"), "waterway=canal": ("river", "canal"), "waterway=ditch": ("river", "ditch"),
         "natural=water": ("lake", "body of water")}
@@ -32,7 +33,7 @@ def _norm(s):
 
 def _locations():
     import geopandas as gpd
-    g = gpd.read_file(ROOT / "data" / "raw" / "streets.geojson")[["gemeente", "name", "geometry"]]
+    g = gpd.read_file(config.RAW / "streets.geojson")[["gemeente", "name", "geometry"]]
     pts = g.geometry.representative_point()
     loc = {}
     for gem, name, p in zip(g["gemeente"], g["name"], pts):

@@ -10,13 +10,14 @@ types that are not streets (see EXCLUDED); each street keeps its `highway` type(
 """
 from __future__ import annotations
 
+import config
 import time
 
 import geopandas as gpd
 import requests
 from shapely.geometry import LineString
 
-OVERPASS = "https://overpass-api.de/api/interpreter"
+OVERPASS = config.OVERPASS_URL
 UA = {"User-Agent": "street-etymology-research/0.1 (open-data research script)"}   # generic: no personal details
 EXCLUDED = {"proposed", "platform", "bus_stop", "services", "rest_area", "raceway", "corridor", "busway", "elevator", "emergency_bay", "give_way", "crossing"}
 RANK = ["residential", "living_street", "unclassified", "tertiary", "secondary", "primary", "trunk", "motorway", "pedestrian", "service", "road",

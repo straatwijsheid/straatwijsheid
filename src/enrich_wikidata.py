@@ -5,6 +5,7 @@ then search Wikidata for matching entities and pull enough claims (instance-of,
 occupation, citizenship, description) to classify the street with a confidence
 score. Streets with no confident match are left for the LLM fallback pass.
 """
+import config
 import difflib
 import json
 from pathlib import Path
@@ -18,9 +19,9 @@ from requests.adapters import HTTPAdapter, Retry
 
 WD_API = "https://www.wikidata.org/w/api.php"
 # Generic client name. Wikimedia asks for a contact in the User-Agent; to provide one,
-# set WIKIDATA_CONTACT in the environment (it is never stored in this file).
+# set WIKIDATA_CONTACT in the environment or wikidata_contact in config.local.toml (it is never stored in a tracked file).
 USER_AGENT = "StreetEtymologyResearch/0.1 (personal research project" + (
-    f"; contact: {os.environ['WIKIDATA_CONTACT']}" if os.environ.get("WIKIDATA_CONTACT") else ""
+    f"; contact: {config.CONTACT}" if config.CONTACT else ""
 ) + ")"
 
 _session = requests.Session()
@@ -350,7 +351,7 @@ def missing_street_names(cache_path, gemeenten=None) -> list[str]:
     """Distinct street names in data/raw/streets.geojson that the cache has not looked up yet (the same name in several gemeenten is one lookup)."""
     import geopandas as gpd
     root = Path(__file__).resolve().parent.parent
-    g = gpd.read_file(root / "data" / "raw" / "streets.geojson")
+    g = gpd.read_file(config.RAW / "streets.geojson")
     if gemeenten:
         g = g[g["gemeente"].isin(gemeenten)]
     done = set()
@@ -363,14 +364,14 @@ def missing_street_names(cache_path, gemeenten=None) -> list[str]:
 if __name__ == "__main__":
     import argparse
 
-    ap = argparse.ArgumentParser(description="Look streets up on Wikidata (resumable). Set WIKIDATA_CONTACT for polite, faster access.")
+    ap = argparse.ArgumentParser(description="Look streets up on Wikidata (resumable). Set WIKIDATA_CONTACT (or wikidata_contact in config.local.toml) for polite, faster access.")
     ap.add_argument("--missing", action="store_true", help="look up every street in streets.geojson that is not cached yet (the normal mode)")
     ap.add_argument("--gemeente", action="append", help="with --missing: only these gemeenten")
     ap.add_argument("--names", help="a text file with one street name per line, instead of --missing")
     ap.add_argument("--cache", default="all_streets_wikidata.jsonl", help="cache file name in data/enriched/")
     ap.add_argument("--dry-run", action="store_true", help="only report how many names would be looked up")
     a = ap.parse_args()
-    out_path = Path(__file__).resolve().parent.parent / "data" / "enriched" / a.cache
+    out_path = config.ENRICHED / a.cache
     out_path.parent.mkdir(parents=True, exist_ok=True)
     if a.names:
         names = [l.strip() for l in Path(a.names).read_text().splitlines() if l.strip()]

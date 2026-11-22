@@ -8,9 +8,8 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Optional
 
-ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "data"
-KNOWLEDGE = DATA / "knowledge"
+import config
+from config import KNOWLEDGE, ROOT
 
 SOURCE = "claude_knowledge"   # provenance value used for every rule/hand-made override
 
@@ -119,15 +118,15 @@ class Context:
     @classmethod
     def load(cls, root: Path = ROOT):
         import geopandas as gpd
-        gdf = gpd.read_file(root / "data" / "raw" / "streets.geojson")[["gemeente", "name", "buurt", "wijk"]]
+        gdf = gpd.read_file(config.RAW / "streets.geojson")[["gemeente", "name", "buurt", "wijk"]]
         streets = gdf.to_dict("records")
-        final = json.loads((root / "data" / "enriched" / "streets_final.json").read_text())
+        final = json.loads((config.ENRICHED / "streets_final.json").read_text())
         wd = {}
-        for line in (root / "data" / "enriched" / "all_streets_wikidata.jsonl").read_text().splitlines():
+        for line in (config.ENRICHED / "all_streets_wikidata.jsonl").read_text().splitlines():
             if line.strip():
                 r = json.loads(line)
                 wd[r["street"]] = (r.get("wikidata_label") or "", r.get("wikidata_description") or "")
-        b = gpd.read_file(root / "data" / "raw" / "buurten.geojson")
+        b = gpd.read_file(config.RAW / "buurten.geojson")
         names = {n.lower() for n in b["name"]} | {str(w).lower() for w in b["wijk"]} | {g.lower() for g in b.gemeente.unique()}
         return cls(streets, final, wd, names)
 

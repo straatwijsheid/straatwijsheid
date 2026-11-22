@@ -7,6 +7,7 @@ wrong, or points at an item whose English label/description does not describe wh
 """
 from __future__ import annotations
 
+import config
 import collections
 import json
 import re
@@ -27,7 +28,7 @@ GENERIC_TARGETS = {
 
 
 def main():
-    recs = json.loads((ROOT / "data" / "enriched" / "osm_etymology.json").read_text())
+    recs = json.loads((config.ENRICHED / "osm_etymology.json").read_text())
     fn = BASE_FIRST_NAMES - NOT_A_FIRST_NAME
     street_items = lambda r: ", ".join(f"[{q}](https://www.wikidata.org/wiki/{q})" for q in r["tags"].get("wikidata", []))
     L = ["# Wikidata fixes to make", "",
@@ -66,7 +67,7 @@ def main():
     if not n2:
         L.append("(none found)\n")
     OUT.write_text("\n".join(L) + "\n")
-    print(f"wrote {OUT.relative_to(ROOT)}: {sum(len(v) for v in by_target.values())} generic-tree items, {n2} contradicting statements")
+    print(f"wrote {config.rel(OUT)}: {sum(len(v) for v in by_target.values())} generic-tree items, {n2} contradicting statements")
 
 
 if __name__ == "__main__":

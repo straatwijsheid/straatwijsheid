@@ -23,10 +23,12 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
-RAW_DIR.mkdir(parents=True, exist_ok=True)
+import config  # noqa: E402
 
-CONFIG = json.loads((RAW_DIR.parent / "knowledge" / "gemeenten.json").read_text())
+RAW_DIR = config.RAW
+config.ensure_dirs()
+
+CONFIG = json.loads((config.KNOWLEDGE / "gemeenten.json").read_text())
 PDOK_WFS_URL = "https://service.pdok.nl/cbs/wijkenbuurten/2024/wfs/v1_0"
 
 

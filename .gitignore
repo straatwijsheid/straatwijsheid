@@ -6,3 +6,4 @@ cache/
 data/names/candidates.jsonl
 data/names/adjacency.json
 *.log
+config.local.toml

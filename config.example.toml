@@ -1,0 +1,14 @@
+# Copy to config.local.toml (git-ignored) and edit. Environment variables of the same meaning override these values.
+# See src/config.py for the lookup order.
+
+# A contact for polite, faster Wikidata access (sent in the User-Agent). Personal: keep it here, never commit it.
+# wikidata_contact = "you@example.org"
+
+# Where rebuildable data goes (raw/ enriched/ output/ cache/ names/). Unset keeps the current layout inside the repository.
+# build_dir = "~/street-etymology-build"
+
+# The knowledge directory (hand-made overrides, corrections, vocabularies). Default: data/knowledge in this repository.
+# knowledge_dir = "~/street-knowledge"
+
+# An Overpass mirror, if the default is busy.
+# overpass_url = "https://overpass-api.de/api/interpreter"

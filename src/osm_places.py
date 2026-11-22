@@ -5,6 +5,7 @@ street name is a place name: a street called Zwartven is a 'lake' reading only i
 """
 from __future__ import annotations
 
+import config
 import json
 import math
 import sys
@@ -14,9 +15,9 @@ from pathlib import Path
 import requests
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW = ROOT / "data" / "raw" / "osm_places.json"
+RAW = config.RAW / "osm_places.json"
 UA = {"User-Agent": "street-etymology-research/0.1 (open-data research script)"}
-OVERPASS = "https://overpass-api.de/api/interpreter"
+OVERPASS = config.OVERPASS_URL
 QUERY = """[out:json][timeout:300];area["ISO3166-2"="NL-NB"]->.a;
 (nwr(area.a)["name"]["place"~"^(city|town|village|hamlet|suburb|neighbourhood|locality|isolated_dwelling|farm|square)$"];
  nwr(area.a)["name"]["natural"~"^(water|heath|wood|scrub|wetland|bay|grassland|sand|peninsula|hill)$"];

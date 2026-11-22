@@ -1,5 +1,6 @@
 """Build an interactive map of Dutch streets colored by naming category,
 with buurt polygons showing the detected theme on hover/click."""
+import config
 import gzip
 import json
 from pathlib import Path
@@ -12,8 +13,6 @@ import numpy as np
 import shapely
 import re
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-OUT_DIR = Path(__file__).resolve().parent.parent / "output"
 
 CATEGORY_COLORS = {
     "person": "#2563eb",     # blue
@@ -388,13 +387,13 @@ W = {"path": "p", "planned": "c"}   # way_class -> the one-letter code in the fe
 
 
 def main():
-    streets = gpd.read_file(DATA_DIR / "raw" / "streets.geojson")
+    streets = gpd.read_file(config.RAW / "streets.geojson")
     # a street name can exist in several gemeenten, so everything is keyed by (gemeente, name)
     final = {(r["gemeente"], r["street"]): r
-             for r in json.loads((DATA_DIR / "enriched" / "streets_final.json").read_text())}
+             for r in json.loads((config.ENRICHED / "streets_final.json").read_text())}
     themes = {(t["gemeente"], t["buurt"]): t
-              for t in json.loads((DATA_DIR / "enriched" / "buurt_themes_full.json").read_text())["buurten"]}
-    buurten = gpd.read_file(DATA_DIR / "raw" / "buurten.geojson")
+              for t in json.loads((config.ENRICHED / "buurt_themes_full.json").read_text())["buurten"]}
+    buurten = gpd.read_file(config.RAW / "buurten.geojson")
     streets["geometry"] = streets.geometry.apply(round_geom)
     buurten["geometry"] = buurten.geometry.apply(round_geom)
 
@@ -466,7 +465,7 @@ def main():
     gray_style = {"color": CATEGORY_COLORS["unresolved"], "weight": 1, "opacity": 0.5}
     # one script per gemeente, loaded on demand (a <script> rather than fetch() so the map
     # still works when streets_map.html is opened straight from disk)
-    data_dir = OUT_DIR / "data"
+    data_dir = config.OUTPUT / "data"
     data_dir.mkdir(exist_ok=True)
     for old in list(data_dir.glob("*.js")) + list(data_dir.glob("*.js.gz")):
         old.unlink()
@@ -541,7 +540,7 @@ def main():
     """
     m.get_root().html.add_child(folium.Element(legend_html))
 
-    out_path = OUT_DIR / "streets_map.html"
+    out_path = config.OUTPUT / "streets_map.html"
     m.save(str(out_path))
     print(f"Wrote {out_path}")
 

@@ -13,6 +13,7 @@ classifications are. Three kinds of tag on a street's ways are used:
 """
 from __future__ import annotations
 
+import config
 import argparse
 import collections
 import json
@@ -26,11 +27,11 @@ import requests
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rules.base import ROOT, Context                      # noqa: E402
 
-RAW = ROOT / "data" / "raw" / "osm_etymology_ways.json"
-OUT = ROOT / "data" / "enriched" / "osm_etymology.json"
-ENTITY_CACHE = ROOT / "cache" / "wikidata_entities.json"
+RAW = config.RAW / "osm_etymology_ways.json"
+OUT = config.ENRICHED / "osm_etymology.json"
+ENTITY_CACHE = config.CACHE / "wikidata_entities.json"
 UA = {"User-Agent": "street-etymology-research/0.1 (open-data research script)"}   # generic: no personal details
-OVERPASS = "https://overpass-api.de/api/interpreter"
+OVERPASS = config.OVERPASS_URL
 WIKIDATA_API = "https://www.wikidata.org/w/api.php"
 
 QUERY = """[out:json][timeout:300];area["ISO3166-2"="NL-NB"]->.a;
@@ -58,7 +59,7 @@ PLACE_WORDS = re.compile(r"\b(commune|municipality|town|city|province|region|isl
 BIO_WORDS = re.compile(r"\b(species|genus|bird|insect|fish|mammal|plant|flower|tree|butterfly|dragonfly|beetle|fungus|shrub|herb|taxon)\b", re.I)
 
 
-KINDS = {k: v for k, v in json.loads((ROOT / "data" / "knowledge" / "osm_entity_kinds.json").read_text()).items() if not k.startswith("_")}
+KINDS = {k: v for k, v in json.loads((config.KNOWLEDGE / "osm_entity_kinds.json").read_text()).items() if not k.startswith("_")}
 
 
 def classify_entity(ent: dict) -> tuple[str | None, str | None]:
@@ -118,7 +119,7 @@ def fetch():
             r.raise_for_status()
             els = r.json()["elements"]
             RAW.write_text(json.dumps(els, ensure_ascii=False))
-            print(f"fetched {len(els)} ways -> {RAW.relative_to(ROOT)}")
+            print(f"fetched {len(els)} ways -> {config.rel(RAW)}")
             return els
         except Exception as e:                                   # noqa: BLE001
             print(f"overpass attempt {attempt + 1} failed: {str(e)[:80]}")
@@ -163,7 +164,7 @@ def build():
     ways = json.loads(RAW.read_text())
     import geopandas as gpd
     from shapely.geometry import Point
-    b = gpd.read_file(ROOT / "data" / "raw" / "buurten.geojson")
+    b = gpd.read_file(config.RAW / "buurten.geojson")
     gem = b.dissolve(by="gemeente").reset_index()[["gemeente", "geometry"]]
     pts = gpd.GeoDataFrame({"i": range(len(ways))}, geometry=[Point(w["center"]["lon"], w["center"]["lat"]) for w in ways], crs="EPSG:4326")
     joined = gpd.sjoin(pts, gem.to_crs("EPSG:4326"), how="left", predicate="within")
@@ -218,7 +219,7 @@ def build():
                     "center": r["centers"][0] if r.get("centers") else None, "items": items, "text": r["text"][:2]})
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=1))
     c = collections.Counter(o["via"] for o in out)
-    print(f"{len(out)} streets with OSM etymology evidence ({dict(c)}) -> {OUT.relative_to(ROOT)}")
+    print(f"{len(out)} streets with OSM etymology evidence ({dict(c)}) -> {config.rel(OUT)}")
     return out
 
 

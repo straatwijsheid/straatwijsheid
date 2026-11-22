@@ -6,6 +6,7 @@ Reply with the buurt and a line per street ("Banstraat = Jan Ban, organist" / "w
 data/knowledge/corrections.json (street-level, tier 2 or 1 if the user points to Wikidata/OSM) and sharpen the buurt themes."""
 from __future__ import annotations
 
+import config
 import collections
 import json
 import sys
@@ -15,8 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main(gemeenten):
-    notes = json.loads((ROOT / "data" / "knowledge" / "review_notes.json").read_text())
-    rows = json.loads((ROOT / "data" / "enriched" / "streets_final.json").read_text())
+    notes = json.loads((config.KNOWLEDGE / "review_notes.json").read_text())
+    rows = json.loads((config.ENRICHED / "streets_final.json").read_text())
     by = collections.defaultdict(list)
     for r in rows:
         if r["gemeente"] in gemeenten and r["category"] == "person" and not r.get("entity_label") and r["evidence_tier"] >= 3:

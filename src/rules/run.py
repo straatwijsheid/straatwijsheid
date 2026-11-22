@@ -17,12 +17,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import config  # noqa: E402
+
 from rules import audits, corrections, directional, labels, osm, place_review, species, surnames, vocabulary    # noqa: E402
-from rules.base import Context, Override, DATA                                               # noqa: E402
+from rules.base import Context, Override                                               # noqa: E402
 from tiers import evidence_tier                                                               # noqa: E402
 
-OVERRIDES = DATA / "enriched" / "manual_overrides.json"
-EXCLUSIONS = DATA / "knowledge" / "rule_exclusions.json"
+OVERRIDES = config.ENRICHED / "manual_overrides.json"
+EXCLUSIONS = config.KNOWLEDGE / "rule_exclusions.json"
 STRONG = {1, 2}   # tiers that name a specific namesake
 # when several rules are applied together, a later one wins on the same street: reviewed corrections and external evidence last
 PRECEDENCE = ["label_cleanup", "species", "vocabulary", "titles", "directional_road", "bare_surname", "same_name_harmonise", "person_consensus",
@@ -158,7 +160,7 @@ def main(argv=None):
             existing[k] = rec
         data["overrides"] = list(existing.values())
         OVERRIDES.write_text(json.dumps(data, indent=2, ensure_ascii=False))
-        print(f"\nwrote {len(pending)} overrides to {OVERRIDES.relative_to(DATA.parent)}; now re-run reconcile.py, analyze.py, build_map.py, export_csv.py")
+        print(f"\nwrote {len(pending)} overrides to {config.rel(OVERRIDES)}; now re-run reconcile.py, analyze.py, build_map.py, export_csv.py")
     return 0
 
 
