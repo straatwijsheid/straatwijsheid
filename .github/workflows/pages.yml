@@ -1,0 +1,42 @@
+name: publish map
+
+# Publishes a packaged map (src/package_map.py) to GitHub Pages. The map is built on a machine that has the data, attached to a release as
+# straatwijsheid-map.zip, and deployed from there: the build needs hours of network access and never runs in CI. See docs/publishing.md.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag that holds straatwijsheid-map.zip (empty: the latest release)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download the packaged map from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release download ${TAG:+"$TAG"} --repo "$GITHUB_REPOSITORY" --pattern straatwijsheid-map.zip
+          mkdir site && unzip -q straatwijsheid-map.zip -d site
+          test -f site/index.html && test -d site/data
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

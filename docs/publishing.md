@@ -1,0 +1,37 @@
+# Publishing the map
+
+The map is a static site. It is built on a machine that has the data (a full build needs hours of network access and is never run in CI), packaged, attached to a release, and deployed to GitHub Pages by a workflow.
+
+```
+pipeline.py rebuild  ->  package_map.py  ->  release asset  ->  "publish map" workflow  ->  GitHub Pages
+```
+
+## One-time setup
+
+1. **Pages needs a public repository on a free plan.** GitHub Pages is not available for private repositories on the free plan; the organisation is on the free plan today. So either make the repository public (see the public-release issue) or move the organisation to a plan that
+   supports private Pages. Until then the workflow cannot deploy.
+2. **Enable Pages with GitHub Actions as the source:** the repository's Settings, Pages, Build and deployment, Source: *GitHub Actions*.
+3. **Custom domain (optional):** straatwijsheid.nl is set under Settings, Pages, Custom domain, with the DNS records GitHub lists there. The map uses relative paths and works at the root of a domain as well as under `/straatwijsheid/`.
+
+## Each publication
+
+```bash
+.venv/bin/python src/pipeline.py rebuild                # the map and its data in build/output/
+.venv/bin/python src/package_map.py                     # build/dist/straatwijsheid-map.zip (and the unzipped site, build/dist/site/)
+gh release create v0.1 build/dist/straatwijsheid-map.zip --title "v0.1" --notes "..."     # or: gh release upload TAG build/dist/straatwijsheid-map.zip --clobber
+gh workflow run "publish map" -f tag=v0.1               # empty tag: the latest release
+```
+
+The workflow downloads `straatwijsheid-map.zip` from the release, checks it contains `index.html` and `data/`, and deploys it. The page reports where it came from in its footer (code commit, knowledge commit, OpenStreetMap snapshot dates).
+
+To look at the packaged site before publishing: `python3 -m http.server --directory build/dist 8772` and open `http://localhost:8772/site/`.
+
+## What is in the package
+
+`index.html` (the map), `data/` (per-gemeente data, the buurt polygons and the search index, each as plain `.js` and pre-gzipped `.js.gz`), `PROVENANCE.json`, `.nojekyll`. Not the CSVs or the reports: they are separate downloads.
+
+## Before the map is public
+
+- The basemap is OpenStreetMap's public tile server. Check its usage policy for a public site: [#50](https://github.com/straatwijsheid/straatwijsheid/issues/50).
+- The attribution on the map and [NOTICE.md](../NOTICE.md) must be accurate.
+- The legend links to the review sheets in the knowledge repository, which is private for now.
