@@ -265,8 +265,14 @@ def main():
     themes_by_buurt = {(t["gemeente"], t["buurt"]): t for t in themes}
 
     final = apply_manual_overrides(reconcile(wikidata_results, context, themes_by_buurt))
+    ways = {}
+    if "way_class" in gdf:
+        ways = {(g, n): (h, w) for g, n, h, w in zip(gdf["gemeente"], gdf["name"], gdf["highway"], gdf["way_class"])}
     for row in final:
         row["evidence_tier"] = evidence_tier(row)
+        h, w = ways.get((row["gemeente"], row["street"]), (None, None))
+        row["highway"] = h if isinstance(h, str) else None          # OSM highway type of the street
+        row["way_class"] = w if isinstance(w, str) else "street"     # street | path | planned
 
     out_path = DATA_DIR / "enriched" / "streets_final.json"
     out_path.write_text(json.dumps(final, indent=2, ensure_ascii=False))

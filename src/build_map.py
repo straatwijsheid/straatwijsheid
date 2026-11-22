@@ -195,13 +195,15 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
       __ROWS__
       <div class="gm-sec"><b>Layers</b>
         <div class="gm-row"><label><input type="checkbox" class="ly-check" autocomplete="off" data-l="streets" checked> Streets</label></div>
+        <div class="gm-row"><label><input type="checkbox" class="ly-check" autocomplete="off" data-l="paths" checked> Paths (footway, cycleway, track)</label></div>
+        <div class="gm-row"><label><input type="checkbox" class="ly-check" autocomplete="off" data-l="planned" checked> Roads under construction</label></div>
         <div class="gm-row"><label><input type="checkbox" class="ly-check" autocomplete="off" data-l="buurten" checked> Buurt themes (all gemeenten)</label></div>
       </div>
     </div>
     <script>
     window.addEventListener('load', function () {
       var map = window[__MAP__], G = __REGISTRY__, R = __RENDER__, INITIAL = __INITIAL__;
-      var on = {}, layers = {streets: true, buurten: true}, built = {}, loading = {};
+      var on = {}, layers = {streets: true, buurten: true, paths: true, planned: true}, built = {}, loading = {};
       G.forEach(function (g) { on[g.name] = INITIAL.indexOf(g.name) >= 0; });
 
       var esc = function (t) { return String(t).replace(/[&<>"']/g,
@@ -222,12 +224,12 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
       // faint (non-interactive), while an invisible, wider line on top catches the
       // mouse. Gray hit zones go under the colored ones so a gray street never
       // steals hover from a colored one it runs alongside.
-      function buildStreets(data) {
+      function buildPart(data, want) {
         var grp = L.featureGroup();
         var isColored = function (f) { return f.properties.k !== undefined; };
         var hits = function (keep, weight) {
           return L.geoJson(data, {
-            filter: keep,
+            filter: function (f) { return want(f) && keep(f); },
             style: function () { return {weight: weight, opacity: 0, fill: false}; },
             onEachFeature: function (f, l) {
               l.bindTooltip(tpl(f), {sticky: true});
@@ -237,11 +239,28 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         };
         hits(function (f) { return !isColored(f); }, 14).addTo(grp);
         L.geoJson(data, {
+          filter: want,
           interactive: false,
           style: function (f) { return isColored(f) ? {color: R.palette[f.properties.k], weight: 3, opacity: 0.8} : R.gray; }
         }).addTo(grp);
         hits(isColored, 9).addTo(grp);
         return grp;
+      }
+      // streets are drawn in three parts so the panel can switch paths and planned roads on and off:
+      // p.w is absent for streets, "p" for paths (footway, cycleway, track...), "c" for roads under construction
+      function buildStreets(data) {
+        var grp = L.featureGroup(), parts = {};
+        [["s", function (f) { return !f.properties.w; }], ["p", function (f) { return f.properties.w === "p"; }],
+         ["c", function (f) { return f.properties.w === "c"; }]].forEach(function (d) { parts[d[0]] = buildPart(data, d[1]); });
+        grp.parts = parts;
+        return grp;
+      }
+      function syncParts(grp) {
+        Object.keys(grp.parts).forEach(function (k) {
+          var show = k === "s" || (k === "p" ? layers.paths : layers.planned), part = grp.parts[k];
+          if (show && !grp.hasLayer(part)) grp.addLayer(part);
+          if (!show && grp.hasLayer(part)) grp.removeLayer(part);
+        });
       }
       // buurt polygons: p.t = theme text, p.c = colour; no p.t means no theme (p.o says why)
       function buildBuurten(data) {
@@ -329,6 +348,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
           var want = on[g.name] && layers.streets;
           if (want && !map.hasLayer(layer)) map.addLayer(layer);
           if (!want && map.hasLayer(layer)) map.removeLayer(layer);
+          syncParts(layer);
         });
         if (refit) fitSelection();
       }
@@ -362,6 +382,9 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
     </script>
     """.replace("__ROWS__", rows).replace("__MAP__", json.dumps(map_name)).replace("__REGISTRY__", js_registry)\
         .replace("__RENDER__", json.dumps(render, separators=(",", ":"), ensure_ascii=False)).replace("__INITIAL__", json.dumps(initial))
+
+
+W = {"path": "p", "planned": "c"}   # way_class -> the one-letter code in the feature properties (streets carry none)
 
 
 def main():
@@ -420,6 +443,8 @@ def main():
             entity = None  # e.g. a weak Wikidata guess: don't present it as identified
         if entity is None or not row.get("analyzed", True):
             gprops = {"n": row["name"]}
+            if W.get(row.get("way_class")):
+                gprops["w"] = W[row["way_class"]]
             if row.get("analyzed", True):
                 gprops["t"] = int(row["evidence_tier"])
                 gsub = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else ""
@@ -431,7 +456,7 @@ def main():
         _, color = subgroup_color(row["category"], subcat)
         conf = row["confidence"]
         conf = None if conf is None or conf != conf else conf
-        props = {"n": row["name"], "k": color_index(color), "e": entity, "c": row["category"], "s": subcat or "",
+        props = {"n": row["name"], "k": color_index(color), **({"w": W[row["way_class"]]} if W.get(row.get("way_class")) else {}), "e": entity, "c": row["category"], "s": subcat or "",
                  "f": conf, "l": "high" if (conf or 0) >= 0.75 else "medium" if (conf or 0) >= 0.5 else "low",
                  "b": row["source"] if isinstance(row["source"], str) else "", "t": int(row["evidence_tier"])}
         for key, field in (("d", "entity_description"), ("u", "source_url")):

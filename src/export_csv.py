@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA, OUT = ROOT / "data", ROOT / "output"
 
 COLS = ["gemeente", "street", "wijk", "buurt", "category", "subcategory", "entity_label",
-        "entity_description", "evidence_tier", "evidence_tier_name", "confidence", "source", "source_url",
+        "entity_description", "evidence_tier", "evidence_tier_name", "highway", "way_class", "confidence", "source", "source_url",
         "buurt_theme", "notes"]
 
 

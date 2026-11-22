@@ -69,6 +69,8 @@ def propose(ctx: Context, features: list | None = None) -> list[Override]:
         if not best:
             continue
         d, f = best
+        if f["kind"] in ("leisure=park", "place=square") and _norm(f["name"]) == _norm(row["street"]):
+            continue        # the park/square is just the street's own plein/park: no independent evidence of what it is named after
         new_cat, new_sub = "place", "local_landscape_feature"
         if f["kind"] in KIND:
             new_sub, word = KIND[f["kind"]][0], KIND[f["kind"]][1]

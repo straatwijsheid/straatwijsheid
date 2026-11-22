@@ -4,6 +4,44 @@ Working list for the street-name etymology project. Goal: classify what every st
 (person / place / thing, with sub-kinds), show it on a map, and keep raising the share of streets we can identify.
 Noord-Brabant (59 gemeenten, 38,090 streets) is done as a first pass; everything below is about quality, durability and scale.
 
+## Project: GitHub-ready (near-term priority, set 2026-11-22)
+
+**Goal.** A public core repo that a stranger can clone, bootstrap and test, plus a separate knowledge repo (see "Repository model" below). Ordered by dependency:
+each milestone unblocks the next; items outside this list (tier-2 verification, resolver declines, review sheets, OSM upload tooling, PMTiles, OSM refresh phases 2-6)
+are quality work that does not block publishing.
+
+**M0. Finish what is in flight (do first; moving data mid-run would break it)**
+- [x] Wikidata lookup of the new names done; rebuilt with themes; rules applied to the supplement (2026-11-22): species, vocabulary, titles, directional_road, same_name_harmonise,
+      person_consensus, theme_forced_name_fit, name_resolver, osm_places (tightened: a park/square named exactly like the street is not evidence), osm_etymology (2,228 overrides).
+      Held back: `bare_surname` (168 proposals, sampled ~50% wrong: Ankerstraat/Koggestraat -> monarchs) and `wikidata_place_review` (68, turns Linden/Heide into "foreign towns").
+      **Not committed yet.** 44,600 streets: tier 1 9.9%, tier 2 31.8%, tier 3 14.2%, tier 4 5.5%, tier 5 38.6%.
+- [x] Tiers per `way_class`: street 10% tier 1 / 37% tier 5; path 12% / 54%; planned 11% / 56%. Decide whether paths/planned roads count in the headline numbers (they will appear in the README).
+- [ ] Elisabethlaan (Eindhoven, Philipsdorp): OSM tag Q76366670 = Maria Heyligers, neither of the user's candidates (Anna Elisabeth / Maria Elisabeth Philips); add to OSM_FIXES as a "check" item or confirm with the user's source.
+- [ ] Review the held `bare_surname` (168) and `wikidata_place_review` (68) proposals; improve `bare_surname` (common nouns like Anker, Kogge are not surnames).
+- [ ] Baarle-Nassau (46% gap): check the Baarle-Hertog enclaves are not double counted (a public number must not rest on a known glitch).
+
+**M1. Foundations that everything else touches**
+- [ ] `config.py` + git-ignored `config.local.toml` (BUILD_DIR, KNOWLEDGE_DIR, `WIKIDATA_CONTACT`, Overpass URL); replace the ~15 hard-coded `ROOT/data/...`/`output` paths. (Precursor of the build/ split and of unattended runs.)
+- [ ] Override layering: split `manual_overrides.json` into `legacy_hand` (frozen, goes to the knowledge repo) and per-rule layers (regenerated into build/); make rule application idempotent so a rule rewrites only its own layer. (Precursor of the knowledge-repo split; also removes the ~680-override near-loss hazard.)
+- [ ] Minimal OSM snapshot versioning (OSM project Phase 1, the dated snapshot + checksum + `fetched_at` part; the diff/changelog can follow): decides what the raw files in build/ and the release assets look like, and makes "X% of streets" reproducible. Close the open decision "OSM is the street list source" (it now is: `osm_streets.py`; CBS supplies boundaries only) and re-fetch the early gemeenten (OSM place polygon) the same way so all 59 are consistent.
+
+**M2. Split the repos** (needs M1)
+- [ ] Classify every file in `data/knowledge/`, `data/enriched/` into core / knowledge / build; create the knowledge repo (`filter-repo` keeps its history); `.gitignore` the build dir; `pipeline.py bootstrap`; stamp code + knowledge commit and OSM snapshot date into every output.
+- [ ] Golden fixture (a few gemeenten, canned Wikidata cache, tiny knowledge subset) so tests and CI never need the knowledge repo or the network; end-to-end test; GitHub Actions running the five test files.
+
+**M3. Public hygiene** (can run in parallel with M2)
+- [ ] Remove `/Users/marius/...` paths (23 occurrences, all in `scripts/legacy/`): move the legacy scripts to the knowledge repo's archive (or a tag) rather than publishing them in core.
+- [ ] Drop the unused `osmnx` requirement (`acquire.py` no longer uses it); pin and test a clean `pip install -r requirements.txt` on a fresh venv.
+- [ ] **User decisions**: licence for code (MIT/Apache-2.0?) and for the knowledge repo (CC0/CC-BY?); public from day one or private first; repo names; fresh history for core (squash: simplest, old history stays in the private repo) vs `filter-repo` (keeps history but 125 MB of old data blobs, largest 41 MB `streets.geojson`).
+- [ ] Data-source terms in a `NOTICE`/README section: OpenStreetMap contributors (ODbL), CBS/PDOK (CC-BY 4.0), Wikidata (CC0); how derived outputs may be reused. Secret scan (none expected: `WIKIDATA_CONTACT` is never stored).
+- [ ] Contributing guide: how to add a gemeente, a rule, an exclusion, a correction; how local knowledge reaches the knowledge repo.
+
+**M4. Documentation** (after M2: paths and layout are final; fold in the Documentation section below)
+- [ ] README, pipeline guide, method & principles, data dictionary, known limitations, map guide, findings (the Documentation items below).
+
+**M5. First public release**
+- [ ] Publish the map (GitHub Pages) and a dated raw snapshot + Wikidata cache as release assets; tag v0.1.
+
 ## Documentation (needed)
 
 Document the whole project in Markdown, so someone new (or future us) can understand, run and extend it.
@@ -84,9 +122,22 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
       - [ ] **OSM upload tooling (user, later)**: how to play by OSM's rules (no mass edits without the import/automated-edit procedure; per-edit
             changeset comments, sources, own account) while avoiding one-at-a-time edits: e.g. a JOSM-ready `.osc`/MapRoulette challenge or
             Overpass-turbo-assisted bulk-select per gemeente, small reviewed batches, `source=` + changeset discussion. Design with the user.
-      - [ ] **Coverage check**: for Cranendonck, 59 of 477 named OSM highways (12%) are not in `streets.geojson` (mostly paths/tracks, but also
-            Albert Plesmanstraat, Eindhovenseweg, Havenweg, Dennenlaan, Pastoor Thijssenlaan). Find out why (network filter? CBS outline?) and measure it for
-            other gemeenten before scaling.
+      - [ ] **Street-list coverage gap (root cause found 2026-11-21)**: `acquire.py` builds the street list from an osmnx `network_type="drive"` graph with
+            `retain_all=False`, which drops (a) service roads such as `service=parking_aisle`/`driveway`, (b) pedestrian/footway/cycleway/track ways,
+            (c) disconnected components (short isolated streets) and (d) anything clipped by the outline. Found via Elisabethlaan in Philipsdorp (OSM way
+            715072023, a parking aisle tagged `name:etymology:wikidata=Q76366670`, Maria Heyligers): 534 distinct names on ways that OSM taggers marked with
+            `wikidata`/`name:etymology:*` are absent from our list (vs 1,733 matched), and Cranendonck lacks 12% of its named OSM highways.
+            Fix: replace the drive graph by an Overpass query for every named `highway=*` way in the outline (with `highway`/`service` kept as a column
+            so tiers/maps can filter), re-run acquire for all gemeenten, look up the new names, and run them through the pipeline as one more wave
+            (`pipeline.py add` handles it). Measure the gap per gemeente first (named OSM ways vs our list).
+            **Status 2026-11-21**: gap measured (6,808 of 44,887 named street names, 15.2%, missing; worst Baarle-Nassau 46%, Nuenen 28%, Loon op Zand 27%);
+            new fetch `src/osm_streets.py` (every named `highway=*` way except proposed/platform/bus_stop/services...; `highway`, `way_class` street|path|planned);
+            `acquire.py --supplement` added 6,510 streets to the 59 gemeenten (existing rows untouched, `origin: supplement`; 3,115 paths, 281 planned);
+            map has Paths / Roads-under-construction toggles; CSV and streets_final carry `highway` and `way_class`.
+      - [ ] **Next for the supplement**: look up the 4,632 new street names on Wikidata (`WIKIDATA_CONTACT=... src/enrich_wikidata.py --missing`, ~45 min, user's shell),
+            then `pipeline.py rebuild --themes`, `rules/run.py --check` (osm_etymology will now match the 526 tagged streets that were missing, e.g. Elisabethlaan),
+            and review tiers per way_class (paths/planned should maybe be reported separately).
+      - [ ] Baarle-Nassau (46% gap): check the Belgian enclaves (Baarle-Hertog) are not double counted.
       - [ ] OSM additions: `data/knowledge/osm_suggestions.json` + OSM_FIXES.md section C. Philipsweg (Cranendonck): 15 ways to tag; Doctor Anton
             Philipsweg: 4 of 16 ways tagged so far, 12 to go; Doctor Anton Philipsweg, Tilburg (7210536) now tagged; 6 ways at Maarheeze still to tag. Re-fetch 2026-11-21 moved both streets to tier 1 (`data/knowledge/osm_entity_kinds.json` fixes the kind for Q592767 / Q170416). Re-fetch again (`osm_etymology.py --fetch --build`, then rules --apply osm_etymology, rebuild) after more edits.
       - [ ] Person streets (about 400 of the declined) get a kind but no name unless backed; a name-level review of shared first names (Hendrik, Willem, Maurits...) could add namesakes via the buurt.
@@ -137,6 +188,42 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
 - [ ] An end-to-end smoke test on a tiny fixture gemeente (acquire is network-bound: fixture geojson + a canned Wikidata cache), run in CI-style on every change.
 - [ ] The Wikidata cache is a flat JSONL keyed by street name: add `fetched_at` and re-check policy (also in the OSM project, Phase 5).
 - [ ] `scripts/legacy/` (60 scripts) stays as provenance; consider moving it to a git tag/branch once nothing references it.
+
+## Repository model: code repo + build directory + knowledge repo (agreed 2026-11-22)
+
+Three places, three lifecycles:
+1. **Core repo (git)**: the Python code and what is needed to run and test it: pipeline, rules, tests, docs, a small golden test fixture, and the *generic
+   rule reference data that changes in lockstep with the rules* (species list, saint/title patterns, vocabulary patterns: `data/knowledge/vocabulary.json`,
+   `species*.txt`, `common_*.txt`, `directional_places.json`, `theme_labels.json`, `gemeenten.json`).
+2. **Build directory (not under git, path configurable, may live outside the repo)**: everything rebuildable from sources: raw OSM/PDOK downloads, Wikidata cache,
+   OSM etymology/places snapshots, `streets_final.json`, adjacency/candidate tables, derived buurt themes, rule-generated override layers, `output/` (map, CSV).
+   Published as release assets (map, dated raw snapshot) when needed.
+3. **Knowledge repo (separate git repo, "street-knowledge")**: human judgement that cannot be regenerated: the 29k `legacy_hand` overrides, hand-written buurt
+   themes (`claude_reasoning`), `corrections.json`, `rule_exclusions.json`, `famous_people.txt`, `person_labels.json`, place-match corrections,
+   `osm_suggestions.json`, `osm_entity_kinds.json`, `review_notes.json`, the review sheets with the user's answers, future `user_notes`. Own history, own licence,
+   open to contributions from other people with local knowledge.
+
+Design points / risks to settle (challenges to the model, not objections):
+- **Code and knowledge versions must match.** The core repo reads the knowledge repo through one configured path (`KNOWLEDGE_DIR`, default a sibling checkout
+  `../street-knowledge`), checks a `schema_version` file at start-up, and stamps the knowledge commit hash into every output (`streets_final.json`
+  metadata, CSV header, map footer) so any published number can be tied to exact code + knowledge + OSM snapshot.
+- **Rule reference data vs judgements.** Splitting `data/knowledge/` is the real work: vocabulary/species lists *define* rules (core repo), corrections/exclusions/overrides
+  are *judgements about streets* (knowledge repo). Where a file is both (famous_people, place-match corrections) it goes to the knowledge repo.
+- **Tests must not need the knowledge repo.** Rule tests use the golden fixture in core; an optional integration check runs against the real knowledge repo.
+- **History**: create the knowledge repo with `git filter-repo --path ...` so the files keep their history; then remove them from core (core history stays large:
+  125 MB; rewrite only before going public).
+- **Licensing**: OSM/Wikidata-derived data has its own terms (ODbL, CC0): note them in the knowledge repo README; the knowledge repo can be CC-BY or CC0 while the code is MIT.
+
+- [ ] One `config.py` (replaces the idea of `paths.py`): BUILD_DIR, KNOWLEDGE_DIR, `WIKIDATA_CONTACT`, Overpass URL. Lookup order: environment variable > git-ignored
+      `config.local.toml` in the core repo > default; a committed `config.example.toml` documents the keys. The contact address lives only in the local file (never in
+      the knowledge repo, which is meant to be shared, and never in a tracked file); `pipeline.py` and `enrich_wikidata.py` read it so no manual `export` is needed.
+      Replace the ~15 hard-coded `ROOT/data/...` and `output` paths.
+- [ ] Classify every file in `data/knowledge/` and `data/enriched/` into core / knowledge / build (table in this file).
+- [ ] Split `manual_overrides.json`: `legacy_hand` + hand themes -> knowledge repo; rule-generated layers -> build (regenerated by `rules/run.py --apply`).
+- [ ] Create the knowledge repo (filter-repo keeps history), add README, licence, schema_version; wire `pipeline.py` to it; stamp commit hashes into outputs.
+- [ ] `pipeline.py bootstrap`: from a clean clone + knowledge repo, rebuild `build/` (acquire, Wikidata, OSM, rules, outputs).
+- [ ] Add `build/` to `.gitignore`, `git rm --cached` rebuildable data; publish map and dated OSM snapshot as release assets; keep the Wikidata cache as a versioned snapshot (not reproducible: Wikidata changes).
+- [ ] Golden fixture (a few gemeenten, canned Wikidata cache) and an end-to-end test.
 
 ## Project: OSM as a connected, refreshable evidence source (raised 2026-11-21)
 

@@ -14,25 +14,14 @@ and then the combined files every downstream script reads:
 """
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
 
 import geopandas as gpd
-import osmnx as ox
 import requests
 
-# osmnx pins every Overpass request to ONE IPv4 address (socket.gethostbyname) so its
-# slot-availability check and the query hit the same machine. If that machine is down
-# the whole fetch fails even though the host has other working addresses. Skipping the
-# pin lets requests/urllib3 fall back across addresses; the cost is that the status
-# check and the query may hit different servers, which is harmless for a one-off fetch.
-import osmnx._http as _ox_http  # noqa: E402
-
-_ox_http._config_dns = lambda url: None
-if os.environ.get("OVERPASS_URL"):
-    ox.settings.overpass_url = os.environ["OVERPASS_URL"]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
@@ -41,29 +30,10 @@ CONFIG = json.loads((RAW_DIR.parent / "knowledge" / "gemeenten.json").read_text(
 PDOK_WFS_URL = "https://service.pdok.nl/cbs/wijkenbuurten/2024/wfs/v1_0"
 
 
-def fetch_streets(gemeente: str, area=None, place=None) -> gpd.GeoDataFrame:
-    """Street network inside `area` (a polygon) or, failing that, the OSM place `place`."""
-    if area is not None:
-        print(f"Fetching street network for the {gemeente} outline")
-        graph = ox.graph_from_polygon(area, network_type="drive", retain_all=False)
-    else:
-        print(f"Fetching street network for: {place}")
-        graph = ox.graph_from_place(place, network_type="drive", retain_all=False)
-    edges = ox.graph_to_gdfs(graph, nodes=False, edges=True)
-
-    edges = edges[edges["name"].notna()].copy()
-    # name can be a list when a way has alt names; take the first
-    edges["name"] = edges["name"].apply(lambda n: n[0] if isinstance(n, list) else n)
-
-    # merge all segments sharing a name into one MultiLineString per street
-    merged = (
-        edges[["name", "geometry"]]
-        .dissolve(by="name")
-        .reset_index()
-    )
-    merged = gpd.GeoDataFrame(merged, geometry="geometry", crs=edges.crs)
-    print(f"Found {len(merged)} unique street names ({len(edges)} raw segments)")
-    return merged
+def fetch_streets(area) -> gpd.GeoDataFrame:
+    """Every named street-like OSM way with a midpoint inside `area` (see osm_streets.py for what counts)."""
+    import osm_streets
+    return osm_streets.fetch_streets(area)
 
 
 def _gemeente_filter(gemeente: str) -> str:
@@ -162,11 +132,43 @@ def acquire(gemeente: str) -> None:
     buurten = fetch_buurten(gemeente, pdok, cfg.get("buurt_prefix"))
     if not len(buurten):
         raise RuntimeError(f"PDOK has no buurten for '{pdok}': add an entry to data/knowledge/gemeenten.json")
-    streets = fetch_streets(gemeente, area=buurten.geometry.union_all())
+    streets = fetch_streets(buurten.geometry.union_all())
     streets["gemeente"] = gemeente
     streets = join_streets_to_buurten(streets, buurten)
     buurten.to_file(RAW_DIR / f"buurten_{slug(gemeente)}.geojson", driver="GeoJSON")
     streets.to_file(RAW_DIR / f"streets_{slug(gemeente)}.geojson", driver="GeoJSON")
+
+
+def supplement(gemeente: str) -> None:
+    """Add the named streets an earlier (osmnx drive-network) fetch missed, and fill highway/way_class for the streets it had.
+    Existing rows keep their geometry; new rows are appended with `origin = supplement`."""
+    import pandas as pd
+
+    path = RAW_DIR / f"streets_{slug(gemeente)}.geojson"
+    old = gpd.read_file(path)
+    buurten = gpd.read_file(RAW_DIR / f"buurten_{slug(gemeente)}.geojson")
+    fresh = fetch_streets(buurten.geometry.union_all())
+    info = fresh.drop_duplicates("name").set_index("name")[["highway", "highway_all", "way_class"]]
+    for col in info.columns:
+        old[col] = old["name"].map(info[col])
+    if "origin" not in old:
+        old["origin"] = "drive_network"
+    new = fresh[~fresh["name"].isin(set(old["name"]))].copy()
+    if len(new):
+        new["gemeente"] = gemeente
+        new = join_streets_to_buurten(new, buurten)
+        new["origin"] = "supplement"
+        old = gpd.GeoDataFrame(pd.concat([old, new], ignore_index=True), crs=old.crs)
+    old.to_file(path, driver="GeoJSON")
+    print(f"{gemeente}: +{len(new)} streets ({new['way_class'].value_counts().to_dict() if len(new) else {}}); now {len(old)}")
+
+
+def gemeente_name(slug_or_name: str) -> str:
+    """The display name stored in the data for a slug ('bergen-op-zoom' -> 'Bergen op Zoom'); names pass through."""
+    for p in RAW_DIR.glob("streets_*.geojson"):
+        if p.stem[len("streets_"):] == slug(slug_or_name):
+            return gpd.read_file(p, rows=1)["gemeente"].iloc[0]
+    return slug_or_name
 
 
 def have(gemeente: str) -> bool:
@@ -178,8 +180,28 @@ def main(argv=None):
     ap.add_argument("gemeenten", nargs="*")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--force", action="store_true", help="refetch gemeenten that are already in data/raw")
+    ap.add_argument("--supplement", action="store_true", help="add streets an older fetch missed to gemeenten already in data/raw (all of them if none named)")
     ap.add_argument("--retries", type=int, default=4, help="Overpass is often busy: attempts per gemeente")
     a = ap.parse_args(argv)
+    if a.supplement:
+        todo = a.gemeenten or [p.stem[len("streets_"):] for p in sorted(RAW_DIR.glob("streets_*.geojson"))]
+        names = {slug(g): g for g in todo}
+        failed = []
+        for sl in sorted({slug(g) for g in todo}):
+            g = next((x for x in todo if slug(x) == sl), sl)
+            for attempt in range(1, a.retries + 1):
+                try:
+                    supplement(gemeente_name(sl))
+                    break
+                except Exception as e:                                 # noqa: BLE001
+                    print(f"{sl}: attempt {attempt}/{a.retries} failed: {str(e)[:120]}")
+                    time.sleep(10 * attempt)
+            else:
+                failed.append(sl)
+        combine()
+        if failed:
+            sys.exit(f"failed: {failed}")
+        return
     if a.list or not a.gemeenten:
         done = sorted(p.stem[len("streets_"):] for p in RAW_DIR.glob("streets_*.geojson"))
         print(f"{len(done)} gemeenten in data/raw: {', '.join(done)}")
