@@ -35,4 +35,4 @@ Structural limits of the data and method: things that stay true until the design
 
 - **Coverage is Noord-Brabant** today. Other provinces need acquisition, a Wikidata lookup and the rules; the pipeline is generic, the data is not yet there (see the issue tracker for the plan).
 - **The map shows a few gemeenten at a time**; the data files are per gemeente and there is no tiled whole-country view yet.
-- **Reviews are local knowledge, not authority.** A correction from a contributor is as good as its source; unsourced knowledge is capped at tier 2.
+- **Reviews are local knowledge, not authority.** A correction from a contributor is as good as its source, which is why each correction carries a reason.
