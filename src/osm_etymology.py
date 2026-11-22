@@ -7,9 +7,9 @@ classifications are. Three kinds of tag on a street's ways are used:
   name:etymology            free text ("Named after the painter ...")   (kept as a hint)
   wikidata                  the street's own Wikidata item; its 'named after' (P138) statement gives the namesake
 
-  python src/osm_etymology.py --fetch      Overpass -> data/raw/osm_etymology_ways.json   (Noord-Brabant); records a dated snapshot and writes OSM_CHANGES.md
+  python src/osm_etymology.py --fetch      Overpass -> build/raw/osm_etymology_ways.json   (Noord-Brabant); records a dated snapshot and writes OSM_CHANGES.md
   python src/osm_etymology.py --refresh    fetch + changes report + build
-  python src/osm_etymology.py --build      resolve the Wikidata items -> data/enriched/osm_etymology.json
+  python src/osm_etymology.py --build      resolve the Wikidata items -> build/enriched/osm_etymology.json
   python src/osm_etymology.py --report     how often our classification agrees with it, by evidence tier
 """
 from __future__ import annotations

@@ -1,7 +1,7 @@
 """Vocabulary rules for recurring Dutch street themes (flowers, trees, birds, composers, painters, saints...).
 
 `classify(name)` is a pure function of the street name; the vocabularies are data in
-data/knowledge/vocabulary.json. `classify_titles(name)` recognises streets named after an
+knowledge/global/vocabulary.json. `classify_titles(name)` recognises streets named after an
 unidentified person from a title or first-name pattern (Burgemeester X, Pastoor X, Jan X...).
 """
 from __future__ import annotations

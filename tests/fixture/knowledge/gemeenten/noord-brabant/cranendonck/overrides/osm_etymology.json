@@ -1,0 +1,65 @@
+{
+ "layer": "osm_etymology",
+ "overrides": [
+  {
+   "gemeente": "Cranendonck",
+   "street": "Beatrixlaan",
+   "category": "person",
+   "subcategory": "monarch_statesman",
+   "entity_label": "Beatrix of the Netherlands",
+   "entity_description": "Queen of the Netherlands from 1980 to 2013 (born 1938)",
+   "confidence": 0.85,
+   "source": "osm_etymology",
+   "source_url": "https://www.wikidata.org/wiki/Q29574",
+   "notes": "OpenStreetMap name:etymology:wikidata: Q29574"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Eburonenstraat",
+   "category": "thing",
+   "subcategory": "archaeology_term",
+   "entity_label": "Eburones",
+   "entity_description": "Germanic tribe",
+   "confidence": 0.85,
+   "source": "osm_etymology",
+   "source_url": "https://www.wikidata.org/wiki/Q323500",
+   "notes": "OpenStreetMap name:etymology:wikidata: Q323500"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Julianalaan",
+   "category": "person",
+   "subcategory": "monarch_statesman",
+   "entity_label": "Juliana of the Netherlands",
+   "entity_description": "Queen of the Netherlands from 1948 to 1980 (1909-2004)",
+   "confidence": 0.85,
+   "source": "osm_etymology",
+   "source_url": "https://www.wikidata.org/wiki/Q154946",
+   "notes": "OpenStreetMap name:etymology:wikidata: Q154946"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Moezelstraat",
+   "category": "place",
+   "subcategory": "river",
+   "entity_label": "Moselle",
+   "entity_description": "river in Western Europe",
+   "confidence": 0.85,
+   "source": "osm_etymology",
+   "source_url": "https://www.wikidata.org/wiki/Q1667",
+   "notes": "OpenStreetMap name:etymology:wikidata: Q1667"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Rijnstraat",
+   "category": "place",
+   "subcategory": "river",
+   "entity_label": "Rhine",
+   "entity_description": "river in Western Europe to the North Sea",
+   "confidence": 0.85,
+   "source": "osm_etymology",
+   "source_url": "https://www.wikidata.org/wiki/Q584",
+   "notes": "OpenStreetMap name:etymology:wikidata: Q584"
+  }
+ ]
+}

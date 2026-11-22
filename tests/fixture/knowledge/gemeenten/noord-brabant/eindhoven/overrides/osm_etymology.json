@@ -1,0 +1,53 @@
+{
+ "layer": "osm_etymology",
+ "overrides": [
+  {
+   "gemeente": "Eindhoven",
+   "street": "Anthony van Opbergenstraat",
+   "category": "person",
+   "subcategory": "architect_or_historian",
+   "entity_label": "Anthonis van Obbergen",
+   "entity_description": "architect, engineer",
+   "confidence": 0.85,
+   "source": "osm_etymology",
+   "source_url": "https://www.wikidata.org/wiki/Q556068",
+   "notes": "OpenStreetMap name:etymology:wikidata: Q556068"
+  },
+  {
+   "gemeente": "Eindhoven",
+   "street": "Elgarstraat",
+   "category": "person",
+   "subcategory": "musician_composer",
+   "entity_label": "Edward Elgar",
+   "entity_description": "English composer (1857-1934)",
+   "confidence": 0.85,
+   "source": "osm_etymology",
+   "source_url": "https://www.wikidata.org/wiki/Q179631",
+   "notes": "OpenStreetMap name:etymology:wikidata: Q179631"
+  },
+  {
+   "gemeente": "Eindhoven",
+   "street": "Lombokpad",
+   "category": "place",
+   "subcategory": "foreign_town",
+   "entity_label": "Lombok Island",
+   "entity_description": "island in West Nusa Tenggara Province, Indonesia",
+   "confidence": 0.85,
+   "source": "osm_etymology",
+   "source_url": "https://www.wikidata.org/wiki/Q7564",
+   "notes": "OpenStreetMap name:etymology:wikidata: Q7564"
+  },
+  {
+   "gemeente": "Eindhoven",
+   "street": "Rietvinkstraat",
+   "category": "thing",
+   "subcategory": "fauna",
+   "entity_label": "Lonchura",
+   "entity_description": "genus of birds",
+   "confidence": 0.85,
+   "source": "osm_etymology",
+   "source_url": "https://www.wikidata.org/wiki/Q852860",
+   "notes": "OpenStreetMap name:etymology:wikidata: Q852860"
+  }
+ ]
+}

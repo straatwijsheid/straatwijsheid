@@ -1,0 +1,842 @@
+[
+ {
+  "gemeente": "Cranendonck",
+  "street": "Aldenborghlaan",
+  "buurt": "Budel",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Beatrixlaan",
+  "buurt": "Maarheeze",
+  "category": "person",
+  "subcategory": "monarch_statesman",
+  "entity_label": "Beatrix of the Netherlands",
+  "source": "osm_etymology",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Bergsestraat",
+  "buurt": "Gastel",
+  "category": "thing",
+  "subcategory": null,
+  "entity_label": null,
+  "source": "wikidata_thing_match",
+  "evidence_tier": 4
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Burgemeester van Velthovenstraat",
+  "buurt": "Budel",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": null,
+  "source": "title_heuristic",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "De Goudvink",
+  "buurt": "Budel",
+  "category": "thing",
+  "subcategory": "fauna",
+  "entity_label": "Bullfinch",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "De Roedel",
+  "buurt": "Budel",
+  "category": "thing",
+  "subcategory": "fauna",
+  "entity_label": "Pack (of deer/wolves)",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "De Rutjens",
+  "buurt": "Soerendonk",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "De Specht",
+  "buurt": "Budel",
+  "category": "thing",
+  "subcategory": "fauna",
+  "entity_label": "Woodpecker",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Doctor Visschersstraat",
+  "buurt": "Budel",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": null,
+  "source": "title_heuristic",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Eburonenstraat",
+  "buurt": "Budel",
+  "category": "thing",
+  "subcategory": "archaeology_term",
+  "entity_label": "Eburones",
+  "source": "osm_etymology",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "El Pinar",
+  "buurt": "Verspreide huizen Hugten",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Heesakkerweg",
+  "buurt": "Budel",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Hoortweg",
+  "buurt": "Verspreide huizen Budel-Dorplein",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Houtsnip",
+  "buurt": "Maarheeze",
+  "category": "thing",
+  "subcategory": null,
+  "entity_label": null,
+  "source": "wikidata_thing_match",
+  "evidence_tier": 4
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Jan Maasplein",
+  "buurt": "Soerendonk",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": "Jan Maas",
+  "source": "wikidata",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Julianalaan",
+  "buurt": "Maarheeze",
+  "category": "person",
+  "subcategory": "monarch_statesman",
+  "entity_label": "Juliana of the Netherlands",
+  "source": "osm_etymology",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Keizer Ottostraat",
+  "buurt": "Budel",
+  "category": "person",
+  "subcategory": "monarch_statesman",
+  "entity_label": "Keizer Otto",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Koenraadtweg",
+  "buurt": "Verspreide huizen Hugten",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Liedekerkestraat",
+  "buurt": "Budel-Dorplein",
+  "category": "place",
+  "subcategory": "village",
+  "entity_label": "Liedekerke",
+  "source": "wikidata",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Moezelstraat",
+  "buurt": "Budel",
+  "category": "place",
+  "subcategory": "river",
+  "entity_label": "Moselle",
+  "source": "osm_etymology",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Oranje Nassaulaan",
+  "buurt": "Maarheeze",
+  "category": "person",
+  "subcategory": "monarch_statesman",
+  "entity_label": "House of Orange-Nassau",
+  "source": "osm_etymology",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Peellandstraat",
+  "buurt": "Budel",
+  "category": "thing",
+  "subcategory": "archaeology_term",
+  "entity_label": "Peelland",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Poelpad",
+  "buurt": "Budel-Schoot",
+  "category": "person",
+  "subcategory": "unspecified_individual",
+  "entity_label": null,
+  "source": "wikidata_surname_only",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Puttenstraat",
+  "buurt": "Maarheeze",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Rijnstraat",
+  "buurt": "Budel",
+  "category": "place",
+  "subcategory": "river",
+  "entity_label": "Rhine",
+  "source": "osm_etymology",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Schoolpad",
+  "buurt": "Budel-Schoot",
+  "category": "thing",
+  "subcategory": null,
+  "entity_label": null,
+  "source": "wikidata_thing_match",
+  "evidence_tier": 4
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Sint Josephplein",
+  "buurt": "Budel-Dorplein",
+  "category": "person",
+  "subcategory": "religious",
+  "entity_label": "Saint Joseph",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Thijssenstraat",
+  "buurt": "Budel-Dorplein",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Cranendonck",
+  "street": "Zicht",
+  "buurt": "Maarheeze",
+  "category": "thing",
+  "subcategory": "occupation_guild",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "17",
+  "buurt": "Bergen",
+  "category": "thing",
+  "subcategory": null,
+  "entity_label": null,
+  "source": "wikidata_thing_match",
+  "evidence_tier": 4
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Achterbeekseweg",
+  "buurt": "Roosten",
+  "category": "place",
+  "subcategory": "local_landmark",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Achterstraat",
+  "buurt": "Tuindorp",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Albertipad",
+  "buurt": "Prinsejagt",
+  "category": "person",
+  "subcategory": "architect_or_historian",
+  "entity_label": null,
+  "source": "buurt_theme_fallback",
+  "evidence_tier": 4
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Anthony van Opbergenstraat",
+  "buurt": "Prinsejagt",
+  "category": "person",
+  "subcategory": "architect_or_historian",
+  "entity_label": "Anthonis van Obbergen",
+  "source": "osm_etymology",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Boccherinilaan",
+  "buurt": "Genderdal",
+  "category": "person",
+  "subcategory": "musician_composer",
+  "entity_label": "Luigi Boccherini",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Casellastraat",
+  "buurt": "Blaarthem",
+  "category": "person",
+  "subcategory": "musician_composer",
+  "entity_label": "Alfredo Casella",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Cluselaan",
+  "buurt": "Achtse Barrier-Spaaihoef",
+  "category": "place",
+  "subcategory": "foreign_town",
+  "entity_label": null,
+  "source": "buurt_theme_fallback",
+  "evidence_tier": 4
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Dardanuspad",
+  "buurt": "Oude Gracht-Oost",
+  "category": "person",
+  "subcategory": "mythological_figure",
+  "entity_label": null,
+  "source": "buurt_theme_fallback",
+  "evidence_tier": 4
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Elgarstraat",
+  "buurt": "Genderdal",
+  "category": "person",
+  "subcategory": "musician_composer",
+  "entity_label": "Edward Elgar",
+  "source": "osm_etymology",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Firapeellaan",
+  "buurt": "Jagershoef",
+  "category": "person",
+  "subcategory": "literary_mythical_figure",
+  "entity_label": "Firapeel",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Generaal van der Duynlaan",
+  "buurt": "Generalenbuurt",
+  "category": "person",
+  "subcategory": "military",
+  "entity_label": null,
+  "source": "title_heuristic",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Glooiing",
+  "buurt": "Blixembosch-Oost",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Groene Loper",
+  "buurt": "TU-terrein",
+  "category": "thing",
+  "subcategory": null,
+  "entity_label": null,
+  "source": "wikidata_thing_match",
+  "evidence_tier": 4
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Jagerslaan",
+  "buurt": "Schuttersbosch",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Jan van de Capellelaan",
+  "buurt": "Doornakkers-Oost",
+  "category": "person",
+  "subcategory": "artist_visual",
+  "entity_label": "Jan van de Cappelle",
+  "source": "wikidata",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Kanaaldijk-Noord",
+  "buurt": "Doornakkers-West",
+  "category": "place",
+  "subcategory": "local_landmark",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Lombokpad",
+  "buurt": "'t Hofke",
+  "category": "place",
+  "subcategory": "foreign_town",
+  "entity_label": "Lombok Island",
+  "source": "osm_etymology",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Molenstraat",
+  "buurt": "Binnenstad",
+  "category": "unresolved",
+  "subcategory": null,
+  "entity_label": null,
+  "source": "surname_unsupported",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Nancylaan",
+  "buurt": "Achtse Barrier-Spaaihoef",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": "Nancy",
+  "source": "wikidata",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Nassaustraat",
+  "buurt": "Eliasterrein, Vonderkwartier",
+  "category": "person",
+  "subcategory": "monarch_statesman",
+  "entity_label": "House of Nassau",
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Oranjestraat",
+  "buurt": "Bergen",
+  "category": "person",
+  "subcategory": "monarch_statesman",
+  "entity_label": "House of Orange",
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Peter Zuidlaan",
+  "buurt": "Grasrijk",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Pieter Pauluslaan",
+  "buurt": "Lievendaal",
+  "category": "person",
+  "subcategory": "politician_statesman",
+  "entity_label": "Pieter Paulus",
+  "source": "wikidata",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Rietvinkstraat",
+  "buurt": "Villapark",
+  "category": "thing",
+  "subcategory": "fauna",
+  "entity_label": "Lonchura",
+  "source": "osm_etymology",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Sint Petrus Canisiuslaan",
+  "buurt": "Burghplan",
+  "category": "person",
+  "subcategory": "religious",
+  "entity_label": "Saint Peter Canisius",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Spanvlinderplein",
+  "buurt": "'t Hofke",
+  "category": "thing",
+  "subcategory": "fauna_butterfly",
+  "entity_label": null,
+  "source": "buurt_theme_fallback",
+  "evidence_tier": 4
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Spijkert",
+  "buurt": "Muschberg, Geestenberg",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "buurt_theme_fallback",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Steilte",
+  "buurt": "Blixembosch-Oost",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Suikerpeerstraat",
+  "buurt": "Vaartbroek",
+  "category": "thing",
+  "subcategory": "flora",
+  "entity_label": "Suikerpeer",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Tervurenhof",
+  "buurt": "Tempel",
+  "category": "place",
+  "subcategory": "village",
+  "entity_label": "Tervuren",
+  "source": "wikidata",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Eindhoven",
+  "street": "Verhulststraat",
+  "buurt": "Bennekel-Oost",
+  "category": "person",
+  "subcategory": "musician_composer",
+  "entity_label": "Johannes Verhulst",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Acacialaan",
+  "buurt": "Waalre",
+  "category": "thing",
+  "subcategory": "flora",
+  "entity_label": "Acacia",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Achtereindsestraat",
+  "buurt": "Verspreide huizen",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Antoon Coolenlaan",
+  "buurt": "Aalst",
+  "category": "person",
+  "subcategory": "writer_poet",
+  "entity_label": "Antoon Coolen",
+  "source": "wikidata",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "August Sniederslaan",
+  "buurt": "Aalst",
+  "category": "person",
+  "subcategory": "writer_poet",
+  "entity_label": "August Snieders",
+  "source": "wikidata",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Bleeckhof",
+  "buurt": "Waalre",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Booyenhoek",
+  "buurt": "Ekenrooi",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Brabantialaan",
+  "buurt": "Aalst",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Brederode",
+  "buurt": "Aalst",
+  "category": "person",
+  "subcategory": "monarch_statesman",
+  "entity_label": "House of Brederode",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Chopinlaan",
+  "buurt": "Ekenrooi",
+  "category": "person",
+  "subcategory": "musician_composer",
+  "entity_label": "Frédéric Chopin",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Daslaan",
+  "buurt": "Waalre",
+  "category": "thing",
+  "subcategory": "fauna_mammal",
+  "entity_label": "Badger",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Dianestraat",
+  "buurt": "Ekenrooi",
+  "category": "person",
+  "subcategory": "musician_composer",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 4
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Emmastraat",
+  "buurt": "Aalst",
+  "category": "person",
+  "subcategory": "monarch_statesman",
+  "entity_label": "Queen Emma",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Filips de Goedelaan",
+  "buurt": "Ekenrooi",
+  "category": "person",
+  "subcategory": "monarch_statesman",
+  "entity_label": "Philip the Good",
+  "source": "claude_knowledge",
+  "evidence_tier": 2
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Henricus de Waderloolaan",
+  "buurt": "Waalre",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Kleine Broekweg",
+  "buurt": "Waalre",
+  "category": "unresolved",
+  "subcategory": null,
+  "entity_label": null,
+  "source": "wikidata_weak_match",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Leenderweg",
+  "buurt": "Verspreide huizen",
+  "category": "person",
+  "subcategory": "writer_poet",
+  "entity_label": "Leendert Dupper",
+  "source": "wikidata",
+  "evidence_tier": 1
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Mevrouw Brantlaan",
+  "buurt": "Ekenrooi",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Onze Lieve Vrouwedijk",
+  "buurt": "Verspreide huizen",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Oude Torenstraat",
+  "buurt": "Waalre",
+  "category": "place",
+  "subcategory": "local_landmark",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Paradijslaan",
+  "buurt": "Waalre",
+  "category": "place",
+  "subcategory": "local_landscape_feature",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 5
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Pastoor van der Heijdenstraat",
+  "buurt": "Ekenrooi",
+  "category": "person",
+  "subcategory": "religious",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Steph Zoetmulderdreef",
+  "buurt": "Waalre",
+  "category": "person",
+  "subcategory": "other",
+  "entity_label": null,
+  "source": "claude_knowledge",
+  "evidence_tier": 3
+ },
+ {
+  "gemeente": "Waalre",
+  "street": "Trolliuslaan",
+  "buurt": "Voldijn",
+  "category": "thing",
+  "subcategory": "flora_flower",
+  "entity_label": null,
+  "source": "buurt_theme_fallback",
+  "evidence_tier": 4
+ }
+]

@@ -1,6 +1,6 @@
 """Build, inspect and backtest the name-level candidate table.
 
-  python src/names/run.py --build                 write data/names/candidates.jsonl (derived; rebuilt in seconds)
+  python src/names/run.py --build                 write build/names/candidates.jsonl (derived; rebuilt in seconds)
   python src/names/run.py --show NAME [NAME ...]   a name's candidates, and how each of its streets would resolve
   python src/names/run.py --backtest [--n 4000]    how well does the resolver recover classifications it is not shown?
   python src/names/run.py --propose                dry run on streets with no named namesake (tiers 3-5): what would be accepted

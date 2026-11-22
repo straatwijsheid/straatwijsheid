@@ -4,11 +4,14 @@
 # A contact for polite, faster Wikidata access (sent in the User-Agent). Personal: keep it here, never commit it.
 # wikidata_contact = "you@example.org"
 
-# Where rebuildable data goes (raw/ enriched/ output/ cache/ names/). Unset keeps the current layout inside the repository.
-# build_dir = "~/street-etymology-build"
+# Where rebuildable data goes (raw/ enriched/ output/ cache/ names/). Default: build/ in this repository (git-ignored).
+# build_dir = "~/straatwijsheid-build"
 
-# The knowledge directory (hand-made overrides, corrections, vocabularies). Default: data/knowledge in this repository (where the knowledge repository is checked out).
-# knowledge_dir = "~/street-knowledge"
+# The knowledge directory (hand-made overrides, corrections, vocabularies). Default: knowledge/ in this repository (git-ignored; `pipeline.py bootstrap` clones the knowledge repository there).
+# knowledge_dir = "~/straatwijsheid-knowledge"
+
+# The knowledge repository bootstrap clones from.
+# knowledge_repo = "https://github.com/straatwijsheid/knowledge.git"
 
 # An Overpass mirror, if the default is busy.
 # overpass_url = "https://overpass-api.de/api/interpreter"

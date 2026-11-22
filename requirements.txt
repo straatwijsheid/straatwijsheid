@@ -1,7 +1,6 @@
 # Direct dependencies, with the versions the project was built and tested against (Python 3.14).
 # Install: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 geopandas>=1.1.4      # reads/writes the GeoJSON files (pulls in pyogrio, pyproj)
-osmnx>=2.1.1          # street networks from OpenStreetMap/Overpass (pulls in networkx)
 folium>=0.20.0        # the Leaflet map
 shapely>=2.1.2
 numpy>=2.5.3

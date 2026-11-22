@@ -248,7 +248,7 @@ def apply_manual_overrides(final: list[dict], exclude=(), upto: str | None = Non
 
 
 def compute_final(exclude=(), upto: str | None = None) -> list[dict]:
-    """Classify every street in data/raw/streets.geojson from the Wikidata cache, the buurt themes and the override layers (in memory)."""
+    """Classify every street in build/raw/streets.geojson from the Wikidata cache, the buurt themes and the override layers (in memory)."""
     import geopandas as gpd
 
     wikidata_results = load_jsonl(config.ENRICHED / "all_streets_wikidata.jsonl")
@@ -274,7 +274,7 @@ def compute_final(exclude=(), upto: str | None = None) -> list[dict]:
 
 
 def main():
-    """Classify every street and write data/enriched/streets_final.json."""
+    """Classify every street and write build/enriched/streets_final.json."""
     from collections import Counter
 
     final = compute_final()

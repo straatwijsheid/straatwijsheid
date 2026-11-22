@@ -83,7 +83,7 @@ def broad(category, subcategory) -> str:
 class Context:
     """Everything the rules need to know about the dataset, loaded once.
 
-    streets  -- list of {gemeente, name, buurt} (from data/raw/streets.geojson)
+    streets  -- list of {gemeente, name, buurt} (from build/raw/streets.geojson)
     final    -- list of streets_final.json records (the current classification)
     """
     streets: list

@@ -1,0 +1,17 @@
+{
+ "layer": "corrections",
+ "overrides": [
+  {
+   "gemeente": "Cranendonck",
+   "street": "Oranje Nassaulaan",
+   "category": "person",
+   "subcategory": "monarch_statesman",
+   "entity_label": "House of Orange-Nassau",
+   "entity_description": "royal house of the Dutch royal family",
+   "confidence": 0.85,
+   "source": "osm_etymology",
+   "source_url": "https://www.wikidata.org/wiki/Q155483",
+   "notes": "Reviewed correction: a royal house is filed as the kind 'monarch_statesman'; OSM supplies the namesake"
+  }
+ ]
+}

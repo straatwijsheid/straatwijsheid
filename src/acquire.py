@@ -1,16 +1,16 @@
 """Fetch gemeenten's street networks (OSM) and buurt boundaries (PDOK/CBS), for any gemeente in the Netherlands.
 
   python src/acquire.py Tilburg Breda        fetch one or more gemeenten (skips those already fetched; --force refetches)
-  python src/acquire.py --list               gemeenten already in data/raw
+  python src/acquire.py --list               gemeenten already in build/raw
 
 Default for a gemeente: the street network is taken from the outline of its own CBS buurten (robust: no geocoding, no stale OSM polygon),
-and the buurten are fetched under the same name. Exceptions (merged gemeenten, long official names) live in data/knowledge/gemeenten.json.
+and the buurten are fetched under the same name. Exceptions (merged gemeenten, long official names) live in knowledge/global/gemeenten.json.
 
 Outputs, per gemeente:
-  data/raw/streets_<slug>.geojson   one row per unique street name, merged geometry, with its buurt and wijk
-  data/raw/buurten_<slug>.geojson   neighborhood polygons
+  build/raw/streets_<slug>.geojson   one row per unique street name, merged geometry, with its buurt and wijk
+  build/raw/buurten_<slug>.geojson   neighborhood polygons
 and then the combined files every downstream script reads:
-  data/raw/streets.geojson, data/raw/buurten.geojson   (all gemeenten, with a `gemeente` column)
+  build/raw/streets.geojson, build/raw/buurten.geojson   (all gemeenten, with a `gemeente` column)
 """
 import argparse
 import json
@@ -160,7 +160,7 @@ def acquire(gemeente: str) -> None:
     pdok = cfg.get("pdok", gemeente)
     buurten = fetch_buurten(gemeente, pdok, cfg.get("buurt_prefix"))
     if not len(buurten):
-        raise RuntimeError(f"PDOK has no buurten for '{pdok}': add an entry to data/knowledge/gemeenten.json")
+        raise RuntimeError(f"PDOK has no buurten for '{pdok}': add an entry to knowledge/global/gemeenten.json")
     record_province(gemeente, buurten)
     streets = fetch_streets(buurten.geometry.union_all())
     streets["gemeente"] = gemeente
@@ -217,8 +217,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("gemeenten", nargs="*")
     ap.add_argument("--list", action="store_true")
-    ap.add_argument("--force", action="store_true", help="refetch gemeenten that are already in data/raw")
-    ap.add_argument("--supplement", action="store_true", help="add streets an older fetch missed to gemeenten already in data/raw (all of them if none named)")
+    ap.add_argument("--force", action="store_true", help="refetch gemeenten that are already in build/raw")
+    ap.add_argument("--supplement", action="store_true", help="add streets an older fetch missed to gemeenten already in build/raw (all of them if none named)")
     ap.add_argument("--retries", type=int, default=4, help="Overpass is often busy: attempts per gemeente")
     a = ap.parse_args(argv)
     if a.supplement:
@@ -242,7 +242,7 @@ def main(argv=None):
         return
     if a.list or not a.gemeenten:
         done = sorted(p.stem[len("streets_"):] for p in RAW_DIR.glob("streets_*.geojson"))
-        print(f"{len(done)} gemeenten in data/raw: {', '.join(done)}")
+        print(f"{len(done)} gemeenten in build/raw: {', '.join(done)}")
         return
     failed = []
     for g in a.gemeenten:

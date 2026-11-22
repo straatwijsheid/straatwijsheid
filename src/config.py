@@ -4,13 +4,13 @@ Lookup order for each setting: environment variable > `config.local.toml` in the
 personal details such as the Wikidata contact) > default. `config.example.toml` documents the keys.
 
   setting            env variable            config.local.toml key   default
-  build directory    STREETS_BUILD_DIR       build_dir               (unset: the current layout, data/raw, data/enriched, output, cache under the repo)
-  knowledge dir      STREETS_KNOWLEDGE_DIR   knowledge_dir           <repo>/data/knowledge
+  build directory    STREETS_BUILD_DIR       build_dir               <repo>/build   (git-ignored; raw/ enriched/ output/ cache/ names/, everything rebuildable)
+  knowledge dir      STREETS_KNOWLEDGE_DIR   knowledge_dir           <repo>/knowledge   (the knowledge repository checked out; `pipeline.py bootstrap` clones it)
+  knowledge repo     STREETS_KNOWLEDGE_REPO  knowledge_repo          https://github.com/straatwijsheid/knowledge.git
   Wikidata contact   WIKIDATA_CONTACT        wikidata_contact        (none: lookups work but are throttled harder)
   Overpass URL       OVERPASS_URL            overpass_url            https://overpass-api.de/api/interpreter
 
-With a build directory set, rebuildable data lives under it: raw/ enriched/ output/ cache/ names/. Unset, everything stays where it has always been
-so nothing moves until the repository split. `python src/config.py` prints the resolved settings (the contact is only shown as set / not set).
+Rebuildable data lives under the build directory: raw/ enriched/ output/ cache/ names/. `python src/config.py` prints the resolved settings (the contact is only shown as set / not set).
 """
 from __future__ import annotations
 
@@ -42,16 +42,14 @@ def _dir(value) -> Path | None:
     return Path(value).expanduser().resolve() if value else None
 
 
-BUILD_DIR = _dir(setting("STREETS_BUILD_DIR", "build_dir"))
-KNOWLEDGE = _dir(setting("STREETS_KNOWLEDGE_DIR", "knowledge_dir")) or ROOT / "data" / "knowledge"
+BUILD_DIR = _dir(setting("STREETS_BUILD_DIR", "build_dir")) or ROOT / "build"
+KNOWLEDGE = _dir(setting("STREETS_KNOWLEDGE_DIR", "knowledge_dir")) or ROOT / "knowledge"
+KNOWLEDGE_REPO = setting("STREETS_KNOWLEDGE_REPO", "knowledge_repo", "https://github.com/straatwijsheid/knowledge.git")
 GLOBAL = KNOWLEDGE / "global"        # curated lists that apply everywhere; per-gemeente knowledge is under KNOWLEDGE/gemeenten (see knowledge.py)
 CONTACT = setting("WIKIDATA_CONTACT", "wikidata_contact")
 OVERPASS_URL = setting("OVERPASS_URL", "overpass_url", "https://overpass-api.de/api/interpreter")
 
-if BUILD_DIR:
-    RAW, ENRICHED, OUTPUT, CACHE, NAMES = (BUILD_DIR / d for d in ("raw", "enriched", "output", "cache", "names"))
-else:
-    RAW, ENRICHED, OUTPUT, CACHE, NAMES = ROOT / "data" / "raw", ROOT / "data" / "enriched", ROOT / "output", ROOT / "cache", ROOT / "data" / "names"
+RAW, ENRICHED, OUTPUT, CACHE, NAMES = (BUILD_DIR / d for d in ("raw", "enriched", "output", "cache", "names"))
 
 
 def rel(path) -> str:
@@ -70,14 +68,13 @@ def ensure_dirs() -> None:
 
 
 def describe() -> str:
-    rows = [("repository", ROOT), ("build directory", BUILD_DIR or "(unset: legacy layout)"), ("raw", RAW), ("enriched", ENRICHED), ("output", OUTPUT),
-            ("cache", CACHE), ("names", NAMES), ("knowledge", KNOWLEDGE), ("wikidata contact", "set" if CONTACT else "not set"), ("overpass", OVERPASS_URL),
+    rows = [("repository", ROOT), ("build directory", BUILD_DIR), ("raw", RAW), ("enriched", ENRICHED), ("output", OUTPUT),
+            ("cache", CACHE), ("names", NAMES), ("knowledge", KNOWLEDGE), ("knowledge repo", KNOWLEDGE_REPO), ("wikidata contact", "set" if CONTACT else "not set"), ("overpass", OVERPASS_URL),
             ("local config", LOCAL_FILE if LOCAL_FILE.exists() else f"{LOCAL_FILE.name} not present")]
     return "\n".join(f"{k:18}{v}" for k, v in rows)
 
 
-if BUILD_DIR:
-    ensure_dirs()      # a build directory elsewhere is created on first use
+ensure_dirs()      # the build directory is created on first use
 
 
 if __name__ == "__main__":

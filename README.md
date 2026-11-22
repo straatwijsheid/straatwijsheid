@@ -40,7 +40,7 @@ ever move streets toward tier 1.
 2. **Look up** each street's core name (the name without "straat", "laan"...) on Wikidata.
 3. **Reconcile** the per-street Wikidata guesses with each buurt's naming theme. A confident individual match is trusted; a weak one
    gives way to a strongly themed buurt; surname-only matches without support are rejected.
-4. **Rules and hand classification** (`src/rules/`, `data/knowledge/`, the override layers under `data/knowledge/gemeenten/<province>/<gemeente>/overrides/`) add what Wikidata
+4. **Rules and hand classification** (`src/rules/`, `knowledge/`, the override layers under `knowledge/gemeenten/<province>/<gemeente>/overrides/`) add what Wikidata
    cannot: species, composers, saints, directional roads (`Eindhovensedijk`), titles, local names, and consistency audits.
 5. **Analyse** whether themes cluster by wijk, **build the map**, **export CSVs**.
 
@@ -61,9 +61,9 @@ repository root.
 .venv/bin/python src/pipeline.py rebuild            # after rules/overrides/knowledge changed: reconcile, analyze, map, CSVs, tier statistics
 
 # or stage by stage (each is also what pipeline.py runs)
-.venv/bin/python src/acquire.py "Tilburg"           # street network from the CBS buurten outline + buurten; exceptions in data/knowledge/global/gemeenten.json
+.venv/bin/python src/acquire.py "Tilburg"           # street network from the CBS buurten outline + buurten; exceptions in knowledge/global/gemeenten.json
 .venv/bin/python src/enrich_wikidata.py --missing   # every street name in streets.geojson not cached yet (resumable)
-.venv/bin/python src/reconcile.py                   # Wikidata + themes + overrides -> data/enriched/streets_final.json
+.venv/bin/python src/reconcile.py                   # Wikidata + themes + overrides -> build/enriched/streets_final.json
 .venv/bin/python src/themes.py                      # buurt themes for buurten without one; then reconcile again
 .venv/bin/python src/rules/run.py --check           # review what each rule proposes; --apply RULE to write it
 .venv/bin/python src/analyze.py && .venv/bin/python src/build_map.py && .venv/bin/python src/export_csv.py
@@ -81,9 +81,9 @@ roughly 100 names a minute only when `WIKIDATA_CONTACT` is set.
 src/                 pipeline.py (orchestrator), acquire.py, enrich_wikidata.py, reconcile.py, themes.py, analyze.py, build_map.py, export_csv.py, tiers.py,
                      osm_etymology.py / osm_places.py (OpenStreetMap evidence), names/ (candidate table + resolver)
 src/rules/           tested classification rules (see src/rules/README.md); run.py is the CLI
-data/knowledge/      curated knowledge (the knowledge repository checks out here): global/ (species, vocabularies, famous people, place corrections, provinces)
+knowledge/      curated knowledge (the knowledge repository checks out here): global/ (species, vocabularies, famous people, place corrections, provinces)
                      and gemeenten/<province>/<gemeente>/ (corrections, review sheet and notes, the override layers)
-data/raw/ enriched/ names/ output/ cache/   the build directory: rebuildable, never in git (set `build_dir` in config.local.toml to put it elsewhere)
+build/raw/ enriched/ names/ output/ cache/   the build directory: rebuildable, never in git (set `build_dir` in config.local.toml to put it elsewhere)
 tests/               unit tests for the tiers, rules, overrides, snapshots and knowledge sharding
 ```
 

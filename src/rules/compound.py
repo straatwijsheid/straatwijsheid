@@ -1,7 +1,7 @@
 """Is a street name just an ordinary Dutch compound (akker + weg, kerk + straat...)?
 
 Such a name carries no namesake, so a theme or surname guess attached to it is almost always wrong.
-The vocabulary is data/knowledge/common_stems.txt."""
+The vocabulary is knowledge/global/common_stems.txt."""
 from __future__ import annotations
 
 import re

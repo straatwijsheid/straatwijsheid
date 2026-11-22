@@ -1,0 +1,927 @@
+{
+ "buurten": [
+  {
+   "buurt": "Blixembosch-Oost",
+   "wijk": "Blixembosch",
+   "theme": "Culture cluster: opera titles, jazz musicians, classic literature, fairy tales",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "person",
+     "subcategory": "musician_composer",
+     "share": 0.25
+    },
+    {
+     "category": "person",
+     "subcategory": "writer_poet",
+     "share": 0.35
+    },
+    {
+     "category": "thing",
+     "subcategory": "fiction_title_or_motif",
+     "share": 0.4
+    }
+   ],
+   "confidence": 0.7,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Duke Ellingtonlaan",
+    "Charles Dickenslaan",
+    "Jonathan Swiftlaan",
+    "Rigoletto",
+    "Assepoester",
+    "Roodkapje"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Prinsejagt",
+   "wijk": "Tongelre",
+   "theme": "Architects and Dutch historians",
+   "category": "person",
+   "subcategory": "architect_or_historian",
+   "confidence": 0.85,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Jacob van Campenweg",
+    "Pieter Poststraat",
+    "Rietveldlaan",
+    "Willem Dudokweg",
+    "de Klerklaan",
+    "Fruinlaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Genderdal",
+   "wijk": "Gestelse Ontginning",
+   "theme": "Classical composers",
+   "category": "person",
+   "subcategory": "musician_composer",
+   "confidence": 0.95,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Gounodlaan",
+    "Mendelssohnlaan",
+    "Chopinlaan",
+    "Mahlerlaan",
+    "Vivaldistraat"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Oude Gracht-Oost",
+   "wijk": "Kortonjo",
+   "theme": "Greco-Roman mythology",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "person",
+     "subcategory": "mythological_figure",
+     "share": 0.7
+    },
+    {
+     "category": "thing",
+     "subcategory": "mythical_object_or_ship",
+     "share": 0.3
+    }
+   ],
+   "confidence": 0.85,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Argostraat",
+    "Antigonelaan",
+    "Odysseuslaan",
+    "Aeneaslaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Villapark",
+   "wijk": "De Laak",
+   "theme": "Bird species",
+   "category": "thing",
+   "subcategory": "fauna",
+   "confidence": 0.95,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Pluvierlaan",
+    "Fazantlaan",
+    "Havanlaan",
+    "Merellaan",
+    "Nachtegaallaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Achtse Barrier-Spaaihoef",
+   "wijk": "Achtse Molen",
+   "theme": "French towns/regions, broader France geography",
+   "category": "place",
+   "subcategory": "foreign_town",
+   "confidence": 0.75,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Honfleurlaan",
+    "Straatsburglaan",
+    "Nanteslaan",
+    "Parijslaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "'t Hofke",
+   "wijk": "Oud-Tongelre",
+   "theme": "Butterflies, plus a Dutch East Indies place-name sub-cluster and one WWII liberator (Eisenhower)",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "thing",
+     "subcategory": "fauna_butterfly",
+     "share": 0.6
+    },
+    {
+     "category": "place",
+     "subcategory": "dutch_east_indies",
+     "share": 0.3
+    },
+    {
+     "category": "person",
+     "subcategory": "statesman_liberator",
+     "share": 0.1
+    }
+   ],
+   "confidence": 0.75,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Apollovlinderlaan",
+    "Citroenvlinderlaan",
+    "Molukkenlaan",
+    "Celebeslaan",
+    "Eisenhowerlaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Bennekel-Oost",
+   "wijk": "Oud-Gestel",
+   "theme": "Renaissance & Baroque composers (Muziekkwartier)",
+   "category": "person",
+   "subcategory": "musician_composer",
+   "confidence": 0.9,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Sweelinckstraat",
+    "Ockeghemstraat",
+    "van Beethovenlaan",
+    "Sibeliuslaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Bergen",
+   "wijk": "Centrum",
+   "theme": "Organic historic city-center names, weak House-of-Orange sub-cluster",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "place",
+     "subcategory": "organic_historic",
+     "share": 0.6
+    },
+    {
+     "category": "person",
+     "subcategory": "monarch_statesman",
+     "share": 0.25
+    },
+    {
+     "category": "person",
+     "subcategory": "writer_poet",
+     "share": 0.15
+    }
+   ],
+   "confidence": 0.4,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Grote Berg",
+    "Oranjestraat",
+    "Mauritsstraat",
+    "Frederik van Eedenplein"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Binnenstad",
+   "wijk": "Centrum",
+   "theme": "Organic historic city-center names (no assigned theme)",
+   "category": "place",
+   "subcategory": "organic_historic",
+   "confidence": 0.55,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Vestdijk",
+    "Kerkstraat",
+    "Kanaalstraat",
+    "Stadhuisplein"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Blaarthem",
+   "wijk": "Oud-Gestel",
+   "theme": "Composers (Muziekkwartier, continued)",
+   "category": "person",
+   "subcategory": "musician_composer",
+   "confidence": 0.9,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Berliozlaan",
+    "Brahmslaan",
+    "Debussystraat",
+    "Haydnstraat"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Burghplan",
+   "wijk": "Putten",
+   "theme": "Dutch/Flemish Golden Age & medieval painters, with a saints sub-cluster",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "person",
+     "subcategory": "artist_visual",
+     "share": 0.65
+    },
+    {
+     "category": "person",
+     "subcategory": "religious",
+     "share": 0.35
+    }
+   ],
+   "confidence": 0.8,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Honthorststraat",
+    "Jan van Eyckgracht",
+    "Saenredamstraat",
+    "Sint Lidwinastraat"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Doornakkers-Oost",
+   "wijk": "Doornakkers",
+   "theme": "Dutch Golden Age painters, plus a distinct Boer War / South Africa sub-cluster",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "person",
+     "subcategory": "artist_visual",
+     "share": 0.55
+    },
+    {
+     "category": "person",
+     "subcategory": "boer_war_figure",
+     "share": 0.3
+    },
+    {
+     "category": "place",
+     "subcategory": "south_africa",
+     "share": 0.15
+    }
+   ],
+   "confidence": 0.75,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Johannes Vermeerstraat",
+    "Jan Gossaertstraat",
+    "Generaal Cronjéstraat",
+    "President Steynstraat",
+    "Transvaalweg"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Doornakkers-West",
+   "wijk": "Doornakkers",
+   "theme": "Boer War / South Africa (Doornakkers' dominant wijk theme)",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "person",
+     "subcategory": "boer_war_figure",
+     "share": 0.6
+    },
+    {
+     "category": "place",
+     "subcategory": "south_africa",
+     "share": 0.4
+    }
+   ],
+   "confidence": 0.85,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Paul Krügerlaan",
+    "Generaal Bothastraat",
+    "Pretoriastraat",
+    "Johannesburgstraat",
+    "Stellenboschstraat"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Eliasterrein, Vonderkwartier",
+   "wijk": "Oud-Strijp",
+   "theme": "House of Orange-Nassau royalty",
+   "category": "person",
+   "subcategory": "monarch_statesman",
+   "confidence": 0.9,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Julianastraat",
+    "Nassaustraat",
+    "Willem de Zwijgerstraat",
+    "Anna Paulownastraat"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Generalenbuurt",
+   "wijk": "Begijnenbroek",
+   "theme": "Allied/Dutch WWII generals and statesmen",
+   "category": "person",
+   "subcategory": "military",
+   "confidence": 0.9,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Generaal Pattonlaan",
+    "Generaal Bradleylaan",
+    "Generaal de Gaullelaan",
+    "Winston Churchilllaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Grasrijk",
+   "wijk": "Meerhoven",
+   "theme": "\"Gras\" (grass)-prefixed nature branding for a modern development",
+   "category": "thing",
+   "subcategory": "development_concept",
+   "confidence": 0.85,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Grasklokje",
+    "Grasmus",
+    "Graspieper",
+    "Grasvink"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Jagershoef",
+   "wijk": "Ontginning",
+   "theme": "Medieval literature: Reynard the Fox and Arthurian-legend characters",
+   "category": "person",
+   "subcategory": "literary_mythical_figure",
+   "confidence": 0.85,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Reinaertlaan",
+    "Cantecleerstraat",
+    "Koning Arthurlaan",
+    "Lohengrinlaan",
+    "Merlijnweg"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Lievendaal",
+   "wijk": "Halve Maan",
+   "theme": "Dutch legal scholars/jurists (matches Het Ven)",
+   "category": "person",
+   "subcategory": "legal_scholar",
+   "confidence": 0.85,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Professor Meyerslaan",
+    "Fabiushof",
+    "Josephus Jittastraat",
+    "Paul Scholtenweg"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Muschberg, Geestenberg",
+   "wijk": "Oud-Tongelre",
+   "theme": "Old field/farmland names, with distinct cartographer and electrical/telecom-technology sub-clusters",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "place",
+     "subcategory": "local_landscape_feature",
+     "share": 0.45
+    },
+    {
+     "category": "person",
+     "subcategory": "cartographer",
+     "share": 0.2
+    },
+    {
+     "category": "thing",
+     "subcategory": "technology_term",
+     "share": 0.35
+    }
+   ],
+   "confidence": 0.65,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Haagbeemd",
+    "Mercatorstraat",
+    "Orteliusweg",
+    "Accumulatorstraat",
+    "Transformatorstraat",
+    "Telexweg"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Roosten",
+   "wijk": "Kortonjo",
+   "theme": "Physicians & medical scientists (matches Eikenburg)",
+   "category": "person",
+   "subcategory": "scientist_physician",
+   "confidence": 0.9,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Fleminglaan",
+    "Marie Curielaan",
+    "Jennerlaan",
+    "Hippocrateslaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Schuttersbosch",
+   "wijk": "Putten",
+   "theme": "Forest fauna and flora",
+   "category": "thing",
+   "subcategory": "fauna_and_flora",
+   "confidence": 0.8,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Elandsgang",
+    "Vossenlaan",
+    "Cantharellenlaan",
+    "Jeneverbeslaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "TU-terrein",
+   "wijk": "Centrum",
+   "theme": "TU/e campus infrastructure naming, largely generic",
+   "category": "unclear",
+   "subcategory": "campus_infrastructure",
+   "confidence": 0.4,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "De Zaale",
+    "Den Dolech",
+    "Het Kranenveld"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Tempel",
+   "wijk": "Aanschot",
+   "theme": "Belgian towns",
+   "category": "place",
+   "subcategory": "foreign_town",
+   "confidence": 0.9,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Antwerpenlaan",
+    "Brussellaan",
+    "Leuvenlaan",
+    "Bruggelaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Tuindorp",
+   "wijk": "Oud-Stratum",
+   "theme": "Catholic saints (matches Sintenbuurt)",
+   "category": "person",
+   "subcategory": "religious",
+   "confidence": 0.85,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Sint Hubertusstraat",
+    "Sint Jorislaan",
+    "Sint Servaasweg",
+    "Piuslaan"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "buurt": "Vaartbroek",
+   "wijk": "Dommelbeemd",
+   "theme": "Fruits and vegetables, plus one WWII outlier (Airborne)",
+   "category": "thing",
+   "subcategory": "flora_food",
+   "confidence": 0.85,
+   "source": "claude_reasoning",
+   "example_streets": [
+    "Aardbeistraat",
+    "Druivenstraat",
+    "Perzikstraat",
+    "Tomatenstraat"
+   ],
+   "gemeente": "Eindhoven"
+  },
+  {
+   "gemeente": "Waalre",
+   "buurt": "Waalre",
+   "wijk": "Wijk 00 Waalre",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "Blokvenlaan",
+    "Bolksheuvel",
+    "Ansbalduslaan",
+    "Baron van Wijnbergenplantsoen",
+    "Beverlaan"
+   ],
+   "theme": "local field, farm and road names, local people and mammals",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "place",
+     "subcategory": "local_landscape_feature",
+     "share": 0.46
+    },
+    {
+     "category": "person",
+     "subcategory": "other",
+     "share": 0.17
+    },
+    {
+     "category": "thing",
+     "subcategory": "fauna_mammal",
+     "share": 0.08
+    },
+    {
+     "category": "person",
+     "subcategory": "unspecified_individual",
+     "share": 0.07
+    }
+   ],
+   "confidence": 0.54
+  },
+  {
+   "gemeente": "Waalre",
+   "buurt": "Aalst",
+   "wijk": "Wijk 00 Waalre",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "Anna Paulownalaan",
+    "Beatrixweg",
+    "Brabantialaan",
+    "De Leesakker",
+    "Aalstermolenhof"
+   ],
+   "theme": "royals and nobility, local field, farm and road names and local landmarks and institutions",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "person",
+     "subcategory": "monarch_statesman",
+     "share": 0.28
+    },
+    {
+     "category": "place",
+     "subcategory": "local_landscape_feature",
+     "share": 0.21
+    },
+    {
+     "category": "place",
+     "subcategory": "local_landmark",
+     "share": 0.1
+    },
+    {
+     "category": "person",
+     "subcategory": "other",
+     "share": 0.09
+    }
+   ],
+   "confidence": 0.48
+  },
+  {
+   "gemeente": "Waalre",
+   "buurt": "Voldijn",
+   "wijk": "Wijk 00 Waalre",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "Akeleilaan",
+    "Anemonelaan",
+    "Bosranklaan",
+    "Laarhof",
+    "Adriaen Poirterslaan"
+   ],
+   "theme": "Mostly flowers",
+   "category": "thing",
+   "subcategory": "flora_flower",
+   "confidence": 0.75
+  },
+  {
+   "gemeente": "Waalre",
+   "buurt": "Ekenrooi",
+   "wijk": "Wijk 00 Waalre",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "Arembergstraat",
+    "Beekdael",
+    "Bachlaan",
+    "Beethovenlaan",
+    "Ernst Casimirstraat"
+   ],
+   "theme": "local field, farm and road names, composers and royals and nobility",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "place",
+     "subcategory": "local_landscape_feature",
+     "share": 0.26
+    },
+    {
+     "category": "person",
+     "subcategory": "musician_composer",
+     "share": 0.25
+    },
+    {
+     "category": "person",
+     "subcategory": "monarch_statesman",
+     "share": 0.22
+    },
+    {
+     "category": "person",
+     "subcategory": "other",
+     "share": 0.17
+    }
+   ],
+   "confidence": 0.48
+  },
+  {
+   "gemeente": "Waalre",
+   "buurt": "Verspreide huizen",
+   "wijk": "Wijk 00 Waalre",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "Achtereindsestraat",
+    "Agterste meer",
+    "Korenmolen",
+    "Molenstraat"
+   ],
+   "theme": "Mostly local field, farm and road names",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "confidence": 0.77
+  },
+  {
+   "gemeente": "Cranendonck",
+   "buurt": "Budel",
+   "wijk": "Wijk 00 Budel",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "Adr. Groenewegenlaan",
+    "Adriaan Kookenstraat",
+    "'t Inne",
+    "'t Stepke",
+    "De Boomklever"
+   ],
+   "theme": "local people, local field, farm and road names and birds",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "person",
+     "subcategory": "other",
+     "share": 0.23
+    },
+    {
+     "category": "place",
+     "subcategory": "local_landscape_feature",
+     "share": 0.14
+    },
+    {
+     "category": "thing",
+     "subcategory": "fauna",
+     "share": 0.11
+    },
+    {
+     "category": "thing",
+     "subcategory": "occupation_guild",
+     "share": 0.09
+    }
+   ],
+   "confidence": 0.47
+  },
+  {
+   "gemeente": "Cranendonck",
+   "buurt": "Budel-Schoot",
+   "wijk": "Wijk 01 Schoot",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "Adam van Moorselstraat",
+    "Hein Smeetsstraat",
+    "Grootschoterweg",
+    "Hamonterweg",
+    "Poelruiter"
+   ],
+   "theme": "local people, local field, farm and road names and birds",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "person",
+     "subcategory": "other",
+     "share": 0.52
+    },
+    {
+     "category": "place",
+     "subcategory": "local_landscape_feature",
+     "share": 0.22
+    },
+    {
+     "category": "thing",
+     "subcategory": "fauna",
+     "share": 0.13
+    },
+    {
+     "category": "person",
+     "subcategory": "unspecified_individual",
+     "share": 0.04
+    }
+   ],
+   "confidence": 0.56
+  },
+  {
+   "gemeente": "Cranendonck",
+   "buurt": "Budel-Dorplein",
+   "wijk": "Wijk 02 Dorplein",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "Koningin Emmastraat",
+    "Koningin Julianastraat",
+    "Marialaan",
+    "Sint Barbaraweg",
+    "Prinses Christinaplantsoen"
+   ],
+   "theme": "royals and nobility, saints and clergy and local people",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "person",
+     "subcategory": "monarch_statesman",
+     "share": 0.29
+    },
+    {
+     "category": "person",
+     "subcategory": "religious",
+     "share": 0.23
+    },
+    {
+     "category": "person",
+     "subcategory": "other",
+     "share": 0.19
+    },
+    {
+     "category": "place",
+     "subcategory": "local_landmark",
+     "share": 0.13
+    }
+   ],
+   "confidence": 0.49
+  },
+  {
+   "gemeente": "Cranendonck",
+   "buurt": "Verspreide huizen Budel-Dorplein",
+   "wijk": "Wijk 02 Dorplein",
+   "source": "derived_from_street_classification",
+   "theme": "Too few named streets to identify a theme",
+   "category": "unclear",
+   "confidence": 0.3,
+   "example_streets": [
+    "Hoortweg",
+    "Peeldijk"
+   ]
+  },
+  {
+   "gemeente": "Cranendonck",
+   "buurt": "Maarheeze",
+   "wijk": "Wijk 03 Maarheeze",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "'t Hagelkruis",
+    "'t Zandblauwtje",
+    "Anemonenstraat",
+    "Anjerhof",
+    "De Kievit"
+   ],
+   "theme": "local field, farm and road names, flowers and birds",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "place",
+     "subcategory": "local_landscape_feature",
+     "share": 0.35
+    },
+    {
+     "category": "thing",
+     "subcategory": "flora_flower",
+     "share": 0.17
+    },
+    {
+     "category": "thing",
+     "subcategory": "fauna",
+     "share": 0.12
+    },
+    {
+     "category": "person",
+     "subcategory": "monarch_statesman",
+     "share": 0.09
+    }
+   ],
+   "confidence": 0.5
+  },
+  {
+   "gemeente": "Cranendonck",
+   "buurt": "Verspreide huizen Hugten",
+   "wijk": "Wijk 03 Maarheeze",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "El Pinar",
+    "Horriken",
+    "Kalberg",
+    "Panweg"
+   ],
+   "theme": "Mostly local field, farm and road names",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "confidence": 0.7
+  },
+  {
+   "gemeente": "Cranendonck",
+   "buurt": "Soerendonk",
+   "wijk": "Wijk 04 Soerendonk",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "'t Hool",
+    "'t Schutje",
+    "Dokter Raevenplein",
+    "Van Schaiklaan",
+    "Damenweg"
+   ],
+   "theme": "Mostly local field, farm and road names",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "confidence": 0.74
+  },
+  {
+   "gemeente": "Cranendonck",
+   "buurt": "Gastel",
+   "wijk": "Wijk 05 Gastel",
+   "source": "derived_from_street_classification",
+   "example_streets": [
+    "'t Lange",
+    "De Dijk",
+    "Hoevestraat",
+    "Hoogstraat",
+    "Gravenkasteel"
+   ],
+   "theme": "local field, farm and road names, unspecified_individual and local landmarks and institutions",
+   "category": "mixed",
+   "subthemes": [
+    {
+     "category": "place",
+     "subcategory": "local_landscape_feature",
+     "share": 0.46
+    },
+    {
+     "category": "person",
+     "subcategory": "unspecified_individual",
+     "share": 0.38
+    },
+    {
+     "category": "place",
+     "subcategory": "local_landmark",
+     "share": 0.08
+    },
+    {
+     "category": "person",
+     "subcategory": "religious",
+     "share": 0.08
+    }
+   ],
+   "confidence": 0.54
+  }
+ ]
+}

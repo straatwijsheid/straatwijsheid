@@ -1,7 +1,7 @@
 """Plant and animal names: turn a generic 'Plant'/'Bird' description into the actual species.
 
-data/knowledge/species.txt          Dutch stem = English name | Latin name   (matched with suffix stripping)
-data/knowledge/species_streets.txt  Street name = English | Latin | Dutch stem (exact, for names the stems miss)
+knowledge/global/species.txt          Dutch stem = English name | Latin name   (matched with suffix stripping)
+knowledge/global/species_streets.txt  Street name = English | Latin | Dutch stem (exact, for names the stems miss)
 Description format: "<Latin>; Dutch name '<stem>'" (kept stable: other rules and the tooltip depend on it)."""
 from __future__ import annotations
 

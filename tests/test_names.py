@@ -5,6 +5,7 @@ import traceback
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+import _need_knowledge  # noqa: F401  (stops with a clear message when the knowledge repository is not checked out)
 
 from names import candidates as C, resolve as R      # noqa: E402
 from rules.base import Context                          # noqa: E402

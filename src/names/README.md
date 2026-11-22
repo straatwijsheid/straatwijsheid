@@ -5,7 +5,7 @@ different things in different places (Willemstraat: the House of Orange, or Will
 interpretation we have evidence for, and a resolver picks one per street from its buurt and wijk.
 
 ```
-python src/names/run.py --build                 # data/names/candidates.jsonl (derived, git-ignored, rebuilt in ~3 s)
+python src/names/run.py --build                 # build/names/candidates.jsonl (derived, git-ignored, rebuilt in ~3 s)
 python src/names/run.py --show Willem kerk      # a name's candidates; how each of its streets resolves now
 python src/names/run.py --backtest              # how well does it recover classifications it is not shown?
 python src/names/run.py --propose               # dry run on streets with no named namesake: what it would accept
@@ -52,7 +52,7 @@ resolver; labels match only ~74%.
 A CBS buurt is an administrative unit, not a naming unit. Kooloos (*The story of street names in the Netherlands*, EUR 2013) defines a
 naming theme as "minimal four streets which interconnect ... and all relate to the same specific subject". Dongen's Hoge Akker buurt
 holds three themes (writers, architects, WWII Allied leaders); the streets Churchillstraat actually touches are Bradley, Montgomery and
-Roosevelt. `adjacency.py` builds which streets touch (geometries within 8 m, same gemeente; cached in `data/names/adjacency.json`) and
+Roosevelt. `adjacency.py` builds which streets touch (geometries within 8 m, same gemeente; cached in `build/names/adjacency.json`) and
 `themes()` finds Kooloos-style themes (connected same-kind clusters of >=4). The resolver can take the adjacent streets as an extra,
 dominant context (weights 0.6 adjacent / 0.3 buurt / 0.1 wijk).
 

@@ -21,6 +21,18 @@ from pathlib import Path
 import config
 
 
+def _rel(path) -> str:
+    """Paths in the manifest are relative to the raw directory, so the build directory can be anywhere (absolute only if outside it)."""
+    try:
+        return str(Path(path).resolve().relative_to(config.RAW.resolve()))
+    except ValueError:
+        return str(path)
+
+
+def _abs(stored: str) -> Path:
+    return Path(stored) if Path(stored).is_absolute() else config.RAW / stored
+
+
 def manifest_path() -> Path:
     return config.RAW / "snapshots.json"
 
@@ -59,7 +71,7 @@ def record(name: str, path: Path, source: str, query: str | None = None, rows: i
     m = load()
     hist = m["snapshots"].setdefault(name, [])
     entry = {"fetched_at": fetched_at or now(), "sha256": digest, "bytes": path.stat().st_size, "rows": rows, "source": source,
-             "query_sha256": hashlib.sha256(query.encode()).hexdigest() if query else None, "file": config.rel(path), "archive": None}
+             "query_sha256": hashlib.sha256(query.encode()).hexdigest() if query else None, "file": _rel(path), "archive": None}
     if note:
         entry["note"] = note
     if archive:
@@ -72,7 +84,7 @@ def record(name: str, path: Path, source: str, query: str | None = None, rows: i
             target = d / f"{entry['fetched_at'][:10].replace('-', '')}_{digest[:8]}{path.suffix}.gz"
             with path.open("rb") as src, gzip.open(target, "wb", compresslevel=6) as dst:
                 shutil.copyfileobj(src, dst)
-            entry["archive"] = config.rel(target)
+            entry["archive"] = _rel(target)
     if hist and hist[-1]["sha256"] == digest:
         hist[-1].update({k: v for k, v in entry.items() if k != "fetched_at"})      # same bytes fetched again: keep the first date, note the refresh
         hist[-1]["last_checked"] = entry["fetched_at"]
@@ -90,7 +102,7 @@ def previous_archive(name: str, current_sha: str | None = None) -> Path | None:
     """The newest archived snapshot of `name` whose content differs from `current_sha` (what a new fetch is compared with)."""
     for h in reversed(history(name)):
         if h.get("archive") and h["sha256"] != current_sha:
-            p = config.ROOT / h["archive"] if not Path(h["archive"]).is_absolute() else Path(h["archive"])
+            p = _abs(h["archive"])
             if p.exists():
                 return p
     return None
@@ -116,7 +128,7 @@ def verify() -> bool:
     ok = True
     for name, hist in sorted(load()["snapshots"].items()):
         last = hist[-1]
-        p = config.ROOT / last["file"] if not Path(last["file"]).is_absolute() else Path(last["file"])
+        p = _abs(last["file"])
         if not p.exists():
             print(f"MISSING  {name}: {last['file']}")
             ok = False

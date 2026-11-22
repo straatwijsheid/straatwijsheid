@@ -1,0 +1,17 @@
+{
+ "layer": "vocabulary",
+ "overrides": [
+  {
+   "gemeente": "Cranendonck",
+   "street": "Sint Josephplein",
+   "category": "person",
+   "subcategory": "religious",
+   "entity_label": "Saint Joseph",
+   "entity_description": null,
+   "confidence": 0.4,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null
+  }
+ ]
+}

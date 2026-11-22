@@ -3,6 +3,7 @@
   python src/pipeline.py add Tilburg Breda       new gemeenten, end to end
   python src/pipeline.py rebuild                 everything downstream of the data (after rules/overrides/knowledge changed)
   python src/pipeline.py status                  what is missing at each stage
+  python src/pipeline.py bootstrap               fresh checkout: build directory + clone the knowledge repository
 
 `add` runs, in order (each stage is also a script you can run alone):
   1 acquire    src/acquire.py            streets + buurten for the gemeenten (skips ones already fetched)
@@ -71,9 +72,29 @@ def stage_rules(apply=()):
 def stage_outputs():
     run(SRC / "reconcile.py")
     run(SRC / "analyze.py")
-    run(SRC / "build_map.py")
+    run(SRC / "build_map.py")      # also writes output/PROVENANCE.json (code + knowledge commits, OSM snapshot dates)
     run(SRC / "export_csv.py")
     tiers()
+
+
+def stage_bootstrap(clone=True):
+    """Prepare a fresh checkout: the build directory, and the knowledge repository (cloned from config.KNOWLEDGE_REPO unless it is already there)."""
+    config.ensure_dirs()
+    print(config.describe())
+    k = config.KNOWLEDGE
+    if not (k / "global").exists():
+        if not clone:
+            sys.exit(f"No knowledge at {k}. Clone it (git clone {config.KNOWLEDGE_REPO} {k}) or set knowledge_dir in config.local.toml.")
+        print(f"\nCloning the knowledge repository {config.KNOWLEDGE_REPO} -> {k}")
+        r = subprocess.run(["git", "clone", config.KNOWLEDGE_REPO, str(k)])
+        if r.returncode:
+            sys.exit("Clone failed (a private repository needs access: `gh auth login`, or clone it yourself and set knowledge_dir in config.local.toml).")
+    import knowledge, provenance
+    st = provenance.git_state(k)
+    print(f"\nknowledge: {st['commit'] or 'not a git checkout'}{' (modified)' if st['dirty'] else ''}; {len(knowledge.shard_dirs())} gemeente folders")
+    have = sorted((config.RAW).glob("streets_*.geojson"))
+    print(f"build data: {len(have)} gemeenten acquired" + ("" if have else "; start with  python src/pipeline.py add <gemeente> ..."))
+    return knowledge.check()
 
 
 def tiers():
@@ -100,13 +121,16 @@ def status():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["add", "rebuild", "status"])
+    ap.add_argument("command", choices=["add", "rebuild", "status", "bootstrap"])
     ap.add_argument("gemeenten", nargs="*")
     ap.add_argument("--skip-wikidata", action="store_true", help="add: do not look names up (e.g. already done in your own shell)")
     ap.add_argument("--refresh-osm", action="store_true", help="re-fetch the OSM etymology tags (Noord-Brabant-wide)")
     ap.add_argument("--apply-rules", nargs="+", metavar="RULE", help="regenerate these rules' override layers instead of only checking (name them; see rules/run.py --list)")
+    ap.add_argument("--no-clone", action="store_true", help="bootstrap: do not clone the knowledge repository, only check it is there")
     ap.add_argument("--themes", action="store_true", help="rebuild: also derive missing buurt themes")
     a = ap.parse_args(argv)
+    if a.command == "bootstrap":
+        return stage_bootstrap(clone=not a.no_clone)
     if a.command == "status":
         return status()
     if a.command == "add":

@@ -2,7 +2,7 @@
 
 Versioned, tested rule families. Each is a pure function of the data: it takes a `Context` (the streets, the current
 `streets_final.json`, the Wikidata cache, place names) and returns `Override` records. Only `run.py` touches
-its override layer (`data/enriched/overrides/<rule>.json`, see `src/overrides.py`).
+its override layer (`knowledge/gemeenten/<province>/<gemeente>/overrides/<rule>.json`, see `src/overrides.py`).
 
 ```
 python src/rules/run.py --list                 # the rules
@@ -31,7 +31,7 @@ After `--apply`, re-run `src/reconcile.py --full`, `src/analyze.py`, `src/build_
   places, so identities are only asserted where the street's own buurt supports that kind of person, and a label that
   rests on the theme alone must also be backed by the name itself (a species word, a title or first-name pattern, a place).
 * **Evidence only moves toward tier 1** (`src/tiers.py`): `apply` never replaces a verified (tier 1) street without `--force`.
-* **Knowledge is data**, in `data/knowledge/global/` (curated lists) and `data/knowledge/gemeenten/<province>/<gemeente>/` (per-gemeente decisions): `species.txt`, `species_streets.txt`, `vocabulary.json`, `famous_people.txt`,
+* **Knowledge is data**, in `knowledge/global/` (curated lists) and `knowledge/gemeenten/<province>/<gemeente>/` (per-gemeente decisions): `species.txt`, `species_streets.txt`, `vocabulary.json`, `famous_people.txt`,
   `person_labels.json`, `place_match_corrections.json`, `directional_places.json`, `common_stems.txt`, `common_words.txt`,
   `common_compounds.txt`. Improve a rule by editing data first; code only holds logic.
 

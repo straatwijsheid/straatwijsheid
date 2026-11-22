@@ -4,6 +4,8 @@ import traceback
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+import _need_knowledge  # noqa: F401  (stops with a clear message when the knowledge repository is not checked out)
+from _fixture import fixture_build
 
 import osm_etymology as O                      # noqa: E402
 from osm_report import classify_pair, label_agrees   # noqa: E402
@@ -48,13 +50,14 @@ def test_pairing_and_rule():
             row("A", "Clashlaan", "person", "artist_visual", "Someone")]                        # tier 2 vs a place -> conflict
     recs = [rec("A", "Zzstraat", "person", "writer_poet", "Some Writer"), rec("A", "Vermeerstraat", "person", "artist_visual", "Johannes Vermeer"),
             rec("A", "Rembrandtlaan", "person", "artist_visual", "Rembrandt van Rijn"), rec("A", "Clashlaan", "place", "dutch_town", "Clash"), rec("A", "Frederiklaan", "person", "industrialist", "Frederik Philips", "Q1453131")]
-    ctx = _ctx(rows)
-    assert classify_pair(ctx.rows[("A", "Clashlaan")], recs[3])[0] == "conflict"
-    out = {o.street: o for o in osm.propose(ctx, recs)}
-    assert set(out) == {"Zzstraat", "Vermeerstraat", "Frederiklaan"}                      # tier-1 agreement and the conflict are left alone
-    assert out["Vermeerstraat"].source == "osm_etymology" and out["Vermeerstraat"].entity_label == "Johannes Vermeer"
-    assert out["Zzstraat"].category == "person"
-    assert out["Frederiklaan"].entity_label == "Frederik Philips" and out["Frederiklaan"].subcategory == "industrialist"
+    with fixture_build():
+        ctx = _ctx(rows)
+        assert classify_pair(ctx.rows[("A", "Clashlaan")], recs[3])[0] == "conflict"
+        out = {o.street: o for o in osm.propose(ctx, recs)}
+        assert set(out) == {"Zzstraat", "Vermeerstraat", "Frederiklaan"}                      # tier-1 agreement and the conflict are left alone
+        assert out["Vermeerstraat"].source == "osm_etymology" and out["Vermeerstraat"].entity_label == "Johannes Vermeer"
+        assert out["Zzstraat"].category == "person"
+        assert out["Frederiklaan"].entity_label == "Frederik Philips" and out["Frederiklaan"].subcategory == "industrialist"
 
 
 def test_label_agreement():

@@ -1,7 +1,7 @@
 """Roads named after the place they lead to: <Place>se/sche + weg/dijk/straat/... (Eindhovensedijk).
 
 The namesake is the destination place. A stem counts as a place when it is a gemeente, wijk or buurt
-name in the dataset, or is listed in data/knowledge/directional_places.json (nearby places and
+name in the dataset, or is listed in knowledge/global/directional_places.json (nearby places and
 destinations that are not in the dataset, e.g. Antwerp, Kleef)."""
 from __future__ import annotations
 

@@ -1,0 +1,29 @@
+{
+ "layer": "vocabulary",
+ "overrides": [
+  {
+   "gemeente": "Eindhoven",
+   "street": "Nassaustraat",
+   "category": "person",
+   "subcategory": "monarch_statesman",
+   "entity_label": "House of Nassau",
+   "entity_description": "Name shared by several people; only the kind of namesake is asserted",
+   "confidence": 0.5,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null
+  },
+  {
+   "gemeente": "Eindhoven",
+   "street": "Oranjestraat",
+   "category": "person",
+   "subcategory": "monarch_statesman",
+   "entity_label": "House of Orange",
+   "entity_description": "Name shared by several people; only the kind of namesake is asserted",
+   "confidence": 0.5,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null
+  }
+ ]
+}

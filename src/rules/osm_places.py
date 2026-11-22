@@ -5,7 +5,7 @@ A street whose name equals a named OSM feature (hamlet, neighbourhood, suburb, s
 `place / local name` (`local_landscape_feature`); a same-named stream or lake is `river` / `lake`. The OSM feature is the independent
 evidence that the place exists there; it does not prove the street was named for it, so the result is tier 2, not tier 1.
 
-Data: data/raw/osm_places.json (`python src/osm_places.py --fetch`). Never overrides tier 1-2, species/vocabulary things at tier 3-4,
+Data: build/raw/osm_places.json (`python src/osm_places.py --fetch`). Never overrides tier 1-2, species/vocabulary things at tier 3-4,
 or streets already read as a non-local kind of place (towns, regions: the directional-road rule handles those)."""
 from __future__ import annotations
 

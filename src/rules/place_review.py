@@ -1,7 +1,7 @@
 """Accepted Wikidata place matches that are wrong, and their repairs.
 
 Wikidata often matches an ordinary word to an unrelated place of the same name (Brugstraat -> Bruges, Heide -> a German
-town, Klarinet -> a settlement in South Africa). data/knowledge/place_match_corrections.json lists the names reviewed by hand:
+town, Klarinet -> a settlement in South Africa). knowledge/global/place_match_corrections.json lists the names reviewed by hand:
  not_a_place   name -> [category, subcategory, label, description, note]   (the street is not named after a place)
  named_places  name -> [label, description, subcategory]                    (it is a place, but Wikidata picked an obscure namesake)
 Any other accepted place match whose description names an obscure place abroad gets a generic description so the tooltip does

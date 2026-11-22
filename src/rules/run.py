@@ -2,11 +2,11 @@
 
   python src/rules/run.py --list
   python src/rules/run.py --check [RULE ...]     dry run: what each rule proposes, relative to the layers below it
-  python src/rules/run.py --apply RULE [...]     regenerate those rules' layers (data/enriched/overrides/<rule>.json) and nothing else
+  python src/rules/run.py --apply RULE [...]     regenerate those rules' layers (knowledge/gemeenten/<province>/<gemeente>/overrides/<rule>.json) and nothing else
   python src/rules/run.py --apply --cascade RULE regenerate RULE and every enabled rule above it, in precedence order
                                                  (then `pipeline.py rebuild`, or reconcile / analyze / build_map / export_csv)
 
-With no rule named, every enabled rule runs (data/knowledge/rules_status.json lists the disabled ones). A rule computes its proposals from
+With no rule named, every enabled rule runs (knowledge/global/rules_status.json lists the disabled ones). A rule computes its proposals from
 the hand classifications plus the layers *below* it, never from its own previous layer, so re-applying is repeatable; the printed diff says
 what a regeneration changed in its layer. Apply never replaces a tier-1 street (a verified identification) unless --force is given."""
 from __future__ import annotations
@@ -85,7 +85,7 @@ def rule_osm_places(ctx):
 RULES = {
     "osm_places": (rule_osm_places, "street named like a hamlet/neighbourhood/stream/lake/park within 1 km (OSM) -> place / local name, tier 2"),
     "name_resolver": (rule_name_resolver, "name-level resolver: kinds (and backed names) for streets at tiers 3-5, reviewed-safe changes only"),
-    "corrections": (rule_corrections, "reviewed street-level corrections from data/knowledge/corrections.json"),
+    "corrections": (rule_corrections, "reviewed street-level corrections from knowledge/gemeenten/<province>/<gemeente>/corrections.json"),
     "label_cleanup": (labels.repair_saint_labels, "saint labels that repeat the road word (Saint Janstraat -> Saint John)"),
     "osm_etymology": (rule_osm, "OpenStreetMap name:etymology(:wikidata) -> the namesake, tier 1 (conflicts with our tier 1-2 are left alone)"),
     "directional_road": (rule_directional, "<Place>se<road> streets -> the place they lead to"),

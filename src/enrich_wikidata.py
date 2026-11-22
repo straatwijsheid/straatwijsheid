@@ -348,7 +348,7 @@ def lookup_all_resumable(
 
 
 def missing_street_names(cache_path, gemeenten=None) -> list[str]:
-    """Distinct street names in data/raw/streets.geojson that the cache has not looked up yet (the same name in several gemeenten is one lookup)."""
+    """Distinct street names in build/raw/streets.geojson that the cache has not looked up yet (the same name in several gemeenten is one lookup)."""
     import geopandas as gpd
     root = Path(__file__).resolve().parent.parent
     g = gpd.read_file(config.RAW / "streets.geojson")
@@ -368,7 +368,7 @@ if __name__ == "__main__":
     ap.add_argument("--missing", action="store_true", help="look up every street in streets.geojson that is not cached yet (the normal mode)")
     ap.add_argument("--gemeente", action="append", help="with --missing: only these gemeenten")
     ap.add_argument("--names", help="a text file with one street name per line, instead of --missing")
-    ap.add_argument("--cache", default="all_streets_wikidata.jsonl", help="cache file name in data/enriched/")
+    ap.add_argument("--cache", default="all_streets_wikidata.jsonl", help="cache file name in build/enriched/")
     ap.add_argument("--dry-run", action="store_true", help="only report how many names would be looked up")
     a = ap.parse_args()
     out_path = config.ENRICHED / a.cache

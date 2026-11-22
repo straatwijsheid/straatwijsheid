@@ -4,6 +4,7 @@ import traceback
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+import _need_knowledge  # noqa: F401  (stops with a clear message when the knowledge repository is not checked out)
 
 from rules import audits, compound, directional, place_review, species, surnames, vocabulary   # noqa: E402
 from rules.base import Context, core                                                             # noqa: E402

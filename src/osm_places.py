@@ -1,7 +1,7 @@
 """Named OSM geographic features (places, water, heath, woods, nature reserves...) in Noord-Brabant, as independent evidence that a
 street name is a place name: a street called Zwartven is a 'lake' reading only if a feature called Zwartven lies nearby.
 
-  python src/osm_places.py --fetch     Overpass -> data/raw/osm_places.json   (name, kind, lat, lon)
+  python src/osm_places.py --fetch     Overpass -> build/raw/osm_places.json   (name, kind, lat, lon)
 """
 from __future__ import annotations
 

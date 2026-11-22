@@ -1,18 +1,12 @@
 .venv/
 __pycache__/
 *.pyc
-cache/
 .DS_Store
-data/names/candidates.jsonl
-data/names/adjacency.json
 *.log
 config.local.toml
 
-# the build directory (everything rebuildable from sources; see config.py and TODO.md M2): never in git
-data/raw/
-data/enriched/
-data/names/
-output/
+# the build directory (everything rebuildable from sources; see config.py): never in git
+/build/
 
 # archived one-off wave scripts: kept locally only (hard-coded paths); not part of the public repositories
 scripts/legacy/

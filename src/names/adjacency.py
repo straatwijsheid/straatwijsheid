@@ -5,7 +5,7 @@ interconnect to each other and all relate to the same specific subject". A CBS b
 Dongen's Hoge Akker holds three themes (writers, architects, WWII Allied leaders). The streets a street actually touches are a
 sharper context than its buurt, so the resolver can use them as well.
 
-Two streets are adjacent when their geometries come within ADJACENT_M metres (same gemeente). Cached in data/names/adjacency.json."""
+Two streets are adjacent when their geometries come within ADJACENT_M metres (same gemeente). Cached in build/names/adjacency.json."""
 from __future__ import annotations
 
 import config

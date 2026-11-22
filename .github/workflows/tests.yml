@@ -1,0 +1,27 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Knowledge repository (the curated lists the rule tests read)
+        uses: actions/checkout@v4
+        with:
+          repository: straatwijsheid/knowledge
+          path: knowledge
+          # needed only while the knowledge repository is private: a fine-grained token with read access to it, stored as a secret in this repository
+          token: ${{ secrets.KNOWLEDGE_READ_TOKEN || github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Unit tests and end-to-end test on the golden fixture (no network)
+        run: |
+          for t in tests/test_*.py; do echo "== $t"; python "$t" || exit 1; done

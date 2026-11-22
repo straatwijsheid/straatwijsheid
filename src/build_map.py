@@ -539,6 +539,10 @@ def main():
     </div>
     """
     m.get_root().html.add_child(folium.Element(legend_html))
+    import provenance
+    m.get_root().html.add_child(folium.Element(
+        f'<div style="position:fixed;bottom:0;left:0;right:0;z-index:900;background:rgba(255,255,255,.85);font:11px sans-serif;padding:2px 8px;color:#444">'
+        f'{provenance.line(provenance.write())}</div>'))
 
     out_path = config.OUTPUT / "streets_map.html"
     m.save(str(out_path))

@@ -1,0 +1,137 @@
+{
+ "layer": "legacy_hand",
+ "overrides": [
+  {
+   "street": "Achterbeekseweg",
+   "category": "place",
+   "subcategory": "local_landmark",
+   "entity_label": null,
+   "entity_description": "Generic local road name, not a person",
+   "confidence": 0.4,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null,
+   "gemeente": "Eindhoven"
+  },
+  {
+   "gemeente": "Eindhoven",
+   "street": "Achterstraat",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.4,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Harmonised with the same-named street elsewhere (10/12 agree on 'local'); the street's own buurt gave no support for a different reading"
+  },
+  {
+   "street": "Boccherinilaan",
+   "category": "person",
+   "subcategory": "musician_composer",
+   "entity_label": "Luigi Boccherini",
+   "entity_description": "Italian composer and cellist (1743–1805), Classical-era chamber music",
+   "confidence": 0.75,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null,
+   "gemeente": "Eindhoven"
+  },
+  {
+   "street": "Casellastraat",
+   "category": "person",
+   "subcategory": "musician_composer",
+   "entity_label": "Alfredo Casella",
+   "entity_description": "Italian composer (1883–1947)",
+   "confidence": 0.5,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null,
+   "gemeente": "Eindhoven"
+  },
+  {
+   "street": "Firapeellaan",
+   "category": "person",
+   "subcategory": "literary_mythical_figure",
+   "entity_label": "Firapeel",
+   "entity_description": "The leopard, the king's representative, in Van den vos Reynaerde",
+   "confidence": 0.55,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null,
+   "gemeente": "Eindhoven"
+  },
+  {
+   "gemeente": "Eindhoven",
+   "street": "Glooiing",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.3,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Standardised rule: the label 'thing/fiction_title_or_motif' came from the buurt theme alone and the street name itself does not indicate it; no namesake identified"
+  },
+  {
+   "street": "Kanaaldijk-Noord",
+   "category": "place",
+   "subcategory": "local_landmark",
+   "entity_label": null,
+   "entity_description": "Literal canal-dike reference, not a person",
+   "confidence": 0.5,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null,
+   "gemeente": "Eindhoven"
+  },
+  {
+   "street": "Sint Petrus Canisiuslaan",
+   "category": "person",
+   "subcategory": "religious",
+   "entity_label": "Saint Peter Canisius",
+   "entity_description": "Dutch Jesuit theologian (1521–1597)",
+   "confidence": 0.6,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null,
+   "gemeente": "Eindhoven"
+  },
+  {
+   "gemeente": "Eindhoven",
+   "street": "Steilte",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.3,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Standardised rule: the label 'thing/fiction_title_or_motif' came from the buurt theme alone and the street name itself does not indicate it; no namesake identified"
+  },
+  {
+   "street": "Suikerpeerstraat",
+   "category": "thing",
+   "subcategory": "flora",
+   "entity_label": "Suikerpeer",
+   "entity_description": "A traditional Dutch sugar pear cultivar",
+   "confidence": 0.5,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null,
+   "gemeente": "Eindhoven"
+  },
+  {
+   "street": "Verhulststraat",
+   "category": "person",
+   "subcategory": "musician_composer",
+   "entity_label": "Johannes Verhulst",
+   "entity_description": "Dutch composer and conductor (1816–1891)",
+   "confidence": 0.5,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null,
+   "gemeente": "Eindhoven"
+  }
+ ]
+}

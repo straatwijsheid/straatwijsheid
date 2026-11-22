@@ -1,0 +1,173 @@
+{
+ "layer": "legacy_hand",
+ "overrides": [
+  {
+   "gemeente": "Cranendonck",
+   "street": "Aldenborghlaan",
+   "category": "person",
+   "subcategory": "other",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.3,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Named after a person who could not be identified"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "De Goudvink",
+   "category": "thing",
+   "subcategory": "fauna",
+   "entity_label": "Bullfinch",
+   "entity_description": "Pyrrhula pyrrhula; Dutch name 'goudvink'",
+   "confidence": 0.5,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "De Roedel",
+   "category": "thing",
+   "subcategory": "fauna",
+   "entity_label": "Pack (of deer/wolves)",
+   "entity_description": "Roedel; Dutch name 'roedel'",
+   "confidence": 0.45,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "De Rutjens",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.3,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Local field, road or place name; no namesake identified"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "De Specht",
+   "category": "thing",
+   "subcategory": "fauna",
+   "entity_label": "Woodpecker",
+   "entity_description": "Picidae; Dutch name 'specht'",
+   "confidence": 0.5,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "El Pinar",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.3,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Local field, road or place name"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Heesakkerweg",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.3,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Local field, road or place name"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Hoortweg",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.3,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Local field, road or place name"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Keizer Ottostraat",
+   "category": "person",
+   "subcategory": "monarch_statesman",
+   "entity_label": "Keizer Otto",
+   "entity_description": null,
+   "confidence": 0.45,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Koenraadtweg",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.3,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Local field, road or place name; no namesake identified"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Peellandstraat",
+   "category": "thing",
+   "subcategory": "archaeology_term",
+   "entity_label": "Peelland",
+   "entity_description": "Historic people or region",
+   "confidence": 0.35,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Puttenstraat",
+   "category": "place",
+   "subcategory": "local_landscape_feature",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.3,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Local field, road or place name"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Thijssenstraat",
+   "category": "person",
+   "subcategory": "other",
+   "entity_label": null,
+   "entity_description": null,
+   "confidence": 0.3,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": "Named after a person who could not be identified"
+  },
+  {
+   "gemeente": "Cranendonck",
+   "street": "Zicht",
+   "category": "thing",
+   "subcategory": "occupation_guild",
+   "entity_label": null,
+   "entity_description": "Trade, guild or tool term",
+   "confidence": 0.35,
+   "source": "claude_knowledge",
+   "source_url": null,
+   "notes": null
+  }
+ ]
+}

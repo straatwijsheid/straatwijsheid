@@ -7,6 +7,8 @@ import traceback
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+import _need_knowledge  # noqa: F401  (stops with a clear message when the knowledge repository is not checked out)
+from _fixture import fixture_build
 import themes as T
 
 
@@ -47,7 +49,8 @@ def test_missing_street_names():
     with tempfile.TemporaryDirectory() as d:
         cache = Path(d) / "c.jsonl"
         cache.write_text(json.dumps({"street": "Kerkstraat"}) + "\n")
-        names = E.missing_street_names(cache)
+        with fixture_build():
+            names = E.missing_street_names(cache)
         assert "Kerkstraat" not in names              # cached names are never looked up again
         assert names == sorted(set(names))
 
