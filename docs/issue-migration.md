@@ -1,6 +1,6 @@
 # TODO.md to GitHub issues: migration draft
 
-Temporary working file. Delete it once the issues exist (step 2 of the plan). Nothing here has been created on GitHub yet.
+Created on GitHub 2026-11-22 as issues #1 to #49, in draft order (H1 = #1 ... KPI1 = #49). Kept as the record of what was and was not migrated; the issues are now the source of truth.
 
 ## Rules used for this draft
 
