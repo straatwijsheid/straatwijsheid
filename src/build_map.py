@@ -438,7 +438,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
       function go(x) {
         clearMark();
         var g = G.filter(function (y) { return y.id === x.g; })[0];
-        on[g.id] = true; sync();
+        G.forEach(function (y) { on[y.id] = (y.id === g.id); }); sync();   // show only the gemeente of the result, like the 'only' link
         if (x.kind === "Buurt") setLayer("buurten", true);
         if (x.kind === "Street") setLayer(x.way === "p" ? "paths" : x.way === "c" ? "planned" : "streets", true);   // a found street is always shown
         results.innerHTML = ""; qbox.value = x.kind === "Gemeente" ? "" : qbox.value;
