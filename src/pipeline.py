@@ -61,7 +61,7 @@ def stage_osm():
 
 def stage_rules(apply=()):
     """Check what every enabled rule proposes, or regenerate the named rules' override layers. Regenerating all layers at once would change
-    thousands of historical, partly reviewed entries (see TODO.md: layer audit), so applying always names the rules."""
+    thousands of historical, partly reviewed entries (see issue #24: layer audit), so applying always names the rules."""
     if apply:
         run(SRC / "rules" / "run.py", "--apply", *apply)
         run(SRC / "reconcile.py")

@@ -1,7 +1,7 @@
 """Every named street-like way in OpenStreetMap inside an outline, as one row per street name.
 
 Replaces the osmnx "drive network" fetch, which silently dropped parking aisles and driveways, pedestrian streets, footways/cycleways/tracks,
-and short disconnected streets (15% of the named OSM ways in Noord-Brabant; see TODO.md). Here every `highway=*` way with a `name` counts, except
+and short disconnected streets (15% of the named OSM ways in Noord-Brabant). Here every `highway=*` way with a `name` counts, except
 types that are not streets (see EXCLUDED); each street keeps its `highway` type(s) so later steps can filter or style by them.
 
   highway      the most street-like type among the street's ways (see RANK)

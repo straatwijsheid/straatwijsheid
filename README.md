@@ -5,7 +5,7 @@ with sub-kinds (composer, saint, tree, river, castle...), and test whether namin
 
 Current coverage: **all of Noord-Brabant, 59 gemeenten and 38,090 streets**, built up wave by wave from Eindhoven outwards.
 The long-term goal is the whole of the Netherlands, and a steadily growing share of streets we can actually identify.
-See [TODO.md](TODO.md) for what is next.
+Open work is tracked in the [issue tracker](https://github.com/straatwijsheid/straatwijsheid/issues).
 
 ## What you get
 
@@ -94,4 +94,4 @@ tests/               unit tests for the tiers, rules, overrides, snapshots and k
 * Many matches were made from general knowledge and have not been verified against Wikidata or the web (tier 2).
 * The first classification passes were hand-written per gemeente; their results live in the frozen `legacy_hand` override layer (`overrides/legacy_hand.json` in each gemeente's knowledge folder); the scripts that produced them are archived outside this repository and are not re-runnable.
 
-More detail on the method, data fields and findings is still to be written, see the Documentation section of [TODO.md](TODO.md).
+More detail on the method, data fields and the pipeline is still to be written: see the Documentation milestone in the [issue tracker](https://github.com/straatwijsheid/straatwijsheid/issues?q=milestone%3A%22M4+Documentation%22).
