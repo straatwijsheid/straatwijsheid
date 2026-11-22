@@ -190,6 +190,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         #gm-panel .gm-count {color:#888; font-size:11px;}
         #gm-panel .gm-only {font-size:11px; color:#2563eb; text-decoration:none;}
         #gm-panel .gm-sec {margin-top:8px; padding-top:6px; border-top:1px solid #eee;}
+        .street-tip {white-space:normal; max-width:340px; overflow-wrap:anywhere;}
       </style>
       <b>Streets: gemeente</b>
       __ROWS__
@@ -208,15 +209,15 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
 
       var esc = function (t) { return String(t).replace(/[&<>"']/g,
         function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]; }); };
-      var tpl = function (f) {
+      var tpl = function (f, brief) {   // brief = hover tooltip: description shortened, no link (it cannot be clicked there); the click popup has it all
         var p = f.properties, h = "<b>" + esc(p.n) + "</b><br>";
         var tier = p.t ? "<br><span style='color:#555'>Evidence tier " + p.t + ": " + esc(R.tiers[p.t]) + "</span>" : "";
         if (p.e === undefined) {
           if (p.t === undefined || p.t === 5) return h + R.unresolved + (p.t === 5 && p.c && p.c !== "unresolved" ? "<br>Best guess: " + esc(p.c) + "/" + esc(p.s || "") : "") + tier;
           return h + "No specific namesake identified<br>Kind: " + esc(p.c) + (p.s ? "/" + esc(p.s) : "") + tier;
         }
-        h += "Likely named after: <b>" + esc(p.e) + "</b>" + (p.d ? " &mdash; " + esc(p.d) : "");
-        if (p.u) h += ' &nbsp;<a href="' + esc(p.u) + '" target="_blank" rel="noopener">[source]</a>';
+        h += "Likely named after: <b>" + esc(p.e) + "</b>" + (p.d ? " &mdash; " + esc(brief && p.d.length > 200 ? p.d.slice(0, 200).replace(/ +[^ ]*$/, "") + "&hellip;" : p.d) : "");
+        if (p.u && !brief) h += ' &nbsp;<a href="' + esc(p.u) + '" target="_blank" rel="noopener">[source]</a>';
         return h + "<br>Category: " + esc(p.c) + "/" + esc(p.s || "") + " &middot; confidence: " + p.l + " (" + p.f
           + ")<br>Basis: " + esc(R.basis[p.b] || p.b || "unknown") + tier;
       };
@@ -232,7 +233,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
             filter: function (f) { return want(f) && keep(f); },
             style: function () { return {weight: weight, opacity: 0, fill: false}; },
             onEachFeature: function (f, l) {
-              l.bindTooltip(tpl(f), {sticky: true});
+              l.bindTooltip(tpl(f, true), {sticky: true, direction: "auto", className: "street-tip"});
               l.bindPopup(tpl(f), {maxWidth: 320});
             }
           });
@@ -274,9 +275,9 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
             var p = f.properties;
             if (p.t === undefined) {
               l.bindTooltip(esc(p.n) + " (" + esc(p.w) + "): " + (p.o ? "no theme assigned (no named streets here)"
-                : "naming theme not yet analyzed"), {sticky: true});
+                : "naming theme not yet analyzed"), {sticky: true, className: "street-tip"});
             } else {
-              l.bindTooltip(esc(p.n) + ": " + esc(p.t), {sticky: true});
+              l.bindTooltip(esc(p.n) + ": " + esc(p.t), {sticky: true, className: "street-tip"});
               l.bindPopup("<b>" + esc(p.n) + "</b> (" + esc(p.w) + ")<br>" + esc(p.t) + "<br>confidence: " + p.f);
             }
           }
