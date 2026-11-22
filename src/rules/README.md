@@ -2,12 +2,12 @@
 
 Versioned, tested rule families. Each is a pure function of the data: it takes a `Context` (the streets, the current
 `streets_final.json`, the Wikidata cache, place names) and returns `Override` records. Only `run.py` touches
-`data/enriched/manual_overrides.json`.
+its override layer (`data/enriched/overrides/<rule>.json`, see `src/overrides.py`).
 
 ```
 python src/rules/run.py --list                 # the rules
 python src/rules/run.py --check [RULE ...]      # dry run: what each proposes, and how that compares with the data now
-python src/rules/run.py --apply RULE [...]      # write proposals into manual_overrides.json (records the rule in each entry)
+python src/rules/run.py --apply RULE [...]      # regenerate those rules' override layers (prints how each layer changed); --cascade also redoes the rules above
 .venv/bin/python tests/test_rules.py            # unit tests;   tests/test_tiers.py for the evidence tiers
 ```
 

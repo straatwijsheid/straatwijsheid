@@ -40,7 +40,7 @@ ever move streets toward tier 1.
 2. **Look up** each street's core name (the name without "straat", "laan"...) on Wikidata.
 3. **Reconcile** the per-street Wikidata guesses with each buurt's naming theme. A confident individual match is trusted; a weak one
    gives way to a strongly themed buurt; surname-only matches without support are rejected.
-4. **Rules and hand classification** (`src/rules/`, `data/knowledge/`, `data/enriched/manual_overrides.json`) add what Wikidata
+4. **Rules and hand classification** (`src/rules/`, `data/knowledge/`, the override layers in `data/knowledge/overrides/` and `data/enriched/overrides/`) add what Wikidata
    cannot: species, composers, saints, directional roads (`Eindhovensedijk`), titles, local names, and consistency audits.
 5. **Analyse** whether themes cluster by wijk, **build the map**, **export CSVs**.
 
@@ -82,7 +82,7 @@ src/                 pipeline.py (orchestrator), acquire.py, enrich_wikidata.py,
                      osm_etymology.py / osm_places.py (OpenStreetMap evidence), names/ (candidate table + resolver)
 src/rules/           tested classification rules (see src/rules/README.md); run.py is the CLI
 data/raw/            street networks and buurt boundaries per gemeente, plus the combined files
-data/enriched/       Wikidata cache, buurt themes, manual_overrides.json, streets_final.json (the result)
+data/enriched/       Wikidata cache, buurt themes, rule override layers (overrides/), streets_final.json (the result)
 data/knowledge/      curated knowledge the rules use: species, vocabularies, famous people, place corrections...
 scripts/legacy/      the original wave-by-wave scripts, kept verbatim for provenance (not meant to be re-run)
 output/              the map, its data files and the CSV/JSON exports
@@ -94,7 +94,7 @@ tests/               unit tests for the tiers and the rules
 * Classification depth varies by gemeente (they were built in waves): the Kempen gemeenten are the weakest, with about half their streets unidentified.
 * About a quarter of the labels that rest on a buurt's theme in the oldest gemeenten (~1.1k streets) look wrong on sampling.
 * Many matches were made from general knowledge and have not been verified against Wikidata or the web (tier 2).
-* The first classification passes were hand-written per gemeente; their results live in `manual_overrides.json`, and the scripts
+* The first classification passes were hand-written per gemeente; their results live in the frozen `legacy_hand` override layer (`data/knowledge/overrides/legacy_hand.json`), and the scripts
   that produced them are archived, not re-runnable (`scripts/legacy/README.md`).
 
 More detail on the method, data fields and findings is still to be written, see the Documentation section of [TODO.md](TODO.md).

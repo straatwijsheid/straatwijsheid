@@ -228,16 +228,13 @@ def load_jsonl(path: Path) -> list[dict]:
     return [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
 
 
-def apply_manual_overrides(final: list[dict]) -> list[dict]:
-    """Individually researched corrections (web search or general knowledge),
-    applied last since they're the highest-quality evidence available."""
-    overrides_path = config.ENRICHED / "manual_overrides.json"
-    if not overrides_path.exists():
-        return final
-    overrides = {(o["gemeente"], o["street"]): o
-                 for o in load_json(overrides_path)["overrides"]}
+def apply_manual_overrides(final: list[dict], exclude=(), upto: str | None = None) -> list[dict]:
+    """The override layers (src/overrides.py) applied in order, later layers winning: hand classifications first, reviewed corrections last.
+    `upto` / `exclude` let a rule see the state below its own layer when it computes its proposals."""
+    import overrides
+    layers = overrides.merged(exclude=exclude, upto=upto)
     for row in final:
-        o = overrides.get((row["gemeente"], row["street"]))
+        o = layers.get((row["gemeente"], row["street"]))
         if not o:
             continue
         row.update({
@@ -250,8 +247,8 @@ def apply_manual_overrides(final: list[dict]) -> list[dict]:
     return final
 
 
-def main():
-    """Classify every street in data/raw/streets.geojson from the Wikidata cache, the buurt themes and the override layers -> streets_final.json."""
+def compute_final(exclude=(), upto: str | None = None) -> list[dict]:
+    """Classify every street in data/raw/streets.geojson from the Wikidata cache, the buurt themes and the override layers (in memory)."""
     import geopandas as gpd
 
     wikidata_results = load_jsonl(config.ENRICHED / "all_streets_wikidata.jsonl")
@@ -264,7 +261,7 @@ def main():
     themes = load_json(config.ENRICHED / "buurt_themes_full.json")["buurten"]
     themes_by_buurt = {(t["gemeente"], t["buurt"]): t for t in themes}
 
-    final = apply_manual_overrides(reconcile(wikidata_results, context, themes_by_buurt))
+    final = apply_manual_overrides(reconcile(wikidata_results, context, themes_by_buurt), exclude=exclude, upto=upto)
     ways = {}
     if "way_class" in gdf:
         ways = {(g, n): (h, w) for g, n, h, w in zip(gdf["gemeente"], gdf["name"], gdf["highway"], gdf["way_class"])}
@@ -273,11 +270,16 @@ def main():
         h, w = ways.get((row["gemeente"], row["street"]), (None, None))
         row["highway"] = h if isinstance(h, str) else None          # OSM highway type of the street
         row["way_class"] = w if isinstance(w, str) else "street"     # street | path | planned
+    return final
 
-    out_path = config.ENRICHED / "streets_final.json"
-    out_path.write_text(json.dumps(final, indent=2, ensure_ascii=False))
+
+def main():
+    """Classify every street and write data/enriched/streets_final.json."""
     from collections import Counter
 
+    final = compute_final()
+    out_path = config.ENRICHED / "streets_final.json"
+    out_path.write_text(json.dumps(final, indent=2, ensure_ascii=False))
     print(f"Wrote {out_path} ({len(final)} streets)")
     print("Category breakdown:", dict(Counter(row["category"] for row in final)))
 

@@ -18,7 +18,7 @@ python src/names/run.py --propose               # dry run on streets with no nam
   patterns), and what Wikidata matched. Evidence is *mass*; a candidate's prior is its share of the name's mass.
 * **Resolution**: `score = (1-lam)*prior + lam*fit`, where `fit` is how well the kind matches what the street's neighbours in the
   same buurt (0.7) and wijk (0.3) are named after. It returns a kind, a label **only if the namesakes seen agree** (otherwise
-  kind-only), a margin, and `accept`/`ambiguous`. It never writes to `manual_overrides.json`.
+  kind-only), a margin, and `accept`/`ambiguous`. It never writes override layers.
 
 ## What the backtest says (current data)
 

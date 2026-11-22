@@ -22,7 +22,9 @@ are quality work that does not block publishing.
 
 **M1. Foundations that everything else touches**
 - [x] `src/config.py` + git-ignored `config.local.toml` (done 2026-11-22; `config.example.toml` documents it): build dir, knowledge dir, `WIKIDATA_CONTACT`, Overpass URL; lookup order env > local file > default; every script reads paths from it (outputs byte-identical before/after, a test covers precedence and the build directory). With no build dir set the layout is unchanged; the repository split (M2) only has to change defaults. Still hard-coded on purpose: `OSM_FIXES.md`/`WIKIDATA_FIXES.md` (docs in the repo root), the fixed `data/` knowledge file layout, `scripts/legacy/`. (Precursor of the build/ split and of unattended runs.)
-- [ ] Override layering: split `manual_overrides.json` into `legacy_hand` (frozen, goes to the knowledge repo) and per-rule layers (regenerated into build/); make rule application idempotent so a rule rewrites only its own layer. (Precursor of the knowledge-repo split; also removes the ~680-override near-loss hazard.)
+- [x] Override layering (done 2026-11-22): `manual_overrides.json` is gone. `src/overrides.py` holds the layers: `legacy_hand` (28,419, frozen: `data/knowledge/overrides/`) plus one file per rule (`data/enriched/overrides/<rule>.json`), applied in dependency order (`PRECEDENCE`; species after vocabulary, corrections last). `reconcile.compute_final(upto=RULE)` gives the state below a rule; `rules/run.py --apply RULE` regenerates only that rule's layer from that state and prints the diff against the old layer (`--cascade` redoes the rules above); rules named in `data/knowledge/rules_status.json` are skipped in all-rule runs (`bare_surname`, `wikidata_place_review`). `streets_final.json` is byte-identical before and after the migration; `tests/test_overrides.py`.
+      **Finding:** the existing rule layers are the product of *sequential, partly reviewed* applications, so regenerating them from scratch churns thousands of streets (dry run 2026-11-22: name_resolver 757 of 1,090 entries change, vocabulary +533/-96, osm_etymology 123 changed, label_cleanup and species regenerate empty because their inputs now arrive differently). Do not regenerate wholesale; treat it as a separate reviewed "layer audit" (below).
+- [ ] **Layer audit**: for each rule layer, review what a clean regeneration would change (`rules/run.py --check --cascade vocabulary` prints the per-layer diff), decide per rule whether the regenerated layer is better, and commit them one at a time. Until then layers are historical records; new streets get their rules applied with `--apply RULE` as before.
 - [ ] Minimal OSM snapshot versioning (OSM project Phase 1, the dated snapshot + checksum + `fetched_at` part; the diff/changelog can follow): decides what the raw files in build/ and the release assets look like, and makes "X% of streets" reproducible. Close the open decision "OSM is the street list source" (it now is: `osm_streets.py`; CBS supplies boundaries only) and re-fetch the early gemeenten (OSM place polygon) the same way so all 59 are consistent.
 
 **M2. Split the repos** (needs M1)
@@ -180,7 +182,7 @@ There is currently no top-level README; only `src/rules/README.md` and `scripts/
 - [x] `tests/test_pipeline.py`; README run instructions and layout updated.
 
 **Remaining debt**
-- [ ] `manual_overrides.json` is still one 31k-entry file. Split into layers (`legacy_hand` frozen, one file per rule, `corrections`), loaded in a fixed order by `reconcile`, so a rule can regenerate its own layer without the remove-then-reapply trick (shared with OSM project, Phase 2).
+- [x] `manual_overrides.json` split into layers (see M1).
 - [ ] Buurt themes: 394 hand-written (`claude_reasoning`) + 1,670 derived from street classifications that were themselves shaped by those themes (circular). Decide whether derived themes should be recomputed after rules change (`themes.py --rebuild`) and whether the reconcile feedback loop needs damping.
 - [ ] Early gemeenten (Eindhoven, Helmond, ...) were fetched from the OSM place polygon, the rest from the CBS outline; a re-fetch uses the CBS outline for all and OSM drifts (a Waalre re-fetch showed a few changed street names). Version the raw snapshots (date + checksum) so a refresh shows what changed (see the OSM project).
 - [ ] `osm_etymology.py` and `osm_places.py` query the `NL-NB` area only: parametrise by province or gemeente list so `pipeline.py add` works anywhere in NL.
@@ -200,7 +202,7 @@ Three places, three lifecycles:
    Published as release assets (map, dated raw snapshot) when needed.
 3. **Knowledge repo (separate git repo, "street-knowledge")**: human judgement that cannot be regenerated: the 29k `legacy_hand` overrides, hand-written buurt
    themes (`claude_reasoning`), `corrections.json`, `rule_exclusions.json`, `famous_people.txt`, `person_labels.json`, place-match corrections,
-   `osm_suggestions.json`, `osm_entity_kinds.json`, `review_notes.json`, the review sheets with the user's answers, future `user_notes`. Own history, own licence,
+   `osm_suggestions.json`, `osm_entity_kinds.json`, `review_notes.json`, the per-gemeente review sheets (`reviews/<gemeente>.md`, see below), future `user_notes`. Own history, own licence,
    open to contributions from other people with local knowledge.
 
 Design points / risks to settle (challenges to the model, not objections):
@@ -219,10 +221,11 @@ Design points / risks to settle (challenges to the model, not objections):
       the knowledge repo, which is meant to be shared, and never in a tracked file); `pipeline.py` and `enrich_wikidata.py` read it so no manual `export` is needed.
       Replace the ~15 hard-coded `ROOT/data/...` and `output` paths.
 - [ ] Classify every file in `data/knowledge/` and `data/enriched/` into core / knowledge / build (table in this file).
-- [ ] Split `manual_overrides.json`: `legacy_hand` + hand themes -> knowledge repo; rule-generated layers -> build (regenerated by `rules/run.py --apply`).
+- [ ] Move the layers: `legacy_hand.json` + hand themes -> knowledge repo (already in `data/knowledge/overrides/`); rule layers -> build (`data/enriched/overrides/`, regenerable with `rules/run.py --apply`).
 - [ ] Create the knowledge repo (filter-repo keeps history), add README, licence, schema_version; wire `pipeline.py` to it; stamp commit hashes into outputs.
 - [ ] `pipeline.py bootstrap`: from a clean clone + knowledge repo, rebuild `build/` (acquire, Wikidata, OSM, rules, outputs).
 - [ ] Add `build/` to `.gitignore`, `git rm --cached` rebuildable data; publish map and dated OSM snapshot as release assets; keep the Wikidata cache as a versioned snapshot (not reproducible: Wikidata changes).
+- [ ] **Review sheets as pull requests (user, 2026-11-22)**: the `<gemeente>` review sheets (today `REVIEW_EINDHOVEN.md`, generated by `src/review_sheet.py`) move to the knowledge repo as `reviews/<gemeente>.md`, so people with local knowledge propose corrections as PRs against that repo. Needs: (1) the sheet generator writes into the knowledge repo and **merges** instead of overwriting, since answers live in the markdown table's "Your answer" column and a regeneration must keep them (store answers in a machine-readable file, e.g. `reviews/answers/<gemeente>.json`, and render them into the sheet); (2) an **ingest** command that parses merged answers, validates them (street exists, source given, confidence stated) and turns accepted ones into `corrections.json` entries with the contributor's source as `source_url`/`reason`; (3) a PR template + CONTRIBUTING section (what counts as a source: a link, a document, 'local knowledge' flagged as tier 2 at most; no unsourced person names asserted as tier 1); (4) GitHub Actions on the knowledge repo that runs the ingest validation on every PR; (5) decide whether answers are free text (friendly to the GitHub UI) or a small structured form (safer to parse).
 - [ ] Golden fixture (a few gemeenten, canned Wikidata cache) and an end-to-end test.
 
 ## Project: OSM as a connected, refreshable evidence source (raised 2026-11-21)

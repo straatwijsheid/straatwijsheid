@@ -31,7 +31,7 @@ def core(name: str) -> str:
 
 @dataclass
 class Override:
-    """One street's classification, in the shape manual_overrides.json stores."""
+    """One street's classification, in the shape the override layers store."""
     gemeente: str
     street: str
     category: str
@@ -116,11 +116,13 @@ class Context:
                 if y["street"] != row["street"] and (not trusted_only or (y["source"] in TRUSTED and y.get("entity_label")))]
 
     @classmethod
-    def load(cls, root: Path = ROOT):
+    def load(cls, root: Path = ROOT, final: list | None = None):
+        """The data the rules look at. `final` replaces streets_final.json with rows computed in memory (the state below a rule's own layer)."""
         import geopandas as gpd
         gdf = gpd.read_file(config.RAW / "streets.geojson")[["gemeente", "name", "buurt", "wijk"]]
         streets = gdf.to_dict("records")
-        final = json.loads((config.ENRICHED / "streets_final.json").read_text())
+        if final is None:
+            final = json.loads((config.ENRICHED / "streets_final.json").read_text())
         wd = {}
         for line in (config.ENRICHED / "all_streets_wikidata.jsonl").read_text().splitlines():
             if line.strip():

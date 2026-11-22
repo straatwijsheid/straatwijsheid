@@ -58,10 +58,14 @@ def stage_osm():
     run(SRC / "osm_etymology.py", "--build")
 
 
-def stage_rules(apply=False):
-    run(SRC / "rules" / "run.py", "--apply" if apply else "--check")
+def stage_rules(apply=()):
+    """Check what every enabled rule proposes, or regenerate the named rules' override layers. Regenerating all layers at once would change
+    thousands of historical, partly reviewed entries (see TODO.md: layer audit), so applying always names the rules."""
     if apply:
+        run(SRC / "rules" / "run.py", "--apply", *apply)
         run(SRC / "reconcile.py")
+    else:
+        run(SRC / "rules" / "run.py", "--check")
 
 
 def stage_outputs():
@@ -100,7 +104,7 @@ def main(argv=None):
     ap.add_argument("gemeenten", nargs="*")
     ap.add_argument("--skip-wikidata", action="store_true", help="add: do not look names up (e.g. already done in your own shell)")
     ap.add_argument("--refresh-osm", action="store_true", help="re-fetch the OSM etymology tags (Noord-Brabant-wide)")
-    ap.add_argument("--apply-rules", action="store_true", help="write the rule proposals instead of only checking them")
+    ap.add_argument("--apply-rules", nargs="+", metavar="RULE", help="regenerate these rules' override layers instead of only checking (name them; see rules/run.py --list)")
     ap.add_argument("--themes", action="store_true", help="rebuild: also derive missing buurt themes")
     a = ap.parse_args(argv)
     if a.command == "status":
@@ -116,7 +120,7 @@ def main(argv=None):
     if a.refresh_osm:
         stage_osm()
     if a.command == "add" or a.apply_rules:
-        stage_rules(apply=a.apply_rules)
+        stage_rules(apply=a.apply_rules or ())
     stage_outputs()
 
 
