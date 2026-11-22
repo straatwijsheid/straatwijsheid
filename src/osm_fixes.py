@@ -103,6 +103,16 @@ def missing_etymology(area) -> list:
         lines.append("- **Already tagged:** " + ", ".join(f"[{w}](https://www.openstreetmap.org/way/{w})" for w in x["tagged"]))
         lines.append("- **Still to tag:** " + ", ".join(f"[{w}](https://www.openstreetmap.org/way/{w})" for w in x["todo"]))
         lines.append("")
+    checks = json.loads((ROOT / "data" / "knowledge" / "osm_suggestions.json").read_text()).get("checks", [])
+    if checks:
+        lines += ["", "## D. Tags to check (possibly wrong, no certain correction)", ""]
+        for x in checks:
+            lines.append(f"### {x['street']}, gemeente {x['gemeente']} ({x['buurt']}), way [{x['way']}](https://www.openstreetmap.org/way/{x['way']})")
+            lines.append(f"- *Tagged:* `{x['tag']}`: {x['tag_item']}.")
+            lines.append(f"- *Problem:* {x['problem']}")
+            lines.append(f"- *Candidates:* {x['candidates']}")
+            lines.append(f"- *Suggestion:* {x['suggestion']}")
+            lines.append("")
     return lines
 
 
