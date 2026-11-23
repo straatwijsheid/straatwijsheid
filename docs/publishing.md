@@ -19,6 +19,8 @@ pipeline.py rebuild  ->  package_map.py  ->  release asset  ->  "publish map" wo
 .venv/bin/python src/package_map.py                     # build/dist/straatwijsheid-map.zip (and the unzipped site, build/dist/site/)
 gh release create v0.1 build/dist/straatwijsheid-map.zip --title "v0.1" --notes "..."     # or: gh release upload TAG build/dist/straatwijsheid-map.zip --clobber
 gh workflow run "publish map" -f tag=v0.1               # empty tag: the latest release
+.venv/bin/python src/review_sheet.py --export build/dist/review-inputs.json.gz   # what the review sheets are made from
+gh release upload v0.1 build/dist/review-inputs.json.gz  # then run "regenerate sheets" in the knowledge repository (Actions) for the new sheets
 ```
 
 The workflow downloads `straatwijsheid-map.zip` from the release, checks it contains `index.html` and `data/`, and deploys it. The page reports where it came from in its footer (code commit, knowledge commit, OpenStreetMap snapshot dates).

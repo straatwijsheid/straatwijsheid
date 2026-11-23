@@ -78,6 +78,7 @@ CORRECTION_FIELDS = {
     "entity_description": STREET_FIELDS["entity_description"],
     "confidence": STREET_FIELDS["confidence"],
     "reason": ("text", "Why. Required: a correction without a reason is not accepted."),
+    "source_url": ("text or absent", "A link the contributor gave as the source (a review-sheet answer's link). It is shown as the street's `[source]` and does not make the entry tier 1."),
     "from_osm": ("true or absent", "Take the namesake (label, description, Wikidata link) from the street's OpenStreetMap etymology record, keeping the kind given here; the source becomes `osm_etymology` (tier 1)."),
 }
 

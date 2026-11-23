@@ -3,6 +3,8 @@
   python src/review_sheet.py Eindhoven Breda     # (re)writes <knowledge>/gemeenten/<province>/<gemeente>/REVIEW.md for each
   python src/review_sheet.py --all               # every gemeente in the registry
   python src/review_sheet.py --print Eindhoven   # to the terminal instead, nothing written
+  python src/review_sheet.py --export F.json.gz  # save what the sheets are made from (a release asset)
+  python src/review_sheet.py --all --inputs F.json.gz   # regenerate from that file, without the build (what the knowledge repository's workflow does)
 
 The sheet is Dutch first, English beside it (bilingual headers). Sections: streets read as a person with no namesake (per buurt), further
 checks, place readings and surname readings that the switched-off rules would change (`wikidata_place_review`, `bare_surname`), and streets
@@ -135,10 +137,11 @@ def table(header: list[str], rows: list[list]) -> list[str]:
 
 
 def render(name: str, by: dict[str, list[dict]], notes: dict, extra: list[dict], answers: dict[str, str],
-           held: dict[str, list[tuple]] | None = None, themed: list[dict] | None = None) -> str:
+           held: dict[str, list[tuple]] | None = None, themed: list[dict] | None = None, settled: set[str] = frozenset()) -> str:
     """The sheet text. `notes`: street -> our note; `extra`: further checks ({street, buurt, question}); `answers`: street -> answer to keep;
     `held`: {"places": [...], "surnames": [...]} of (street, now, proposal, note); `themed`: streets read from the buurt theme only.
-    A street appears once: in the first section that asks about it."""
+    A street appears once: in the first section that asks about it. `settled`: streets that already have a correction; an answer for one of those
+    that is no longer asked about is dropped instead of being kept in the last section."""
     used: set[str] = set()      # streets whose answer has a place in this sheet
     asked = {r["street"] for items in by.values() for r in items}
     out = [f"# Review sheet / Controleblad: {name}\n", INTRO]
@@ -181,7 +184,7 @@ def render(name: str, by: dict[str, list[dict]], notes: dict, extra: list[dict],
         out.extend(table(["Straat (Street)", "Buurt", "Wij lezen het als (We read it as)", "Buurtthema (Buurt theme)", ANSWER], [
             f"| {cell(r['street'])} | {cell(r['buurt']) if isinstance(r['buurt'], str) else ''} | {kind(r)} | {cell(r.get('buurt_theme'))[:80]} |{tail(answer(r['street']))}" for r in themed]))
         out.append("")
-    gone = {s: a for s, a in answers.items() if s not in used}
+    gone = {s: a for s, a in answers.items() if s not in used and s not in settled}
     if gone:
         out.append(f"## {ORPHANS}\n\nBeantwoord, maar de straat wordt niet meer gevraagd (inmiddels geïdentificeerd of anders gelezen); een beheerder vergelijkt ze met de correcties. "
                    "*Answered, but the street is no longer asked about; a maintainer checks them against the corrections.*\n")
@@ -208,18 +211,48 @@ def held_proposals(rows: list[dict]) -> dict[str, dict[str, list[tuple]]]:
 def build(code: str, rows: list[dict], existing: str = "", held: dict | None = None) -> str:
     """The sheet for one gemeente, carrying over the answers in `existing` (the current file's text)."""
     n = knowledge.read_json(knowledge.gemeente_dir(code) / "review_notes.json", {})
+    corrected = {c["street"] for c in knowledge.read_json(knowledge.gemeente_dir(code) / "corrections.json", {}).get("corrections", [])}
     return render(gem.name_of(code), candidates(rows, code), n.get("notes", {}), n.get("extra", []), parse_answers(existing),
-                  (held or {}).get(code), theme_read(rows, code))
+                  (held or {}).get(code), theme_read(rows, code), corrected)
+
+
+ROW_FIELDS = ("gemeente_code", "street", "buurt", "category", "subcategory", "entity_label", "evidence_tier", "source", "buurt_theme")
+
+
+def export_inputs(path: str) -> None:
+    """Write what a sheet is made from (the street rows and the held proposals) to one small file, so sheets can be regenerated elsewhere without the build."""
+    import gzip
+    rows = json.loads((config.ENRICHED / "streets_final.json").read_text())
+    slim = [{k: r.get(k) for k in ROW_FIELDS} for r in rows]
+    data = {"rows": slim, "held": held_proposals(rows)}
+    opener = gzip.open if path.endswith(".gz") else open
+    with opener(path, "wt", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+    print(f"{path}: {len(slim)} streets, held proposals for {len(data['held'])} gemeenten")
+
+
+def load_inputs(path: str):
+    import gzip
+    opener = gzip.open if path.endswith(".gz") else open
+    with opener(path, "rt", encoding="utf-8") as f:
+        data = json.load(f)
+    return data["rows"], data["held"]
 
 
 def main(args):
+    if "--export" in args:
+        return export_inputs(args[args.index("--export") + 1])
+    inputs = args[args.index("--inputs") + 1] if "--inputs" in args else None
     show = "--print" in args
-    names = [a for a in args if a not in ("--print", "--all")]
+    names = [a for i, a in enumerate(args) if a not in ("--print", "--all", "--inputs") and (not inputs or a != inputs)]
     if not names and "--all" not in args:
         sys.exit(__doc__)
     names = sorted(gem.index()) if "--all" in args else [gem.code_of(a) for a in names]
-    rows = json.loads((config.ENRICHED / "streets_final.json").read_text())
-    held = held_proposals(rows)
+    if inputs:
+        rows, held = load_inputs(inputs)
+    else:
+        rows = json.loads((config.ENRICHED / "streets_final.json").read_text())
+        held = held_proposals(rows)
     for code in names:
         path = sheet_path(code)
         text = build(code, rows, path.read_text() if path.exists() else "", held)

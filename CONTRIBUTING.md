@@ -75,12 +75,25 @@ A maintainer (re)generates sheets with `.venv/bin/python src/review_sheet.py <ge
 
 ### Handle a review-sheet pull request
 
-Contributors follow [knowledge/REVIEWING.md](https://github.com/straatwijsheid/knowledge/blob/main/REVIEWING.md). As a maintainer:
+Contributors follow [knowledge/REVIEWING.md](https://github.com/straatwijsheid/knowledge/blob/main/REVIEWING.md). Every pull request on the knowledge repository is checked by a workflow (`check`, running `ingest_answers.py --validate-changed`): only the answer column of a sheet may change, an answer must name someone, a correction needs a reason. Then, as a maintainer:
 
-1. Read each changed answer. A source (Wikidata item, OpenStreetMap tag, web page) you have read and that says the naming is tier 1 (give the link as the correction's `reason` and `entity_description` source); a book or a sign that you cannot check, or local knowledge, is tier 2; a guess is not applied, ask for a second indication in the pull request.
-2. Add a `corrections.json` entry per accepted answer (`reason` says who and from what, never just "review sheet"), then `rules/run.py --apply corrections` and `pipeline.py rebuild`, as above.
-3. Merge. Regenerate the gemeente's sheet (`review_sheet.py <gemeente>`): answered streets that are now identified leave the list and their answers move to the last section, so nothing is lost silently. Delete answers from that section once they are in `corrections.json`.
-4. For a wrong reading ("wrong: a plant"), add the correction, or a `rule_exclusions.json` entry when a rule proposed it.
+```bash
+.venv/bin/python src/ingest_answers.py Eindhoven            # dry run: what each answer in the merged sheet would become
+.venv/bin/python src/ingest_answers.py Eindhoven --write    # append the accepted ones to corrections.json
+.venv/bin/python src/rules/run.py --apply corrections && .venv/bin/python src/pipeline.py rebuild
+.venv/bin/python src/review_sheet.py Eindhoven              # settled answers leave the sheet
+```
+
+What an answer becomes (rules in `src/ingest_answers.py`):
+
+- `Jan Ban, organist` (optionally with a link): accepted for a street the sheet reads as a person. It becomes a correction with the answer and the link in `reason` and `source_url`, confidence 0.8 with a link and 0.7 without. **Corrections are tier 2 at most**: a contributor's link makes the entry checkable and shows as `[source]` on the map, but tier 1 only comes from Wikidata or an OpenStreetMap etymology tag. Add a `from_osm` correction, or a tag in OpenStreetMap, if the link points to one.
+- `probably ...`, `waarschijnlijk ...` or a trailing `?`: a guess; reported, never applied. Ask for a second indication in the pull request.
+- `wrong: ...` / `fout: ...`: our reading is wrong; the command lists it for you to decide what the street is instead (a correction by hand, or a `rule_exclusions.json` entry when a rule proposed it).
+- An answer for a street that is not a person-with-no-namesake street (a place or a held proposal) is listed for you: what it names is a judgement.
+
+### Regenerate the sheets after a release
+
+Sheets are made from `streets_final`, which needs the full build. So publishing exports what a sheet needs (`review_sheet.py --export`, see [docs/publishing.md](docs/publishing.md)) as the release asset `review-inputs.json.gz`, and the knowledge repository's workflow `regenerate sheets` (run it from the Actions tab, optionally with the release tag) re-renders every sheet from it and opens a pull request with the changes (branch `regenerate-sheets/...`; answers are kept). It needs the setting *Allow GitHub Actions to create and approve pull requests*.
 
 ## Add an exclusion
 

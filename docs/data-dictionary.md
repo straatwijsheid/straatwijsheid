@@ -120,6 +120,7 @@ The themes, flat (`src/export_csv.py`); `subthemes` is not exported.
 | `entity_description` | text or null | A short description of the namesake: a Wikidata description, or ours. For species, `<Latin name>; Dutch name '<stem>'`. A description saying "only the kind of namesake is asserted" marks a kind-only label. |
 | `confidence` | number 0 to 1 | The source's own score for this classification. Not a probability and not comparable across sources; the map words it as high (0.75 or more), medium (0.5 or more) or low. See [confidence](#confidence). |
 | `reason` | text | Why. Required: a correction without a reason is not accepted. |
+| `source_url` | text or absent | A link the contributor gave as the source (a review-sheet answer's link). It is shown as the street's `[source]` and does not make the entry tier 1. |
 | `from_osm` | true or absent | Take the namesake (label, description, Wikidata link) from the street's OpenStreetMap etymology record, keeping the kind given here; the source becomes `osm_etymology` (tier 1). |
 
 ### `raw/streets_gm####.geojson`, `raw/buurten_gm####.geojson` (and the combined `streets.geojson`, `buurten.geojson`)
