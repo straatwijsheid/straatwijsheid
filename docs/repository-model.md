@@ -44,4 +44,4 @@ Paths, the Overpass URL and the optional Wikidata contact come from, in order, a
 
 ## Visibility and releases
 
-Both repositories are public. `main` cannot be force-pushed or deleted, and in the core repository the `test` workflow is a required check for pull requests. Release assets (the built map, a dated raw snapshot) belong to releases, not to git history.
+Both repositories are public. `main` cannot be force-pushed or deleted. In the core repository the `test` workflow is a required check for pull requests; in the knowledge repository it is the `check` workflow (job `answers`), which keeps a pull request from changing anything in a review sheet but the answers. Administrators can bypass both. Pull requests opened by the sheet-regeneration workflow do not trigger checks (a limit of GitHub's default token), so an administrator merges those. Release assets (the built map, a dated raw snapshot) belong to releases, not to git history.
