@@ -73,6 +73,18 @@ def test_old_english_sheet_still_parses():
     assert R.parse_answers(old) == {"Banstraat": "Jan Ban"}
 
 
+def test_placements_match_github_anchors_and_the_sheet():
+    assert R.anchor("Generalenbuurt (Eindhoven)") == "generalenbuurt-eindhoven"
+    assert R.anchor("Is dit wel een plaats? (Is this really a place?)") == "is-dit-wel-een-plaats-is-this-really-a-place"
+    seen = {}
+    assert [R.anchor("Zuid", seen), R.anchor("Zuid", seen)] == ["zuid", "zuid-1"]
+    rows = [_row("Banstraat", buurt="Noord"), _row("Cortstraat", buurt="Zuid")]
+    held = {"places": [("Lindenlaan", "a", "b", "")], "surnames": []}
+    text = R.render("G", R.candidates(rows, "GM1"), {}, [], {"Oudstraat": "een antwoord"}, held, [])
+    assert R.placements(text) == {"Banstraat": "noord-g", "Cortstraat": "zuid-g",
+                                  "Lindenlaan": "is-dit-wel-een-plaats-is-this-really-a-place"}   # an answer-only street is not asked about
+
+
 if __name__ == "__main__":
     fails = 0
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]

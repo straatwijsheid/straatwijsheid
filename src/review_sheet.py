@@ -89,6 +89,39 @@ def theme_read(rows: list[dict], code: str) -> list[dict]:
                    and not (r["category"] == "person" and not r.get("entity_label"))), key=lambda r: r["street"])
 
 
+def anchor(heading: str, seen: dict | None = None) -> str:
+    """The id GitHub gives a heading: lower case, punctuation removed, spaces to hyphens; a repeat gets -1, -2..."""
+    a = re.sub(r"[^\w\- ]", "", heading.strip().lower()).replace(" ", "-")
+    if seen is not None:
+        n = seen.get(a, 0)
+        seen[a] = n + 1
+        a = a if n == 0 else f"{a}-{n}"
+    return a
+
+
+def placements(text: str) -> dict[str, str]:
+    """street -> the anchor of the heading it is asked about under, read from the sheet itself so a link can never point at a street that is
+    not there. Streets listed only as an old answer (the last section) are not asked about and are left out."""
+    out: dict[str, str] = {}
+    seen: dict[str, int] = {}
+    here = None
+    for line in text.splitlines():
+        m = re.match(r"#{2,3} (.+)", line)
+        if m:
+            a = anchor(m.group(1), seen)
+            here = None if m.group(1).startswith(ORPHANS) else a
+            continue
+        if here and line.startswith("| "):
+            street = line[2:].split(" | ", 1)[0].strip()
+            if street not in HEADER_CELLS and not set(street) <= set("-: "):
+                out.setdefault(street, here)
+    return out
+
+
+def sheet_path(code: str):
+    return knowledge.gemeente_dir(code) / FILE
+
+
 def kind(r) -> str:
     """'place: foreign town (Damme)' from a street record or a proposal (anything with category, subcategory, entity_label)."""
     get = r.get if isinstance(r, dict) else lambda k: getattr(r, k, None)
@@ -123,7 +156,7 @@ def render(name: str, by: dict[str, list[dict]], notes: dict, extra: list[dict],
         heading(S_PERSONS)
     for b, items in sorted(by.items(), key=lambda kv: (-len(kv[1]), kv[0])):
         theme = items[0].get("buurt_theme") or "(none)"
-        out.append(f"### {b} ({name}): {len(items)} {'straat' if len(items) == 1 else 'straten'}\n*Buurtthema (Buurt theme):* {theme}\n")
+        out.append(f"### {b} ({name})\n*{len(items)} {'straat' if len(items) == 1 else 'straten'} (streets). Buurtthema (Buurt theme):* {theme}\n")
         out.extend(table(["Straat (Street)", "Wij lezen het als (We read it as)", "Niveau (Tier)", "Onze notitie (Our note)", ANSWER], [
             f"| {cell(r['street'])} | {(r.get('subcategory') or 'person').replace('_', ' ')} | {r['evidence_tier']} | {cell(notes.get(r['street']))} |{tail(answer(r['street']))}"
             for r in sorted(items, key=lambda r: r["street"])]))
@@ -188,7 +221,7 @@ def main(args):
     rows = json.loads((config.ENRICHED / "streets_final.json").read_text())
     held = held_proposals(rows)
     for code in names:
-        path = knowledge.gemeente_dir(code) / FILE
+        path = sheet_path(code)
         text = build(code, rows, path.read_text() if path.exists() else "", held)
         if show:
             print(text)

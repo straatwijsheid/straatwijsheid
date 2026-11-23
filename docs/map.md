@@ -14,6 +14,8 @@ inherits a kind from its buurt's theme is grey, even though its category is know
 **Tooltips and popups.** Hovering a street shows a short answer to "what is this named after, and how sure are we": the namesake and its description (shortened if long), category and subcategory, a confidence label (high, medium, low), the basis
 (Wikidata match, OpenStreetMap etymology tag, inferred from the neighbourhood theme...), and the evidence tier. Clicking opens the full text, including the `[source]` link where there is one. Tooltips are capped in width and wrap; they never include links, since a tooltip vanishes when the pointer moves.
 
+**Help name it.** For a street at tier 3 to 5, the click popup invites the reader to contribute. If the gemeente's review sheet asks about the street, the link goes to that sheet, anchored to the street's buurt (or section); the map reads the published `REVIEW.md` when it is built, so a link never points at a street that is not there. Other tier 3 to 5 streets link to the general call to contribute in the knowledge repository.
+
 **Evidence tiers** (1 identified with external evidence ... 5 not identified) are shown in each street's tooltip and explained in the legend. They are defined in `src/tiers.py`.
 
 **Legend** (bottom left): the three categories, grey for "no specific reference confirmed", a note on what colour means, the tiers, and a link to help name the unidentified streets. *Show detail* expands the sub-groups with their colours.
@@ -43,7 +45,7 @@ Each file is written twice: plain `.js` and a pre-gzipped `.js.gz` several times
 back to the plain script. The data files are `<script>` files rather than `fetch`ed JSON so the page also works from disk.
 
 Coordinates are rounded to about a metre and lightly simplified, which is invisible on the map and keeps the files smaller. Properties use short keys (`n` name, `k` colour index, `e` entity, `c` category, `s` subcategory, `f` confidence, `l` confidence label,
-`b` basis, `t` tier, `d` description, `u` source URL, `w` way class: `p` path, `c` under construction); they are set in `build_map.py`.
+`b` basis, `t` tier, `d` description, `u` source URL, `w` way class: `p` path, `c` under construction, `a` the anchor of the street in its gemeente's review sheet, set only when the sheet asks about it); they are set in `build_map.py`.
 
 ## Building and checking it
 

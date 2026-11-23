@@ -13,6 +13,8 @@ import geopandas as gpd
 import numpy as np
 import shapely
 import re
+import knowledge
+import review_sheet
 
 
 CATEGORY_COLORS = {
@@ -113,6 +115,7 @@ TRUSTED_ENTITY_SOURCES = {"wikidata", "wikidata_surname_only", "web_search", "os
 DEFAULT_GEMEENTE = "Eindhoven"  # the only gemeente switched on at load; the rest load when ticked
 TAGLINE = "Where the streets have a name"
 REVIEW_URL = "https://github.com/straatwijsheid/knowledge#know-your-neighbourhood-help-us-name-the-streets"
+SHEET_BASE = "https://github.com/straatwijsheid/knowledge/blob/main/"      # + a registry entry's `rv` + #anchor
 UNRESOLVED_TEXT = "Where the streets have no (known) name: origin not identified, no confident match found"
 
 
@@ -180,7 +183,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         for g in registry
     )
     js_registry = json.dumps([
-        {k: g[k] for k in ("id", "name", "bounds")} for g in registry
+        {k: g[k] for k in ("id", "name", "bounds", "rv") if k in g} for g in registry
     ])
     return """
     <div id="gm-panel" style="position:fixed; top:12px; right:12px; z-index:1000; background:white;
@@ -221,12 +224,19 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
 
       var esc = function (t) { return String(t).replace(/[&<>"']/g,
         function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]; }); };
+      // a street the gemeente's review sheet asks about links to it (its own buurt); other tier 3-5 streets get the general call to contribute
+      var help = function (p, brief) {
+        if (brief || !p.t || p.t < 3) return "";
+        var g = p.a !== undefined && G.filter(function (x) { return x.id === p.g; })[0];
+        if (g && g.rv) return "<br><a href='" + R.sheetBase + g.rv + "#" + esc(p.a) + "' target='_blank' rel='noopener'>Know who this is? Answer in the review sheet for " + esc(g.name) + "</a>";
+        return "<br><a href='" + R.reviewUrl + "' target='_blank' rel='noopener'>Know who this is? Help name it</a>";
+      };
       var tpl = function (f, brief) {   // brief = hover tooltip: description shortened, no link (it cannot be clicked there); the click popup has it all
         var p = f.properties, h = "<b>" + esc(p.n) + "</b><br>";
         var tier = p.t ? "<br><span style='color:#555'>Evidence tier " + p.t + ": " + esc(R.tiers[p.t]) + "</span>" : "";
         if (p.e === undefined) {
-          if (p.t === undefined || p.t === 5) return h + R.unresolved + (p.t === 5 && p.c && p.c !== "unresolved" ? "<br>Best guess: " + esc(p.c) + "/" + esc(p.s || "") : "") + tier;
-          return h + "No specific namesake identified<br>Kind: " + esc(p.c) + (p.s ? "/" + esc(p.s) : "") + tier;
+          if (p.t === undefined || p.t === 5) return h + R.unresolved + (p.t === 5 && p.c && p.c !== "unresolved" ? "<br>Best guess: " + esc(p.c) + "/" + esc(p.s || "") : "") + tier + help(p, brief);
+          return h + "No specific namesake identified<br>Kind: " + esc(p.c) + (p.s ? "/" + esc(p.s) : "") + tier + help(p, brief);
         }
         h += "Likely named after: <b>" + esc(p.e) + "</b>" + (p.d ? " &mdash; " + esc(brief && p.d.length > 200 ? p.d.slice(0, 200).replace(/ +[^ ]*$/, "") + "&hellip;" : p.d) : "");
         if (p.u && !brief) h += ' &nbsp;<a href="' + esc(p.u) + '" target="_blank" rel="noopener">[source]</a>';
@@ -324,6 +334,7 @@ def gemeente_panel(registry: list[dict], map_name: str, render: dict, initial: l
         return loading[g.id] = new Promise(function (resolve, reject) {
           loadScript("data/" + g.id + ".js", function () {
             var d = window.GM_DATA[g.id];
+            d.features.forEach(function (f) { if (f.properties.a !== undefined) f.properties.g = g.id; });   // which gemeente's sheet the street's anchor belongs to
             built[g.id] = buildStreets(d);
             if (lab) lab.textContent = orig;
             resolve(built[g.id]);
@@ -527,6 +538,13 @@ def main():
         return palette.index(c)
 
     feats = {g: [] for g in gemeente_codes}
+    # which streets a gemeente's published review sheet asks about, and under which heading: read from the sheet, so a popup link never
+    # points at a street that is not there
+    sheets = {}
+    for g in gemeente_codes:
+        sp = review_sheet.sheet_path(g)
+        if sp.exists():
+            sheets[g] = review_sheet.placements(sp.read_text())
     for _, row in streets.iterrows():
         # color only reflects a specific, identified namesake (real entity_label);
         # everything else is thin gray with one shared "origin not identified" tooltip
@@ -544,6 +562,8 @@ def main():
                 gsub = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else ""
                 gprops["c"] = row["category"] if isinstance(row["category"], str) else "unresolved"
                 gprops["s"] = gsub
+            if row.get("analyzed", True) and row["name"] in sheets.get(row["gemeente_code"], {}):
+                gprops["a"] = sheets[row["gemeente_code"]][row["name"]]       # anchor of its buurt/section in the gemeente's review sheet
             feats[row["gemeente_code"]].append({"type": "Feature", "properties": gprops, "geometry": geom})
             continue
         subcat = row["subcategory"] if isinstance(row["subcategory"], str) and row["subcategory"] else None
@@ -578,7 +598,8 @@ def main():
             + json.dumps(payload, separators=(",", ":"), ensure_ascii=False) + ";\n")
         gs = streets[streets["gemeente_code"] == g]
         minx, miny, maxx, maxy = gs.total_bounds
-        registry.append({"id": gid, "name": gemeenten.name_of(g), "streets": len(gs), "bounds": [[miny, minx], [maxy, maxx]]})
+        registry.append({"id": gid, "name": gemeenten.name_of(g), "streets": len(gs), "bounds": [[miny, minx], [maxy, maxx]],
+                         **({"rv": str(review_sheet.sheet_path(g).relative_to(config.KNOWLEDGE))} if g in sheets else {})})
     allb = [f for g in gemeente_codes for f in bfeats[g]]
     write_js(data_dir / "buurten.js",
         "window.GM_BUURTEN=" + json.dumps({"type": "FeatureCollection", "features": allb},
@@ -590,7 +611,7 @@ def main():
     search = {"s": [[r["name"], r["gemeente_code"].lower(), *bbox(r["geometry"]), W.get(r.get("way_class"), "")] for _, r in streets.iterrows()],
               "b": [[r["name"], r["gemeente_code"].lower(), *bbox(r["geometry"])] for _, r in buurten.iterrows()]}
     write_js(data_dir / "search.js", "window.GM_SEARCH=" + json.dumps(search, separators=(",", ":"), ensure_ascii=False) + ";\n")
-    render = {"palette": palette, "basis": SOURCE_LABELS, "tiers": {str(k): v for k, v in TIER_NAMES.items()}, "gray": gray_style, "unresolved": UNRESOLVED_TEXT}
+    render = {"palette": palette, "basis": SOURCE_LABELS, "tiers": {str(k): v for k, v in TIER_NAMES.items()}, "gray": gray_style, "unresolved": UNRESOLVED_TEXT, "sheetBase": SHEET_BASE, "reviewUrl": REVIEW_URL}
     default = gemeenten.known(DEFAULT_GEMEENTE)
     initial = [default.lower()] if default in gemeente_codes else [g.lower() for g in gemeente_codes]
     m.get_root().html.add_child(folium.Element(gemeente_panel(registry, m.get_name(), render, initial)))
