@@ -71,7 +71,7 @@ Then:
 
 Commit `corrections.json` and the regenerated `overrides/corrections.json` together. Review-sheet answers (`REVIEW.md`) are the easier route for people who know a neighbourhood but not the tooling; see the knowledge repository.
 
-A maintainer (re)generates a sheet with `.venv/bin/python src/review_sheet.py <gemeente> ...`; it writes `REVIEW.md` into the gemeente's directory in the knowledge repository. Contributors type free text in the "Your answer" column. Regenerating reads those answers back from the existing file and keeps them, and an answer for a street that is no longer asked about moves to a section at the end instead of being dropped; `--print` shows a sheet without writing it. Turn answers into corrections as above, then regenerate.
+A maintainer (re)generates sheets with `.venv/bin/python src/review_sheet.py <gemeente> ...` (or `--all`; every gemeente has one); it writes `REVIEW.md` into the gemeente's directory in the knowledge repository. Contributors type free text in the "Your answer" column. Regenerating reads those answers back from the existing file and keeps them, and an answer for a street that is no longer asked about moves to a section at the end instead of being dropped; `--print` shows a sheet without writing it. A sheet is Dutch first with English beside it, and asks about: streets read as a person with no namesake, places Wikidata may have got wrong, surname-or-ordinary-word readings (the last two are proposals of rules that are switched off until reviewed), and streets whose kind rests on the buurt theme alone. Each street is asked about once. Turn answers into corrections as above, then regenerate.
 
 ## Add an exclusion
 

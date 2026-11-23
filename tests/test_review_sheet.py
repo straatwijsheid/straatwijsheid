@@ -55,6 +55,24 @@ def test_further_checks_keep_answers():
     assert "Further checks" in text and R.parse_answers(text) == {"Eikenlaan": "a tree"}
 
 
+def test_sections_and_each_street_once():
+    rows = [_row("Banstraat")]
+    held = {"places": [("Lindenlaan", "place: city (Linden)", "place: foreign town", "n"), ("Banstraat", "x", "y", "")],
+            "surnames": [("Molen", "person", "place: local", "")]}
+    themed = [dict(_row("Dorpstraat", tier=4), source="buurt_theme_fallback", category="place", subcategory="foreign_town"), _row("Banstraat")]
+    text = R.render("G", R.candidates(rows, "GM1"), {}, [], {"Molen": "een molen", "Lindenlaan": "ja"}, held, themed)
+    assert text.count("| Banstraat |") == 1                                                 # asked in the first section only
+    for title in (R.S_PERSONS[0], R.S_PLACES[0], R.S_SURNAMES[0], R.S_THEME[0]):
+        assert f"## {title}" in text
+    assert R.parse_answers(text) == {"Molen": "een molen", "Lindenlaan": "ja"} and R.ORPHANS not in text
+    assert "Uw antwoord (Your answer)" in text and "Welkom!" in text
+
+
+def test_old_english_sheet_still_parses():
+    old = "| Street | We read it as | Tier | Our note | Your answer |\n|---|---|---|---|---|\n| Banstraat | composer | 3 |  | Jan Ban |\n"
+    assert R.parse_answers(old) == {"Banstraat": "Jan Ban"}
+
+
 if __name__ == "__main__":
     fails = 0
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
