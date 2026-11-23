@@ -73,6 +73,15 @@ Commit `corrections.json` and the regenerated `overrides/corrections.json` toget
 
 A maintainer (re)generates sheets with `.venv/bin/python src/review_sheet.py <gemeente> ...` (or `--all`; every gemeente has one); it writes `REVIEW.md` into the gemeente's directory in the knowledge repository. Contributors type free text in the "Your answer" column. Regenerating reads those answers back from the existing file and keeps them, and an answer for a street that is no longer asked about moves to a section at the end instead of being dropped; `--print` shows a sheet without writing it. A sheet is Dutch first with English beside it, and asks about: streets read as a person with no namesake, places Wikidata may have got wrong, surname-or-ordinary-word readings (the last two are proposals of rules that are switched off until reviewed), and streets whose kind rests on the buurt theme alone. Each street is asked about once. Turn answers into corrections as above, then regenerate.
 
+### Handle a review-sheet pull request
+
+Contributors follow [knowledge/REVIEWING.md](https://github.com/straatwijsheid/knowledge/blob/main/REVIEWING.md). As a maintainer:
+
+1. Read each changed answer. A source (Wikidata item, OpenStreetMap tag, web page) you have read and that says the naming is tier 1 (give the link as the correction's `reason` and `entity_description` source); a book or a sign that you cannot check, or local knowledge, is tier 2; a guess is not applied, ask for a second indication in the pull request.
+2. Add a `corrections.json` entry per accepted answer (`reason` says who and from what, never just "review sheet"), then `rules/run.py --apply corrections` and `pipeline.py rebuild`, as above.
+3. Merge. Regenerate the gemeente's sheet (`review_sheet.py <gemeente>`): answered streets that are now identified leave the list and their answers move to the last section, so nothing is lost silently. Delete answers from that section once they are in `corrections.json`.
+4. For a wrong reading ("wrong: a plant"), add the correction, or a `rule_exclusions.json` entry when a rule proposed it.
+
 ## Add an exclusion
 
 When a rule proposes something wrong, do not hand-edit its layer (the next `--apply` would bring it back). Add the street to

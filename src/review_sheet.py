@@ -32,9 +32,9 @@ ANSWER = "Uw antwoord (Your answer)"
 INTRO = (
     "Welkom! Dit blad vraagt om uw lokale kennis. Waar we een straatnaam niet kunnen thuisbrengen, staat de straat hieronder. "
     "Typ in de laatste kolom wat u weet, bijvoorbeeld `Jan Ban, organist` of `fout: dit is een plant`; sla over wat u niet weet. "
-    "Gebruik het teken `|` niet in een antwoord. Zie [CONTRIBUTING](https://github.com/straatwijsheid/straatwijsheid/blob/main/CONTRIBUTING.md).\n\n"
+    "Gebruik het teken `|` niet in een antwoord. Uitleg en bronnen: [REVIEWING](https://github.com/straatwijsheid/knowledge/blob/main/REVIEWING.md).\n\n"
     "*Welcome! This sheet asks for your local knowledge. Where we cannot place a street name, the street is listed below. Type what you know in "
-    "the last column, for example `Jan Ban, organist` or `wrong: this is a plant`; skip any you do not know. Do not use the `|` character in an answer.*\n")
+    "the last column, for example `Jan Ban, organist` or `wrong: this is a plant`; skip any you do not know. Do not use the `|` character in an answer. How to, and what counts as a source: see the link above.*\n")
 S_PERSONS = ("Personen zonder bekende naamgever (Streets read as a person, namesake unknown)",
              "Deze straten lezen we als *een persoon van een bepaald soort*, maar wie het was weten we niet. Per buurt: het naamgevingsthema dat we zagen. "
              "*We read these as a kind of person but have not identified who; per buurt, the naming theme we detected.*\n")
