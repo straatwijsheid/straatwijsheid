@@ -56,14 +56,28 @@ def test_pull_request_check_allows_only_answers():
     base = _sheet(rows, {})
     good = base.replace("| Banstraat | musician composer | 3 |  | |", "| Banstraat | musician composer | 3 |  | Jan Ban, organist |")
     assert good != base and I.check_sheet(base, good) == ([], ["Banstraat: no source link; it will be recorded as local knowledge, unverified (tier 2)"])
-    edited = good.replace("| Cortstraat | musician composer | 3 |", "| Cortstraat | painter | 3 |")
-    assert any("Cortstraat" in e and "other than the answer" in e for e in I.check_sheet(base, edited)[0])
-    removed = good.replace("| Cortstraat | musician composer | 3 |  | |\n", "")
-    assert any("row removed" in e for e in I.check_sheet(base, removed)[0])
-    added = good + "| Nieuwstraat | x | 3 |  | iets |\n"
-    assert any("not in the sheet" in e for e in I.check_sheet(base, added)[0])
-    junk = base.replace("| Banstraat | musician composer | 3 |  | |", "| Banstraat | musician composer | 3 |  | 12 |")
-    assert any("could not read" in e for e in I.check_sheet(base, junk)[0])
+    assert I.check_sheet(base, good.replace("\n", "\r\n"))[0] == []                      # line endings do not matter
+    def bad(head, *words):
+        errs = I.check_sheet(base, head)[0]
+        assert errs and all(any(w in e for e in errs) for w in words), (errs, words)
+    bad(good.replace("| Cortstraat | musician composer |", "| Cortstraat | painter |"), "outside the answer column", "Cortstraat")
+    bad(good.replace("| Cortstraat | musician composer | 3 |  | |\n", ""), "removed")
+    bad(good + "| Nieuwstraat | x | 3 |  | iets |\n", "added")
+    bad(good.replace("| Banstraat |", "| Banstrat |"), "Banstrat")                       # a respelled street
+    bad(good.replace("### B (Eindhoven)", "### Bb (Eindhoven)"), "outside the answer column")   # a heading is an anchor
+    bad(good.replace("|---|---|---|---|---|", "|---|---|---|---|"), "outside the answer column")   # a butchered separator
+    bad(good.replace("Streets read", "Strets read").replace("Welkom", "Hallo"), "outside the answer column")
+    bad(good.replace("| Cortstraat | musician composer | 3 |  | |", "| Cortstraat | musician composer | 3 | | |  | x |"), "columns")
+    bad(base.replace("| Banstraat | musician composer | 3 |  | |", "| Banstraat | musician composer | 3 |  | 12 |"), "could not read")
+
+
+def test_a_row_that_lost_a_cell_gives_no_answer():
+    rows = [_row("Banstraat")]
+    text = _sheet(rows, {}).replace("| Banstraat | musician composer | 3 |  | |", "| Banstraat | musician composer | 3 | wrong column |")
+    assert RS.parse_answers(text) == {} and RS.malformed(text)[0][1] == "Banstraat"        # not read as the answer "wrong column"
+    stray = _sheet(rows, {}) + "\n| Banstraat | musician composer | 3 |  | stiekem |\n"
+    assert RS.parse_answers(stray) == {}                                                    # a row outside any table is not an answer
+    assert I.check_sheet(_sheet(rows, {}), stray)[0]                                         # and the check refuses it
 
 
 def test_corrections_checked():

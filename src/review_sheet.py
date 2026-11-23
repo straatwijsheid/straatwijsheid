@@ -62,18 +62,38 @@ def tail(a: str) -> str:
     return f" {a} |" if a else " |"
 
 
-def parse_answers(text: str) -> dict[str, str]:
-    """street -> answer, from every table row in a sheet whose last column ("Your answer", or the orphan table's) is filled in."""
-    out: dict[str, str] = {}
-    for line in text.splitlines():
+def table_rows(text: str):
+    """(line number, cells, width) for each data row of each table in a sheet; `width` is the header's cell count (None before any header).
+    Rows are only data when they sit under a header row, so a stray `|` line elsewhere is not read as an answer."""
+    width = None
+    for n, line in enumerate(text.splitlines(), 1):
         if not line.startswith("|") or not line.rstrip().endswith("|"):
+            width = None                      # a table ends at the first line that is not a row
             continue
         cells = [c.strip() for c in line.strip()[1:-1].split("|")]
-        if len(cells) < 2 or cells[0] in HEADER_CELLS or cells[0] == "" or set(cells[0]) <= set("-: "):
-            continue
-        if cells[-1]:
-            out[cells[0]] = cells[-1]
-    return out
+        if cells[0] in HEADER_CELLS:
+            width = len(cells)
+        elif width is not None and cells[0] and not set(cells[0]) <= set("-: ") and len(cells) >= 2:
+            yield n, cells, width
+
+
+def parse_answers(text: str) -> dict[str, str]:
+    """street -> answer, from every table row in a sheet whose last column ("Your answer", or the orphan table's) is filled in.
+    A row whose cell count differs from its table's header is malformed and gives no answer (`malformed` lists them)."""
+    return {cells[0]: cells[-1] for n, cells, width in table_rows(text) if cells[-1] and len(cells) == width}
+
+
+def malformed(text: str) -> list[tuple[int, str]]:
+    """(line number, street) of rows whose cell count differs from their table's header."""
+    return [(n, cells[0]) for n, cells, width in table_rows(text) if len(cells) != width]
+
+
+def normalise(text: str) -> str:
+    """The sheet with line endings and trailing blanks made uniform and every data row's answer cell emptied: two sheets that differ only in
+    their answers have the same normal form (what the pull-request check compares)."""
+    lines = [l.rstrip() for l in text.replace("\r\n", "\n").splitlines()]
+    rows = {n for n, _, _ in table_rows(text)}
+    return "\n".join(re.sub(r"\|[^|]*\|$", "| |", l) if n in rows else l for n, l in enumerate(lines, 1)).strip() + "\n"
 
 
 def candidates(rows: list[dict], code: str) -> dict[str, list[dict]]:
@@ -260,6 +280,8 @@ def main(args):
             print(text)
             continue
         kept = len(parse_answers(path.read_text())) if path.exists() else 0
+        for n, street in (malformed(path.read_text()) if path.exists() else []):
+            print(f"  warning: {path.name} line {n} ({street}) has the wrong number of columns; its answer was not read")
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text)
         print(f"{path.relative_to(config.KNOWLEDGE)}: {sum(1 for l in text.splitlines() if l.startswith('| ') and 'Straat (Street)' not in l)} streets asked, {kept} answers kept")

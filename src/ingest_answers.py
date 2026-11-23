@@ -128,36 +128,32 @@ def ingest(name: str, write: bool) -> int:
 
 # --- checks for a pull request on the knowledge repository (no build needed) -------------------------------------------------------------------
 
-def sheet_rows(text: str) -> dict[str, tuple]:
-    """street -> every cell except the last (the answer), for each table row of a sheet."""
-    out = {}
-    for line in text.splitlines():
-        if line.startswith("| ") and line.rstrip().endswith("|"):
-            cells = [c.strip() for c in line.strip()[1:-1].split("|")]
-            if cells[0] and cells[0] not in RS.HEADER_CELLS and not set(cells[0]) <= set("-: "):
-                out.setdefault(cells[0], tuple(cells[:-1]))
-    return out
-
-
 def check_sheet(base: str, head: str) -> tuple[list[str], list[str]]:
-    """(errors, notes) for a changed sheet. Only the answer column may change; an answer must be readable."""
+    """(errors, notes) for a changed sheet. Everything except the answer cells must be as it was: headings (they are the links' anchors), tables,
+    streets, order, prose. An answer must be readable."""
+    import difflib
     errors, notes = [], []
-    b, h = sheet_rows(base), sheet_rows(head)
-    for street in sorted(set(h) - set(b)):
-        errors.append(f"{street}: a row that is not in the sheet (rows are generated; only the answer column is yours to edit)")
-    for street in sorted(set(b) - set(h)):
-        errors.append(f"{street}: row removed (rows are generated; clear the answer instead)")
-    for street in sorted(set(b) & set(h)):
-        if b[street] != h[street]:
-            errors.append(f"{street}: a cell other than the answer was changed")
+    if not base.strip():
+        return errors, ["a new sheet: not compared with a previous one"]
+    nb, nh = RS.normalise(base).splitlines(), RS.normalise(head).splitlines()
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, nb, nh, autojunk=False).get_opcodes():
+        if tag == "equal":
+            continue
+        was, now = " / ".join(nb[i1:i2])[:100], " / ".join(nh[j1:j2])[:100]
+        what = {"replace": "changed", "delete": "removed", "insert": "added"}[tag]
+        errors.append(f"line {j1 + 1}: {what} outside the answer column (was: {was or '-'}; now: {now or '-'}). Sheets are generated; only the answers are yours to edit")
+        if len(errors) >= 10:
+            errors.append("... and more")
+            break
+    for n, street in RS.malformed(head):
+        errors.append(f"line {n} ({street}): wrong number of columns (an answer cannot contain '|')")
     old, new = RS.parse_answers(base), RS.parse_answers(head)
+    known = {c[0] for _, c, _ in RS.table_rows(base)}
     for street, raw in sorted(new.items()):
-        if old.get(street) == raw or street not in b:
+        if old.get(street) == raw or street not in known:
             continue
         a = parse(raw, street)
-        if "|" in raw:
-            errors.append(f"{street}: the answer contains a '|'")
-        elif a.kind == "unclear":
+        if a.kind == "unclear":
             errors.append(f"{street}: could not read a name from the answer: {raw!r}")
         elif a.kind == "wrong":
             notes.append(f"{street}: marked as wrong ({a.description or 'no reason given'}); a maintainer decides what it is instead")

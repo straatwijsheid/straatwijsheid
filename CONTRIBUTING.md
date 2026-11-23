@@ -75,7 +75,7 @@ A maintainer (re)generates sheets with `.venv/bin/python src/review_sheet.py <ge
 
 ### Handle a review-sheet pull request
 
-Contributors follow [knowledge/REVIEWING.md](https://github.com/straatwijsheid/knowledge/blob/main/REVIEWING.md). Every pull request on the knowledge repository is checked by a workflow (`check`, running `ingest_answers.py --validate-changed`): only the answer column of a sheet may change, an answer must name someone, a correction needs a reason. Then, as a maintainer:
+Contributors follow [knowledge/REVIEWING.md](https://github.com/straatwijsheid/knowledge/blob/main/REVIEWING.md). Every pull request on the knowledge repository is checked by a workflow (`check`, running `ingest_answers.py --validate-changed`): a sheet may differ only in its answer cells (anything else, even a heading, is an error), an answer must name someone, a correction needs a reason. Then, as a maintainer:
 
 ```bash
 .venv/bin/python src/ingest_answers.py Eindhoven            # dry run: what each answer in the merged sheet would become
