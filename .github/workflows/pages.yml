@@ -34,6 +34,21 @@ jobs:
           gh release download ${TAG:+"$TAG"} --repo "$GITHUB_REPOSITORY" --pattern straatwijsheid-map.zip
           mkdir site && unzip -q straatwijsheid-map.zip -d site
           test -f site/index.html && test -d site/data
+      - name: Add Cloudflare Web Analytics (cookieless), if a token is configured
+        env:
+          CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+        run: |
+          if [ -n "$CF_BEACON_TOKEN" ]; then
+            python3 - <<'PY'
+          import os, pathlib
+          p = pathlib.Path("site/index.html")
+          tag = ('<script defer src="https://static.cloudflareinsights.com/beacon.min.js" '
+                 'data-cf-beacon=\'{"token": "%s"}\'></script>' % os.environ["CF_BEACON_TOKEN"])
+          s = p.read_text(encoding="utf-8")
+          assert "</body>" in s
+          p.write_text(s.replace("</body>", tag + "</body>", 1), encoding="utf-8")
+          PY
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
