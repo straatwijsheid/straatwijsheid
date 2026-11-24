@@ -53,5 +53,8 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+      - name: Wait for the uploaded artifact to become visible
+        # deploy-pages sometimes runs before the artifact it was just handed is listed ("Found 0 artifact(s)"); a short pause avoids it
+        run: sleep 20
       - id: deployment
         uses: actions/deploy-pages@v4
