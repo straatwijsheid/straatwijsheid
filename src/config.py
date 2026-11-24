@@ -9,6 +9,7 @@ personal details such as the Wikidata contact) > default. `config.example.toml` 
   knowledge repo     STREETS_KNOWLEDGE_REPO  knowledge_repo          https://github.com/straatwijsheid/knowledge.git
   Wikidata contact   WIKIDATA_CONTACT        wikidata_contact        (none: lookups work but are throttled harder)
   Overpass URL       OVERPASS_URL            overpass_url            https://overpass-api.de/api/interpreter
+  help/guide page    GUIDE_URL               guide_url               https://straatwijsheid.nl/meedoen/   (linked from the map and from every review sheet)
   basemap tile URL   TILE_URL                tile_url                https://tile.openstreetmap.org/{z}/{x}/{y}.png   (TILE_ATTRIBUTION / tile_attribution: the credit the provider requires)
 
 Rebuildable data lives under the build directory: raw/ enriched/ output/ cache/ names/. `python src/config.py` prints the resolved settings (the contact is only shown as set / not set).
@@ -50,6 +51,8 @@ GLOBAL = KNOWLEDGE / "global"        # curated lists that apply everywhere; per-
 CONTACT = setting("WIKIDATA_CONTACT", "wikidata_contact")
 OVERPASS_URL = setting("OVERPASS_URL", "overpass_url", "https://overpass-api.de/api/interpreter")
 # The map's basemap. The OpenStreetMap tile policy asks sites not to hard-code the tile URL, so switching provider is a setting, not a code change.
+# One stable address for "how do I help": the Take part page on the website (it links to the review guide and, without GitHub, the form).
+GUIDE_URL = setting("GUIDE_URL", "guide_url", "https://straatwijsheid.nl/meedoen/")
 TILE_URL = setting("TILE_URL", "tile_url", "https://tile.openstreetmap.org/{z}/{x}/{y}.png")
 TILE_ATTRIBUTION = setting("TILE_ATTRIBUTION", "tile_attribution", '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors')
 

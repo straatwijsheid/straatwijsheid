@@ -133,7 +133,7 @@ def seo_head() -> str:
             f'<meta property="og:description" content="{d}">\n'
             f'<meta property="og:url" content="{MAP_URL}">\n'
             f'<meta property="og:image" content="{SITE_URL}og.png">\n')
-REVIEW_URL = "https://github.com/straatwijsheid/knowledge#know-your-neighbourhood-help-us-name-the-streets"
+REVIEW_URL = config.GUIDE_URL                    # the website's Take part page (one setting, src/config.py)
 SHEET_BASE = "https://github.com/straatwijsheid/knowledge/blob/main/"      # + a registry entry's `rv` + #anchor
 UNRESOLVED_TEXT = "Where the streets have no (known) name: origin not identified, no confident match found"
 
