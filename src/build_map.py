@@ -114,6 +114,25 @@ SOURCE_LABELS = {
 TRUSTED_ENTITY_SOURCES = {"wikidata", "wikidata_surname_only", "web_search", "osm_etymology", "claude_knowledge", "title_heuristic"}
 DEFAULT_GEMEENTE = "Eindhoven"  # the only gemeente switched on at load; the rest load when ticked
 TAGLINE = "Where the streets have a name"
+MAP_URL = "https://maps.straatwijsheid.nl/"
+SITE_URL = "https://straatwijsheid.nl/"
+MAP_DESCRIPTION = ("An open map of what Dutch streets are named after: a person, a place or a thing. "
+                   "Search a street or browse by gemeente, with the evidence behind every answer.")
+
+
+def seo_head() -> str:
+    """Description, canonical URL and Open Graph tags for the map page (search engines and link previews).
+    Deliberately no Twitter/X tags."""
+    from html import escape
+    d = escape(MAP_DESCRIPTION, quote=True)
+    return (f'<meta name="description" content="{d}">\n'
+            f'<link rel="canonical" href="{MAP_URL}">\n'
+            '<meta property="og:type" content="website">\n'
+            '<meta property="og:site_name" content="Straatwijsheid">\n'
+            f'<meta property="og:title" content="Straatwijsheid: {escape(TAGLINE)}">\n'
+            f'<meta property="og:description" content="{d}">\n'
+            f'<meta property="og:url" content="{MAP_URL}">\n'
+            f'<meta property="og:image" content="{SITE_URL}og.png">\n')
 REVIEW_URL = "https://github.com/straatwijsheid/knowledge#know-your-neighbourhood-help-us-name-the-streets"
 SHEET_BASE = "https://github.com/straatwijsheid/knowledge/blob/main/"      # + a registry entry's `rv` + #anchor
 UNRESOLVED_TEXT = "Where the streets have no (known) name: origin not identified, no confident match found"
@@ -519,6 +538,7 @@ def main():
     m = folium.Map(location=[51.44, 5.47], zoom_start=12, tiles=None)
     folium.TileLayer(tiles=config.TILE_URL, attr=config.TILE_ATTRIBUTION, name="basemap", max_zoom=19).add_to(m)   # the provider and its credit are settings (src/config.py)
     m.get_root().title = "Straatwijsheid: " + TAGLINE
+    m.get_root().header.add_child(folium.Element(seo_head()))
 
     bfeats = {g: [] for g in gemeente_codes}
     for _, row in buurten.iterrows():
@@ -673,6 +693,9 @@ def main():
 
     out_path = config.OUTPUT / "streets_map.html"
     m.save(str(out_path))
+    html = out_path.read_text(encoding="utf-8")
+    if "<html>" in html:                         # folium writes a bare <html>: declare the language
+        out_path.write_text(html.replace("<html>", '<html lang="en">', 1), encoding="utf-8")
     print(f"Wrote {out_path}")
 
 
